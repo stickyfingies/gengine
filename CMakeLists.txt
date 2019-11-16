@@ -7,6 +7,9 @@ find_package(Vulkan REQUIRED)
 add_subdirectory(${CMAKE_SOURCE_DIR}/external/bullet3-2.88)
 add_subdirectory(${CMAKE_SOURCE_DIR}/external/glfw-3.3)
 
+set(BUILD_SHARED_LIBS ON)
+add_subdirectory(${CMAKE_SOURCE_DIR}/external/assimp-5.0.0)
+
 add_executable(${PROJECT_NAME})
 
 target_sources(${PROJECT_NAME}
@@ -23,6 +26,7 @@ PUBLIC
 	${CMAKE_SOURCE_DIR}/include
 	${CMAKE_SOURCE_DIR}/external/bullet3-2.88/src
 	${CMAKE_SOURCE_DIR}/external/glfw-3.3/include
+	${CMAKE_SOURCE_DIR}/external/assimp-5.0.0/include
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -33,6 +37,8 @@ PUBLIC
 	BulletCollision
 	BulletDynamics
 	LinearMath
+	assimp
+	${ASSIMP_LIBRARIES}
 )
 
 target_compile_options(${PROJECT_NAME}
