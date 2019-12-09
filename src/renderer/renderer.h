@@ -15,6 +15,12 @@ namespace gengine
 
 	struct RenderImage;
 
+	struct RenderComponent
+	{
+		VertexBuffer* vbo;
+		unsigned int index_count;
+	};
+
 	class RenderCmdList
 	{
 	public:

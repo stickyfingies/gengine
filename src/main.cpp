@@ -1,5 +1,5 @@
 #include <GLFW/glfw3.h>
-#include <btBulletDynamicsCommon.h>
+#include <bullet/btBulletDynamicsCommon.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <assimp/Importer.hpp>
@@ -11,30 +11,28 @@
 #include "renderer/renderer.h"
 
 #include <array>
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <thread>
+#include <tuple>
 #include <vector>
 
 /*
-- NOTETAKING SECTION
+# TODO
 
-builder.addPass([&](BuilderScope & scope)
-{
-	// construct the graph
+- ECS
+	This is the biggest issue in main.cpp, as wrangling physics, rendering, and model data is currently very hacky.
+	Having a structured way of associating data with a game entity will clean up main.cpp a lot.
 
-	scope.read(some resource);
-	scope.read(some other resource);
-	scope.write(output resource);
+- Clean Up Renderer
+	renderer.cpp is a fucking mess.  Half of the functionality is baked-in when it should be more flexible, the other
+	half is extracted into the public API when it would make things easier for them to be baked in.
 
-	// execute the graph
-
-	return [=](RenderGraphRegistry & registry, RenderCommandList & cmdlist)
-	{
-		cmdlist.draw(some stuff here);
-	}
-});
-
+- Cry About Physics
+	...We'll get to bullet physics later, after the ECS and Render Engine are all cleaned up.  I really don't want to
+	deal with bullet at the moment.
 */
 
 namespace
@@ -46,6 +44,7 @@ namespace
 
 	std::vector<glm::mat4> transforms;
 	std::vector<gengine::Collidable*> collidables;
+	std::vector<gengine::RenderComponent> render_components;
 
 	auto mouse_callback(GLFWwindow* window, double pos_x, double pos_y) -> void
 	{
@@ -61,17 +60,76 @@ namespace
 	auto load_file(std::string_view path)->std::string
 	{
 		std::ifstream stream(path.data(), std::ifstream::binary);
-		
+
 		std::stringstream buffer;
-		
+
 		buffer << stream.rdbuf();
 
 		return buffer.str();
+	}
+
+	auto load_vertex_buffer(std::string_view path) -> std::tuple<std::vector<float>, std::vector<unsigned int>>
+	{
+		Assimp::Importer importer;
+		const auto scene = importer.ReadFile(path.data(), aiProcess_Triangulate | aiProcess_GenNormals);
+
+		//Check for errors
+		if ((!scene) || (scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE) || (!scene->mRootNode))
+		{
+			return {};
+		}
+
+		std::vector<float> vertices;
+		std::vector<unsigned int> indices;
+
+		//Iterate over the meshes
+		for (auto i = 0; i < scene->mNumMeshes; ++i)
+		{
+			//Get the mesh
+			auto mesh = scene->mMeshes[i];
+
+			//Iterate over the vertices of the mesh
+			for (auto j = 0; j < mesh->mNumVertices; ++j)
+			{
+				vertices.push_back(mesh->mVertices[j].x);
+				vertices.push_back(-mesh->mVertices[j].y);
+				vertices.push_back(mesh->mVertices[j].z);
+
+				vertices.push_back(mesh->mNormals[j].x);
+				vertices.push_back(mesh->mNormals[j].y);
+				vertices.push_back(mesh->mNormals[j].z);
+
+				vertices.push_back(mesh->mTextureCoords[0][j].x);
+				vertices.push_back(mesh->mTextureCoords[0][j].y);
+			}
+
+			//Iterate over the faces of the mesh
+			for (auto j = 0; j < mesh->mNumFaces; ++j)
+			{
+				//Get the face
+				auto face = mesh->mFaces[j];
+
+				//Add the indices of the face to the vector
+				for (auto k = 0; k < face.mNumIndices; ++k)
+				{
+					indices.push_back(face.mIndices[k]);
+				}
+			}
+		}
+
+		return { vertices, indices };
 	}
 }
 
 auto main(int argc, char** argv) -> int
 {
+	/////
+	// Loading
+	/////
+
+	const auto [map_vertices, map_indices] = load_vertex_buffer("../data/map.obj");
+	const auto [spinny_vertices, spinny_indices] = load_vertex_buffer("../data/spinny.obj");
+
 	/////
 	// Physics
 	/////
@@ -82,32 +140,30 @@ auto main(int argc, char** argv) -> int
 		float const mass = 0.0f;
 
 		glm::mat4 transform(1.0f);
-		transform = glm::scale(transform, glm::vec3(100.0f, 1.0f, 100.0f));
+		// transform = glm::scale(transform, glm::vec3(1000.0f, 1.0f, 1000.0f));
 
 		transforms.push_back(transform);
-		collidables.push_back(physics_engine.create_box(mass, glm::value_ptr(transform)));
+		collidables.push_back(physics_engine.create_mesh(mass, map_vertices, map_indices, glm::value_ptr(transform)));
 	}
 
 	{
-		float const mass = 2.0f;
-
-		glm::mat4 transform(1.0f);
-		transform = glm::translate(transform, glm::vec3(10.0f, 50.0f, 0.0f));
-		transform = glm::scale(transform, glm::vec3(5.0f));
-
-		transforms.push_back(transform);
-		collidables.push_back(physics_engine.create_box(mass, glm::value_ptr(transform)));
-	}
-
-	{
-		float const size = 1.78f;
 		float const mass = 62.0f;
 
 		glm::mat4 transform(1.0f);
-		transform = glm::translate(transform, glm::vec3(20.0f, 30.0f, 20.0f));
+		transform = glm::translate(transform, glm::vec3(10.0f, 100.0f, 0.0f));
 
 		transforms.push_back(transform);
-		collidables.push_back(physics_engine.create_sphere(size, mass, glm::value_ptr(transform)));
+		collidables.push_back(physics_engine.create_sphere(1.0f, mass, glm::value_ptr(transform)));
+	}
+
+	{
+		float const mass = 70.0f;
+
+		glm::mat4 transform(1.0f);
+		transform = glm::translate(transform, glm::vec3(20.0f, 100.0f, 20.0f));
+
+		transforms.push_back(transform);
+		collidables.push_back(physics_engine.create_capsule(mass, glm::value_ptr(transform)));
 	}
 
 	/////
@@ -125,53 +181,15 @@ auto main(int argc, char** argv) -> int
 
 	auto renderer = gengine::create_renderer(window);
 
-	std::vector<float> vertices{};
+	const auto map_vbo = renderer->create_vertex_buffer(map_vertices, map_indices);
+	const auto spinny_vbo = renderer->create_vertex_buffer(spinny_vertices, spinny_indices);
 
-	std::vector<unsigned int> indices{};
+	auto vert = renderer->create_shader_module(load_file("../data/cube.vert.spv"));
+	auto frag = renderer->create_shader_module(load_file("../data/cube.frag.spv"));
 
-	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile("mymodel.obj", aiProcess_Triangulate | aiProcess_GenNormals);
-
-	//Check for errors
-	if ((!scene) || (scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE) || (!scene->mRootNode))
-	{
-		std::cerr << "Error loading mymodel.obj: " << std::string(importer.GetErrorString()) << std::endl;
-		//Return fail
-		return -1;
-	}
-
-	//Iterate over the meshes
-	for (unsigned int i = 0; i < scene->mNumMeshes; ++i)
-	{
-		//Get the mesh
-		aiMesh* mesh = scene->mMeshes[i];
-
-		//Iterate over the vertices of the mesh
-		for (unsigned int j = 0; j < mesh->mNumVertices; ++j)
-		{
-			vertices.push_back(mesh->mVertices[j].x);
-			vertices.push_back(mesh->mVertices[j].y);
-			vertices.push_back(mesh->mVertices[j].z);
-
-			vertices.push_back(mesh->mNormals[j].x);
-			vertices.push_back(mesh->mNormals[j].y);
-			vertices.push_back(mesh->mNormals[j].z);
-		}
-
-		//Iterate over the faces of the mesh
-		for (unsigned int j = 0; j < mesh->mNumFaces; ++j)
-		{
-			//Get the face
-			aiFace face = mesh->mFaces[j];
-			//Add the indices of the face to the vector
-			for (unsigned int k = 0; k < face.mNumIndices; ++k) { indices.push_back(face.mIndices[k]); }
-		}
-	}
-
-	auto vertex_buffer = renderer->create_vertex_buffer(vertices, indices);
-
-	auto vert = renderer->create_shader_module(load_file("../../data/cube.vert.spv"));
-	auto frag = renderer->create_shader_module(load_file("../../data/cube.frag.spv"));
+	render_components.push_back({map_vbo, static_cast<unsigned int>(map_indices.size())});
+	render_components.push_back({spinny_vbo, static_cast<unsigned int>(spinny_indices.size())});
+	render_components.push_back({spinny_vbo, static_cast<unsigned int>(spinny_indices.size())});
 
 	auto pipeline = renderer->create_pipeline(vert, frag);
 
@@ -193,7 +211,7 @@ auto main(int argc, char** argv) -> int
 
 		glfwPollEvents();
 
-		const float sensitivity = 111.0f;
+		const auto sensitivity = 111.0f;
 
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE))
 		{
@@ -218,7 +236,7 @@ auto main(int argc, char** argv) -> int
 		}
 		if (glfwGetKey(window, GLFW_KEY_SPACE))
 		{
-			const auto on_ground = physics_engine.raycast(camera.Position, glm::vec3(camera.Position.x, camera.Position.y - 6, camera.Position.z));
+			const auto on_ground = physics_engine.raycast(camera.Position, glm::vec3(camera.Position.x, camera.Position.y - 60, camera.Position.z));
 
 			if (on_ground) physics_engine.apply_force(collidables[2], glm::vec3(0.0f, 5.6f, 0.0f));
 		}
@@ -241,20 +259,19 @@ auto main(int argc, char** argv) -> int
 		}
 
 		auto cmdlist = renderer->alloc_cmdlist();
-		
+
 		cmdlist->start_recording();
 
 		cmdlist->start_frame(pipeline);
 
 		cmdlist->bind_pipeline(pipeline);
 
-		cmdlist->bind_vertex_buffer(vertex_buffer);
-
-		for (const auto& transform : transforms)
+		for (auto i = 0; i < transforms.size(); ++i)
 		{
-			cmdlist->push_constants(pipeline, transform, glm::value_ptr(view));
+			cmdlist->push_constants(pipeline, transforms[i], glm::value_ptr(view));
+			cmdlist->bind_vertex_buffer(render_components[i].vbo);
 
-			cmdlist->draw(36, 1);
+			cmdlist->draw(render_components[i].index_count, 1);
 		}
 
 		cmdlist->end_frame();
@@ -275,7 +292,8 @@ auto main(int argc, char** argv) -> int
 
 	renderer->destroy_pipeline(pipeline);
 
-	renderer->destroy_vertex_buffer(vertex_buffer);
+	renderer->destroy_vertex_buffer(map_vbo);
+	renderer->destroy_vertex_buffer(spinny_vbo);
 
 	gengine::destroy_renderer(renderer);
 
