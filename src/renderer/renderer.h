@@ -9,33 +9,41 @@ struct GLFWwindow;
 
 namespace gengine
 {
-	struct ShaderModule;
 	struct ShaderPipeline;
-	struct VertexBuffer;
-
+	struct Buffer;
 	struct RenderImage;
+
+	struct BufferInfo
+	{
+		enum class Usage
+		{
+			VERTEX,
+			INDEX
+		};
+
+		Usage usage;
+		unsigned long stride;
+		unsigned long element_count;
+	};
 
 	struct RenderComponent
 	{
-		VertexBuffer* vbo;
+		Buffer* vbo;
+		Buffer* ebo;
 		unsigned int index_count;
 	};
 
-	class RenderCmdList
+	class RenderContext
 	{
 	public:
 
-		virtual auto start_recording()->void = 0;
+		virtual auto begin()->void = 0;
 
-		virtual auto stop_recording()->void = 0;
-
-		virtual auto start_frame(ShaderPipeline* pso)->void = 0;
-
-		virtual auto end_frame()->void = 0;
+		virtual auto end()->void = 0;
 
 		virtual auto bind_pipeline(ShaderPipeline* pso)->void = 0;
 
-		virtual auto bind_vertex_buffer(VertexBuffer* vbo)->void = 0;
+		virtual auto bind_geometry_buffers(Buffer* vbo, Buffer* ebo)->void = 0;
 
 		// very hacky temporary solution, just like the rest of the codebase
 		virtual auto push_constants(gengine::ShaderPipeline* pso, const glm::mat4 transform, const float* view)->void = 0;
@@ -43,32 +51,79 @@ namespace gengine
 		virtual auto draw(int vertex_count, int instance_count)->void = 0;
 	};
 
-	class Renderer
+	/**
+	 * @brief Represents a low-level rendering construct which maps to a physical GPU
+	 */
+	class RenderDevice
 	{
 	public:
+	
+		/**
+		 * @brief Create a GPU buffer object
+		 * 
+		 * @param info Creation info describing the buffer to be created
+		 * @param data Data to be filled into the buffer
 
-		virtual auto create_vertex_buffer(const std::vector<float>& vertices, const std::vector<unsigned int>& indices)->VertexBuffer* = 0;
+		 * @return Buffer* 
+		 */
+		virtual auto create_buffer(const BufferInfo& info, const void* data)->Buffer* = 0;
 
-		virtual auto destroy_vertex_buffer(VertexBuffer* buffer)->void = 0;
+		/**
+		 * @brief Destroy a GPU buffer object
+		 * 
+		 * @param buffer Buffer to be destroyed
+		 */
+		virtual auto destroy_buffer(Buffer* buffer)->void = 0;
 
-		virtual auto create_shader_module(const std::string_view code)->ShaderModule* = 0;
+		/**
+		 * @brief Create a pipeline object
+		 * 
+		 * @param vert raw SPIR-V vertex shader code
+		 * @param frag raw SPIR-V fragment shader code
+		 
+		 * @return ShaderPipeline* 
+		 */
+		virtual auto create_pipeline(const std::string_view vert, const std::string_view frag)->ShaderPipeline* = 0;
+		
+		/**
+		 * @brief Destroy a pipeline object
+		 * 
+		 * @param pso pipeline to be destroyed
+		 */
+		virtual auto destroy_pipeline(ShaderPipeline* pso)-> void = 0;
 
-		virtual auto destroy_shader_module(ShaderModule* module)->void = 0;
-
-		virtual auto create_pipeline(ShaderModule* vert, ShaderModule* frag)->ShaderPipeline* = 0;
-
-		virtual auto destroy_pipeline(ShaderPipeline* pso)->void = 0;
-
+		/**
+		 * @brief Get the swapchain image object for the current frame
+		 * 
+		 * @return RenderImage* 
+		 */
 		virtual auto get_swapchain_image()->RenderImage* = 0;
 
-		virtual auto alloc_cmdlist()->RenderCmdList* = 0;
+		/**
+		 * @brief Allocate a render context attached to the current frame's backbuffer
+		 *
+		 * @return RenderContext* 
+		 */
+		virtual auto alloc_context()->RenderContext* = 0;
 
-		virtual auto execute_cmdlist(RenderCmdList* cmdlist)->void = 0;
-
-		virtual auto free_cmdlist(RenderCmdList* cmdlist)->void = 0;
+		/**
+		 * @brief Execute the GPU instructions recorded into a context
+		 * 
+		 * @param cmdlist context to be executed
+		 */
+		virtual auto execute_context(RenderContext* cmdlist)->void = 0;
+		
+		/**
+		 * @brief De-allocate a render context
+		 * 
+		 * @param cmdlist context to be de-allocated
+		 */
+		virtual auto free_context(RenderContext* cmdlist)->void = 0;
 	};
 
-	auto create_renderer(GLFWwindow* window)->Renderer*;
+	auto init_renderer(bool debug)->void;
 
-	auto destroy_renderer(Renderer* renderer)->void;
+	auto create_render_device(GLFWwindow* window)->RenderDevice*;
+
+	auto destroy_render_device(RenderDevice* device)->void;
 }

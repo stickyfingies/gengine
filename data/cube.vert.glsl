@@ -8,11 +8,15 @@ layout (location = 0) out vec3 pos;
 layout (location = 1) out vec3 norm;
 layout (location = 2) out vec2 uv;
 
+layout (binding = 0) uniform UniformBufferObject
+{
+    mat4 proj;
+};
+
 layout (push_constant) uniform PushConstants
 {
 	mat4 model;
 	mat4 view;
-	mat4 projection;
 };
 
 void main()
@@ -21,5 +25,5 @@ void main()
 	norm = mat3(transpose(inverse(model))) * aNorm;
 	uv   = aUv;
 
-	gl_Position = projection * view * model * vec4(aPos, 1.0f);
+	gl_Position = proj * view * model * vec4(aPos, 1.0f);
 }

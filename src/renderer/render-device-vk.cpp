@@ -19,6 +19,8 @@
 
 namespace
 {
+	vk::Instance instance;
+
 	const auto FRAMES_IN_FLIGHT = 2;
 	const auto SWAPCHAIN_SIZE = 3;
 
@@ -37,6 +39,20 @@ namespace
 
 		std::cout << "Failed to find suitable memory type" << std::endl;
 		return 0;
+	}
+
+	auto create_buffer_vk(vk::Device device, vk::PhysicalDevice physical_device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Buffer& buffer, vk::DeviceMemory& mem) -> void
+	{
+		const vk::BufferCreateInfo buffer_info({}, size, usage);
+		buffer = device.createBuffer(buffer_info);
+
+		const auto mem_reqs = device.getBufferMemoryRequirements(buffer);
+
+		const vk::MemoryAllocateInfo alloc_info(mem_reqs.size, find_memory_type(physical_device, mem_reqs.memoryTypeBits, static_cast<VkMemoryPropertyFlags>(properties)));
+
+		mem = device.allocateMemory(alloc_info);
+
+		device.bindBufferMemory(buffer, mem, 0);
 	}
 
 	struct Vertex
@@ -67,18 +83,21 @@ namespace
 	{
 		glm::mat4 model;
 		glm::mat4 view;
-		glm::mat4 projection;
+	};
+
+	const vk::BufferUsageFlagBits BUFFER_USAGE_TABLE []
+	{
+		vk::BufferUsageFlagBits::eVertexBuffer,
+		vk::BufferUsageFlagBits::eIndexBuffer
 	};
 }
 
 namespace gengine
 {
-	struct VertexBuffer
+	struct Buffer
 	{
-		vk::Buffer vbo;
-		vk::Buffer ebo;
-		vk::DeviceMemory vbo_mem;
-		vk::DeviceMemory ebo_mem;
+		vk::Buffer buffer;
+		vk::DeviceMemory mem;
 	};
 
 	struct ShaderPipeline
@@ -88,15 +107,13 @@ namespace gengine
 		vk::DescriptorPool descpool;
 		vk::DescriptorSetLayout descset_layout;
 		vk::DescriptorSet descset;
+
 		vk::Image albedo;
 		vk::ImageView albedo_view;
+		vk::Buffer ubo;
 		vk::DeviceMemory image_mem;
+		vk::DeviceMemory ubo_mem;
 		vk::Sampler sampler;
-	};
-
-	struct ShaderModule
-	{
-		vk::ShaderModule module;
 	};
 
 	struct RenderImage
@@ -107,11 +124,11 @@ namespace gengine
 	};
 }
 
-class RenderCmdListVk final : public gengine::RenderCmdList
+class RenderContextVk final : public gengine::RenderContext
 {
 public:
 
-	RenderCmdListVk(vk::CommandBuffer cmdbuf, vk::RenderPass backbuffer_pass, vk::Framebuffer backbuffer, vk::Extent2D extent)
+	RenderContextVk(vk::CommandBuffer cmdbuf, vk::RenderPass backbuffer_pass, vk::Framebuffer backbuffer, vk::Extent2D extent)
 		: cmdbuf{ cmdbuf }
 		, backbuffer_pass{ backbuffer_pass }
 		, backbuffer{ backbuffer }
@@ -120,23 +137,15 @@ public:
 		//
 	}
 
-	~RenderCmdListVk()
+	~RenderContextVk()
 	{
 		//
 	}
 
-	auto start_recording()->void override
+	auto begin()->void override
 	{
 		cmdbuf.begin(vk::CommandBufferBeginInfo());
-	}
 
-	auto stop_recording()->void override
-	{
-		cmdbuf.end();
-	}
-
-	auto start_frame(gengine::ShaderPipeline* pso)->void override
-	{
 		const std::array<vk::ClearValue, 2> clear_values
 		{
 			vk::ClearColorValue(std::array{ 0.2f, 0.2f, 0.2f, 1.0f }),
@@ -148,9 +157,10 @@ public:
 		cmdbuf.beginRenderPass(pass_begin_info, vk::SubpassContents::eInline);
 	}
 
-	auto end_frame()->void override
+	auto end()->void override
 	{
 		cmdbuf.endRenderPass();
+		cmdbuf.end();
 	}
 
 	auto bind_pipeline(gengine::ShaderPipeline* pso)->void override
@@ -159,19 +169,16 @@ public:
 		cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pso->pipeline_layout, 0, pso->descset, {});
 	}
 
-	auto bind_vertex_buffer(gengine::VertexBuffer* vbo)->void override
+	auto bind_geometry_buffers(gengine::Buffer* vbo, gengine::Buffer* ebo)->void override
 	{
-		cmdbuf.bindVertexBuffers(0, { vbo->vbo }, { 0 });
-		cmdbuf.bindIndexBuffer(vbo->ebo, 0, vk::IndexType::eUint32);
+		cmdbuf.bindVertexBuffers(0, vbo->buffer, { 0 });
+		cmdbuf.bindIndexBuffer(ebo->buffer, 0, vk::IndexType::eUint32);
 	}
 
 	auto push_constants(gengine::ShaderPipeline* pso, const glm::mat4 transform, const float* view)->void override
 	{
 		PushConstantData push_constant_data{};
 		push_constant_data.view = glm::make_mat4(view);
-		push_constant_data.projection = glm::perspective(glm::radians(90.0f), 0.8888f, 0.1f, 10000.0f);
-
-		push_constant_data.projection[1][1] *= -1;
 		push_constant_data.model = transform;
 
 		cmdbuf.pushConstants(pso->pipeline_layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(PushConstantData), &push_constant_data);
@@ -197,34 +204,12 @@ private:
 	vk::Extent2D extent;
 };
 
-class RendererVk final : public gengine::Renderer
+class RenderDeviceVk final : public gengine::RenderDevice
 {
 public:
 
-	RendererVk(GLFWwindow* window)
+	RenderDeviceVk(GLFWwindow* window)
 	{
-		// create instance
-		{
-			const vk::ApplicationInfo app_info("App Name", VK_MAKE_VERSION(1, 0, 0), "Engine Name", VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_0);
-
-			const std::array extension_names
-			{
-				VK_KHR_SURFACE_EXTENSION_NAME,
-				#ifdef WIN32
-				VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-				#else
-				VK_KHR_XCB_SURFACE_EXTENSION_NAME,
-				#endif
-				VK_EXT_DEBUG_UTILS_EXTENSION_NAME
-			};
-
-			const std::array layer_names { "VK_LAYER_KHRONOS_validation" };
-
-			const vk::InstanceCreateInfo instance_info({}, &app_info, layer_names.size(), layer_names.data(), extension_names.size(), extension_names.data());
-
-			instance = vk::createInstance(instance_info);
-		}
-
 		// create surface
 		{
 			glfwCreateWindowSurface(instance, window, nullptr, &surface);
@@ -424,7 +409,7 @@ public:
 		}
 	}
 
-	~RendererVk()
+	~RenderDeviceVk()
 	{
 		device.waitIdle();
 
@@ -463,82 +448,60 @@ public:
 		instance.destroy();
 	}
 
-	auto create_vertex_buffer(const std::vector<float>& vertices, const std::vector<unsigned int>& indices)->gengine::VertexBuffer* override
+	auto create_buffer(const gengine::BufferInfo& info, const void* data)->gengine::Buffer* override
 	{
-		auto buffer = new gengine::VertexBuffer{};
+		vk::Buffer staging;
+		vk::DeviceMemory staging_mem;
 
-		const auto vbo_size = vertices.size() * sizeof(vertices[0]);
-		const auto ebo_size = indices.size() * sizeof(indices[0]);
+		create_buffer_vk(device, physical_device, info.element_count * info.stride, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, staging, staging_mem);
 
-		vk::Buffer vbo_staging;
-		vk::Buffer ebo_staging;
-		vk::DeviceMemory vbo_staging_mem;
-		vk::DeviceMemory ebo_staging_mem;
+		vk::Buffer buffer;
+		vk::DeviceMemory buffer_mem;
 
-		create_buffer(vbo_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, vbo_staging, vbo_staging_mem);
-		create_buffer(ebo_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, ebo_staging, ebo_staging_mem);
+		create_buffer_vk(device, physical_device, info.element_count * info.stride, BUFFER_USAGE_TABLE[static_cast<unsigned int>(info.usage)] | vk::BufferUsageFlagBits::eTransferDst, vk::MemoryPropertyFlagBits::eDeviceLocal, buffer, buffer_mem);
+		
+		auto data_dst = device.mapMemory(staging_mem, 0, info.element_count * info.stride);
+		memcpy(data_dst, data, info.element_count * info.stride);
+		device.unmapMemory(staging_mem);
 
-		create_buffer(vbo_size, vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst, vk::MemoryPropertyFlagBits::eDeviceLocal, buffer->vbo, buffer->vbo_mem);
-		create_buffer(ebo_size, vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst, vk::MemoryPropertyFlagBits::eDeviceLocal, buffer->ebo, buffer->ebo_mem);
+		copy_buffer(staging, buffer, info.element_count * info.stride);
 
-		auto data = device.mapMemory(vbo_staging_mem, 0, vbo_size);
-		memcpy(data, vertices.data(), vbo_size);
-		device.unmapMemory(vbo_staging_mem);
+		device.destroyBuffer(staging);
+		device.freeMemory(staging_mem);
 
-		data = device.mapMemory(ebo_staging_mem, 0, ebo_size);
-		memcpy(data, indices.data(), ebo_size);
-		device.unmapMemory(ebo_staging_mem);
-
-		copy_buffer(vbo_staging, buffer->vbo, vbo_size);
-		copy_buffer(ebo_staging, buffer->ebo, ebo_size);
-
-		device.destroyBuffer(vbo_staging);
-		device.destroyBuffer(ebo_staging);
-		device.freeMemory(vbo_staging_mem);
-		device.freeMemory(ebo_staging_mem);
-
-		return buffer;
+		return new gengine::Buffer
+		{
+			buffer,
+			buffer_mem
+		};
 	}
 
-	auto destroy_vertex_buffer(gengine::VertexBuffer* buffer)->void override
+	auto destroy_buffer(gengine::Buffer* buffer)->void override 
 	{
-		device.destroyBuffer(buffer->vbo);
-		device.destroyBuffer(buffer->ebo);
-		device.freeMemory(buffer->vbo_mem);
-		device.freeMemory(buffer->ebo_mem);
+		device.destroyBuffer(buffer->buffer);
+		device.freeMemory(buffer->mem);
 
 		delete buffer;
 	}
 
-	auto create_shader_module(const std::string_view code)->gengine::ShaderModule* override
+	auto create_pipeline(std::string_view vert_code, std::string_view frag_code)->gengine::ShaderPipeline* override
 	{
-		const vk::ShaderModuleCreateInfo module_info({}, code.size(), reinterpret_cast<const uint32_t*>(code.data()));
+		const vk::DescriptorSetLayoutBinding uniform_binding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex);
 
-		const auto module = device.createShaderModule(module_info);
+		const vk::DescriptorSetLayoutBinding albedo_binding(1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment);
 
-		return new gengine::ShaderModule{ module };
-	}
-
-	auto destroy_shader_module(gengine::ShaderModule* module)->void override
-	{
-		device.destroyShaderModule(module->module);
-
-		delete module;
-	}
-
-	auto create_pipeline(gengine::ShaderModule* vert, gengine::ShaderModule* frag)->gengine::ShaderPipeline* override
-	{
-		const vk::DescriptorSetLayoutBinding albedo_binding(0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment);
-
-		const std::array bindings = { albedo_binding };
+		const std::array bindings = { uniform_binding, albedo_binding };
 
 		const vk::DescriptorSetLayoutCreateInfo descset_layout_info({}, bindings.size(), bindings.data());
 
 		const auto descset_layout = device.createDescriptorSetLayout(descset_layout_info);
 
-		const vk::DescriptorPoolSize pool_size(vk::DescriptorType::eCombinedImageSampler, 1);
+		const vk::DescriptorPoolSize sampler_size(vk::DescriptorType::eCombinedImageSampler, 1);
+		const vk::DescriptorPoolSize uniform_size(vk::DescriptorType::eUniformBuffer, 1);
 
-		const vk::DescriptorPoolCreateInfo descpool_info({}, 1, 1, &pool_size);
+		const std::array pool_sizes = { sampler_size, uniform_size };
+
+		const vk::DescriptorPoolCreateInfo descpool_info({}, 2, pool_sizes.size(), pool_sizes.data());
 
 		const auto descpool = device.createDescriptorPool(descpool_info);
 
@@ -548,16 +511,35 @@ public:
 
 		//
 
+		vk::Buffer ubo;
+		vk::DeviceMemory ubo_mem;
+
+		create_buffer_vk(device, physical_device, sizeof(glm::mat4), vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, ubo, ubo_mem);
+
+		// update uniform buffers in command list alloc because we're fucking monkeys
+		
+		glm::mat4 proj = glm::perspective(glm::radians(90.0f), 0.8888f, 0.1f, 10000.0f);
+		proj[1][1] *= -1;
+
+		{
+			void * data = device.mapMemory(ubo_mem, 0, sizeof(glm::mat4));
+			memcpy(data, &proj, sizeof(proj));
+			device.unmapMemory(ubo_mem);
+		}
+
+		// TODO: move image loading from renderer to main application
+
 		int width;
 		int height;
 		int channel_count;
+
 		const auto image_data = stbi_load("../data/albedo.png", &width, &height, &channel_count, 0);
 		const auto image_size = width * height * 4;
 
 		vk::Buffer staging_buffer;
 		vk::DeviceMemory staging_mem;
 
-		create_buffer(image_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, staging_buffer, staging_mem);
+		create_buffer_vk(device, physical_device, image_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, staging_buffer, staging_mem);
 
 		auto data = device.mapMemory(staging_mem, 0, image_size);
 		memcpy(data, image_data, image_size);
@@ -579,12 +561,22 @@ public:
 		const auto albedo_view = create_image_view(albedo, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
 
 		const auto sampler = create_sampler();
+		
+		//
+
+		const vk::DescriptorBufferInfo desc_ubo_info(ubo, 0, sizeof(glm::mat4));
+
+		const vk::WriteDescriptorSet ubo_write(descset, 0, 0, 1, vk::DescriptorType::eUniformBuffer, nullptr, &desc_ubo_info);
+
 
 		const vk::DescriptorImageInfo desc_image_info(sampler, albedo_view, vk::ImageLayout::eShaderReadOnlyOptimal);
 
-		const vk::WriteDescriptorSet albedo_write(descset, 0, 0, 1, vk::DescriptorType::eCombinedImageSampler, &desc_image_info);
+		const vk::WriteDescriptorSet albedo_write(descset, 0, 1, 1, vk::DescriptorType::eCombinedImageSampler, &desc_image_info);
 
-		device.updateDescriptorSets(albedo_write, {});
+
+		const std::array descset_writes { ubo_write, albedo_write };
+
+		device.updateDescriptorSets(descset_writes, {});
 
 		//
 
@@ -598,8 +590,16 @@ public:
 
 		//
 
-		const vk::PipelineShaderStageCreateInfo vert_shader_info({}, vk::ShaderStageFlagBits::eVertex, vert->module, "main");
-		const vk::PipelineShaderStageCreateInfo frag_shader_info({}, vk::ShaderStageFlagBits::eFragment, frag->module, "main");
+        const vk::ShaderModuleCreateInfo vert_module_info({}, vert_code.size(), reinterpret_cast<const uint32_t*>(vert_code.data()));
+
+		const auto vert_module = device.createShaderModule(vert_module_info);
+
+        const vk::ShaderModuleCreateInfo frag_module_info({}, frag_code.size(), reinterpret_cast<const uint32_t*>(frag_code.data()));
+
+		const auto frag_module = device.createShaderModule(frag_module_info);
+
+		const vk::PipelineShaderStageCreateInfo vert_shader_info({}, vk::ShaderStageFlagBits::eVertex, vert_module, "main");
+		const vk::PipelineShaderStageCreateInfo frag_shader_info({}, vk::ShaderStageFlagBits::eFragment, frag_module, "main");
 
 		const std::array shader_stages{ vert_shader_info, frag_shader_info };
 
@@ -649,7 +649,24 @@ public:
 
 		const auto pipeline = device.createGraphicsPipeline(nullptr, pipeline_info);
 
-		return new gengine::ShaderPipeline{ pipeline_layout, pipeline, descpool, descset_layout, descset, albedo, albedo_view, image_mem, sampler };
+        device.destroyShaderModule(vert_module);
+        device.destroyShaderModule(frag_module);
+
+		// note that here we assume that nothing fucked up, and that pipline.value is the actual pipeline object
+		return new gengine::ShaderPipeline
+		{
+			pipeline_layout,
+			pipeline.value,
+			descpool,
+			descset_layout,
+			descset,
+			albedo,
+			albedo_view,
+			ubo,
+			image_mem,
+			ubo_mem,
+			sampler
+		};
 	}
 
 	auto destroy_pipeline(gengine::ShaderPipeline* pso)->void override
@@ -661,7 +678,9 @@ public:
 		device.destroySampler(pso->sampler);
 		device.destroyImageView(pso->albedo_view);
 		device.destroyImage(pso->albedo);
+		device.destroyBuffer(pso->ubo);
 		device.freeMemory(pso->image_mem);
+		device.freeMemory(pso->ubo_mem);
 		device.destroyDescriptorPool(pso->descpool);
 		device.destroyDescriptorSetLayout(pso->descset_layout);
 
@@ -675,9 +694,9 @@ public:
 		return &swapchain_images[image_idx];
 	}
 
-	auto alloc_cmdlist()->gengine::RenderCmdList* override
+	auto alloc_context()->gengine::RenderContext* override
 	{
-		device.waitForFences({ swapchain_fences[current_frame] }, true, std::numeric_limits<uint64_t>::max());
+		const auto ok = device.waitForFences(swapchain_fences[current_frame], true, std::numeric_limits<uint64_t>::max());
 
 		device.resetFences({ swapchain_fences[current_frame] });
 
@@ -687,12 +706,12 @@ public:
 
 		const auto& cmdbuf = cmd_buffers[current_frame];
 
-		return new RenderCmdListVk(cmdbuf, backbuffer_pass, backbuffers[image_idx], extent);
+		return new RenderContextVk(cmdbuf, backbuffer_pass, backbuffers[image_idx], extent);
 	}
 
-	auto execute_cmdlist(gengine::RenderCmdList* foo)->void override
+	auto execute_context(gengine::RenderContext* foo)->void override
 	{
-		auto cmdlist = reinterpret_cast<RenderCmdListVk*>(foo);
+		auto cmdlist = reinterpret_cast<RenderContextVk*>(foo);
 
 		const vk::PipelineStageFlags wait_dst_stage_mask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 
@@ -703,14 +722,14 @@ public:
 
 		const vk::PresentInfoKHR present_info(1, &render_finished_semaphores[current_frame], 1, &swapchain, &image_idx);
 
-		present_queue.presentKHR(present_info);
+		const auto ok = present_queue.presentKHR(present_info);
 
 		current_frame = (current_frame + 1) % FRAMES_IN_FLIGHT;
 	}
 
-	auto free_cmdlist(gengine::RenderCmdList* cmdlist)->void override
+	auto free_context(gengine::RenderContext* ctx)->void override
 	{
-		delete cmdlist;
+		delete ctx;
 	}
 
 private:
@@ -732,24 +751,15 @@ private:
 
 		const vk::SubmitInfo submit_info(0, nullptr, nullptr, 1, &cmdbuf);
 
-		graphics_queue.submit(submit_info, nullptr);
-		graphics_queue.waitIdle();
+		vk::Fence wait_fence = device.createFence({});
+
+		graphics_queue.submit(submit_info, wait_fence);
+
+		const auto ok = device.waitForFences(wait_fence, true, std::numeric_limits<uint64_t>::max());
+
+		device.destroyFence(wait_fence);
 
 		device.freeCommandBuffers(cmd_pool, cmdbuf);
-	}
-
-	auto create_buffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Buffer& buffer, vk::DeviceMemory& mem) -> void
-	{
-		const vk::BufferCreateInfo buffer_info({}, size, usage);
-		buffer = device.createBuffer(buffer_info);
-
-		const auto mem_reqs = device.getBufferMemoryRequirements(buffer);
-
-		const vk::MemoryAllocateInfo alloc_info(mem_reqs.size, find_memory_type(physical_device, mem_reqs.memoryTypeBits, static_cast<VkMemoryPropertyFlags>(properties)));
-
-		mem = device.allocateMemory(alloc_info);
-
-		device.bindBufferMemory(buffer, mem, 0);
 	}
 
 	auto create_image(unsigned int width, unsigned int height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& mem) -> void
@@ -785,7 +795,7 @@ private:
 
 	auto copy_buffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size) -> void
 	{
-		auto cmdbuf = begin_one_time_cmdbuf();
+		const auto cmdbuf = begin_one_time_cmdbuf();
 
 		const vk::BufferCopy copy_region(0, 0, size);
 		cmdbuf.copyBuffer(src, dst, copy_region);
@@ -839,8 +849,6 @@ private:
 		end_one_time_cmdbuf(cmdbuf);
 	}
 
-	vk::Instance instance;
-
 	VkSurfaceKHR surface;
 
 	vk::SwapchainKHR swapchain;
@@ -882,13 +890,35 @@ private:
 
 namespace gengine
 {
-	auto create_renderer(GLFWwindow* window)->Renderer*
+	auto init_renderer(bool debug)->void
 	{
-		return new RendererVk(window);
+		const vk::ApplicationInfo app_info("App Name", VK_MAKE_VERSION(1, 0, 0), "Engine Name", VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_0);
+
+		const std::array extension_names
+		{
+			VK_KHR_SURFACE_EXTENSION_NAME,
+			#ifdef WIN32
+			VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+			#else
+			VK_KHR_XCB_SURFACE_EXTENSION_NAME,
+			#endif
+			VK_EXT_DEBUG_UTILS_EXTENSION_NAME
+		};
+
+		const std::array layer_names { "VK_LAYER_KHRONOS_validation" };
+
+		const vk::InstanceCreateInfo instance_info({}, &app_info, static_cast<unsigned int>(debug), layer_names.data(), extension_names.size(), extension_names.data());
+
+		instance = vk::createInstance(instance_info);
 	}
 
-	auto destroy_renderer(Renderer* renderer)->void
+	auto create_render_device(GLFWwindow* window)->RenderDevice*
 	{
-		delete renderer;
+		return new RenderDeviceVk(window);
+	}
+
+	auto destroy_render_device(RenderDevice* device)->void
+	{
+		delete device;
 	}
 }
