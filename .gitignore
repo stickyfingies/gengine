@@ -39,4 +39,5 @@ external/
 # IDE
 .vs/
 .vscode/
+.clangd/
 CMakeSettings.json

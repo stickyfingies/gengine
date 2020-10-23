@@ -9,6 +9,8 @@ project(gengine LANGUAGES CXX)
 
 # add_subdirectory(${CMAKE_SOURCE_DIR}/vendor/bullet3)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+
 find_package(Vulkan REQUIRED)
 
 add_executable(${PROJECT_NAME})
@@ -50,3 +52,10 @@ set_target_properties(${PROJECT_NAME}
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/bin"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/bin"
 )
+
+add_custom_target(
+    copy-compile-commands ALL
+    ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_BINARY_DIR}/compile_commands.json
+        ${CMAKE_CURRENT_LIST_DIR}
+    )

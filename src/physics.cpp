@@ -22,6 +22,8 @@ namespace gengine
 
 	PhysicsEngine::PhysicsEngine()
 	{
+		std::cout << "[info]\t intitializing physics engine" << std::endl;
+		
 		collision_cfg = new btDefaultCollisionConfiguration();
 
 		broadphase = new btDbvtBroadphase();
@@ -38,29 +40,28 @@ namespace gengine
 		delete collision_cfg;
 	}
 
-	auto PhysicsEngine::create_box(float mass, float const model_matrix[16])->Collidable*
+	auto PhysicsEngine::create_box(float mass, const glm::mat4& model_matrix)->Collidable*
 	{
-		auto collidable = new Collidable;
+		auto collidable = new Collidable{};
 
-		glm::mat4 transformation = glm::make_mat4(model_matrix);
-		glm::vec3 scale;
-		glm::quat rotation;
-		glm::vec3 translation;
-		glm::vec3 skew;
-		glm::vec4 perspective;
-		glm::decompose(transformation, scale, rotation, translation, skew, perspective);
+		auto scale = glm::vec3{};
+		auto rotation = glm::quat{};
+		auto translation = glm::vec3{};
+		auto skew = glm::vec3{};
+		auto perspective = glm::vec4{};
+		glm::decompose(model_matrix, scale, rotation, translation, skew, perspective);
 
 		collidable->scale = scale;
 		collidable->shape = new btBoxShape(btVector3(scale.x, scale.y, scale.z));
 
 		const auto new_transform = glm::translate(glm::mat4(1.0f), translation) * glm::mat4_cast(glm::conjugate(rotation));
 
-		btTransform trans;
+		auto trans = btTransform{};
 		trans.setFromOpenGLMatrix(glm::value_ptr(new_transform));
 
 		collidable->motion_state = new btDefaultMotionState(trans);
 
-		btVector3 inertia(1, 1, 1);
+		auto inertia = btVector3(1, 1, 1);
 
 		if (mass != 0)
 		{
@@ -77,27 +78,26 @@ namespace gengine
 		return collidable;
 	}
 
-	auto PhysicsEngine::create_sphere(float const size, float mass, float const model_matrix[16])->Collidable*
+	auto PhysicsEngine::create_sphere(float const size, float mass, const glm::mat4& model_matrix)->Collidable*
 	{
-		auto collidable = new Collidable;
+		auto collidable = new Collidable{};
 
-		glm::mat4 transformation = glm::make_mat4(model_matrix);
-		glm::vec3 scale;
-		glm::quat rotation;
-		glm::vec3 translation;
-		glm::vec3 skew;
-		glm::vec4 perspective;
-		glm::decompose(transformation, scale, rotation, translation, skew, perspective);
+		auto scale = glm::vec3{};
+		auto rotation = glm::quat{};
+		auto translation = glm::vec3{};
+		auto skew = glm::vec3{};
+		auto perspective = glm::vec4{};
+		glm::decompose(model_matrix, scale, rotation, translation, skew, perspective);
 
 		collidable->scale = scale;
 		collidable->shape = new btSphereShape((scale.x + scale.y + scale.z) / 3.0f);
 
-		btTransform trans;
-		trans.setFromOpenGLMatrix(model_matrix);
+		auto trans = btTransform{};
+		trans.setFromOpenGLMatrix(glm::value_ptr(model_matrix));
 
 		collidable->motion_state = new btDefaultMotionState(trans);
 
-		btVector3 inertia(1, 1, 1);
+		auto inertia = btVector3(1, 1, 1);
 
 		if (mass != 0)
 		{
@@ -114,27 +114,26 @@ namespace gengine
 		return collidable;
 	}
 
-	auto PhysicsEngine::create_capsule(float mass, float const model_matrix[16])->Collidable*
+	auto PhysicsEngine::create_capsule(float mass, const glm::mat4& model_matrix)->Collidable*
 	{
-		auto collidable = new Collidable;
+		auto collidable = new Collidable{};
 
-		glm::mat4 transformation = glm::make_mat4(model_matrix);
-		glm::vec3 scale;
-		glm::quat rotation;
-		glm::vec3 translation;
-		glm::vec3 skew;
-		glm::vec4 perspective;
-		glm::decompose(transformation, scale, rotation, translation, skew, perspective);
+		auto scale = glm::vec3{};
+		auto rotation = glm::quat{};
+		auto translation = glm::vec3{};
+		auto skew = glm::vec3{};
+		auto perspective = glm::vec4{};
+		glm::decompose(model_matrix, scale, rotation, translation, skew, perspective);
 
 		collidable->scale = scale;
 		collidable->shape = new btCapsuleShape(4.0, 1.7);
 
-		btTransform trans;
-		trans.setFromOpenGLMatrix(model_matrix);
+		auto trans = btTransform{};
+		trans.setFromOpenGLMatrix(glm::value_ptr(model_matrix));
 
 		collidable->motion_state = new btDefaultMotionState(trans);
 
-		btVector3 inertia(1, 1, 1);
+		auto inertia = btVector3(1, 1, 1);
 
 		if (mass != 0)
 		{
@@ -150,21 +149,20 @@ namespace gengine
 		return collidable;
 	}
 
-	auto PhysicsEngine::create_mesh(float mass, const std::vector<float>& vertices, const std::vector<unsigned int>& indices, const float model_matrix[16]) -> Collidable*
+	auto PhysicsEngine::create_mesh(float mass, const std::vector<float>& vertices, const std::vector<unsigned int>& indices, const glm::mat4& model_matrix) -> Collidable*
 	{
-		auto collidable = new Collidable;
+		auto collidable = new Collidable{};
 
-		glm::mat4 transformation = glm::make_mat4(model_matrix);
-		glm::vec3 scale;
-		glm::quat rotation;
-		glm::vec3 translation;
-		glm::vec3 skew;
-		glm::vec4 perspective;
-		glm::decompose(transformation, scale, rotation, translation, skew, perspective);
+		auto scale = glm::vec3{};
+		auto rotation = glm::quat{};
+		auto translation = glm::vec3{};
+		auto skew = glm::vec3{};
+		auto perspective = glm::vec4{};
+		glm::decompose(model_matrix, scale, rotation, translation, skew, perspective);
 
-		collidable->mesh = new btTriangleIndexVertexArray;
+		collidable->mesh = new btTriangleIndexVertexArray();
 
-		btIndexedMesh indexed_mesh;
+		auto indexed_mesh = btIndexedMesh{};
 		indexed_mesh.m_indexType = PHY_INTEGER;
 		indexed_mesh.m_numTriangles = indices.size() / 3;
 		indexed_mesh.m_numVertices = vertices.size();
@@ -180,12 +178,12 @@ namespace gengine
 		collidable->shape = new btBvhTriangleMeshShape(collidable->mesh, false);
 		collidable->shape->setLocalScaling(btVector3(1, -1, 1));
 
-		btTransform trans;
-		trans.setFromOpenGLMatrix(model_matrix);
+		auto trans = btTransform{};
+		trans.setFromOpenGLMatrix(glm::value_ptr(model_matrix));
 
 		collidable->motion_state = new btDefaultMotionState(trans);
 
-		btVector3 inertia(1, 1, 1);
+		auto inertia = btVector3(1, 1, 1);
 
 		if (mass != 0)
 		{
@@ -214,7 +212,7 @@ namespace gengine
 
 	auto PhysicsEngine::get_model_matrix(Collidable* collidable, glm::mat4& model_matrix)->void
 	{
-		btTransform trans;
+		auto trans = btTransform{};
 		collidable->motion_state->getWorldTransform(trans);
 
 		const auto pos = trans.getOrigin();
@@ -232,10 +230,10 @@ namespace gengine
 
 	auto PhysicsEngine::raycast(glm::vec3 from, glm::vec3 to)->bool
 	{
-		const btVector3 src(from[0], from[1], from[2]);
-		const btVector3 dst(to[0], to[1], to[2]);
+		const auto src = btVector3(from[0], from[1], from[2]);
+		const auto dst = btVector3(to[0], to[1], to[2]);
 
-		btCollisionWorld::ClosestRayResultCallback res(src, dst);
+		auto res = btCollisionWorld::ClosestRayResultCallback(src, dst);
 
 		dynamics_world->rayTest(src, dst, res);
 
