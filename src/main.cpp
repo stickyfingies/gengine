@@ -4,6 +4,7 @@
 
 #include "camera.hpp"
 #include "assets.h"
+#include "module.h"
 #include "physics.h"
 #include "renderer/renderer.h"
 
@@ -11,20 +12,41 @@
 #include <vector>
 
 /*
-# TODO
+ * NOTE:	Execution order in this file is REALLY confusing. 
+ * 			I'm testing out a new module system that will eventually
+ *			work at the scope of the entire file.  For now, main.cpp
+ * 			is doing some of it's work in `main`, and some of it inside
+ *			the module system.  Seth, if you're reading this later,
+ *			and are confused and hating yourself, I *am* sorry.
 
-- ECS
-	This is the biggest issue in main.cpp, as wrangling physics, rendering, and model data is currently very hacky.
-	Having a structured way of associating data with a game entity will clean up main.cpp a lot.
+static RenderDevice* dev;
 
-- Clean Up Renderer
-	renderer.cpp is a fucking mess.  Half of the functionality is baked-in when it should be more flexible, the other
-	half is extracted into the public API when it would make things easier for them to be baked in.
+REGISTER_MODULE("foo")(Registry& reg)
+{
+	reg.grab(RENDER_DEVICE, &dev);
+};
 
-- Cry About Physics
-	...We'll get to bullet physics later, after the ECS and Render Engine are all cleaned up.  I really don't want to
-	deal with bullet at the moment.
-*/
+ */
+
+MODULE_CALLBACK("main", START)
+{
+	std::cout << "[info]\t (module:main) startup, initializing window manager" << std::endl;
+
+	glfwInit();
+
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+	return true;
+};
+
+MODULE_CALLBACK("main", STOP)
+{
+	std::cout << "[info]\t (module:main) shutdown, terminating window manager" << std::endl;
+
+	glfwTerminate();
+
+	return true;
+};
 
 struct RenderComponent
 {
@@ -137,13 +159,9 @@ auto main(int argc, char** argv)->int
 {
 	// system startup
 
+	gengine::execute_module_callbacks(gengine::RuntimeStage::START);
+
 	auto physics_engine = gengine::PhysicsEngine();
-
-	gengine::init_renderer(false);
-
-	glfwInit();
-
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 	const auto window = glfwCreateWindow(1280, 720, "Hello World", nullptr, nullptr);
 
@@ -218,11 +236,24 @@ auto main(int argc, char** argv)->int
 
 	// core game loop
 
+	auto last_displayed_fps = glfwGetTime();
+
+	auto frame_count = 0u;
+
 	while (!glfwWindowShouldClose(window))
 	{
-		glfwPollEvents();
+		++frame_count;
+
+		if (glfwGetTime() - last_displayed_fps >= 1.0)
+		{
+			std::cout << "[dbg ]\t ms/frame: " << 1000.0 / frame_count << std::endl;
+			last_displayed_fps = glfwGetTime();
+			frame_count = 0;
+		}
 
 		update_physics(camera, physics_engine, collidables, transforms);
+
+		glfwPollEvents();
 
 		update_input(window, camera, physics_engine, collidables[2], transforms);
 
@@ -253,9 +284,7 @@ auto main(int argc, char** argv)->int
 
 	gengine::RenderDevice::destroy(renderer);
 
-	gengine::shutdown_renderer();
+	gengine::execute_module_callbacks(gengine::RuntimeStage::STOP);
 
 	glfwDestroyWindow(window);
-
-	glfwTerminate();
 }

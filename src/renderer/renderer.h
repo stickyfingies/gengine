@@ -2,7 +2,6 @@
 
 #include <glm/glm.hpp>
 
-#include <vector>
 #include <string_view>
 
 struct GLFWwindow;
@@ -52,9 +51,6 @@ namespace gengine
 		virtual auto draw(int vertex_count, int instance_count)->void = 0;
 	};
 
-	/**
-	 * @brief Represents a low-level rendering construct which maps to a physical GPU
-	 */
 	class RenderDevice
 	{
 	public:
@@ -91,8 +87,4 @@ namespace gengine
 		
 		virtual auto free_context(RenderContext* cmdlist)->void = 0;
 	};
-
-	auto init_renderer(bool debug)->void;
-
-	auto shutdown_renderer()->void;
 }

@@ -6,6 +6,11 @@
 },
 {
   "directory": "/home/sethomas/Code/gengine/build",
+  "command": "/usr/bin/c++  -I/home/sethomas/Code/gengine/vendor/bullet3/src -I/home/sethomas/Code/gengine/include -std=c++17 -o CMakeFiles/gengine.dir/src/module.cpp.o -c /home/sethomas/Code/gengine/src/module.cpp",
+  "file": "/home/sethomas/Code/gengine/src/module.cpp"
+},
+{
+  "directory": "/home/sethomas/Code/gengine/build",
   "command": "/usr/bin/c++  -I/home/sethomas/Code/gengine/vendor/bullet3/src -I/home/sethomas/Code/gengine/include -std=c++17 -o CMakeFiles/gengine.dir/src/assets.cpp.o -c /home/sethomas/Code/gengine/src/assets.cpp",
   "file": "/home/sethomas/Code/gengine/src/assets.cpp"
 },

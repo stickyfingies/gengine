@@ -1,6 +1,7 @@
 #include "renderer.h"
 
 #include "vulkan-headers.hpp"
+#include "../module.h"
 
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -19,6 +20,7 @@
 namespace
 {
 
+// TODO: get rid of this global!!!
 auto instance = vk::Instance{};
 
 const auto FRAMES_IN_FLIGHT = 2;
@@ -96,6 +98,52 @@ const auto BUFFER_USAGE_TABLE = std::array
 
 }
 
+MODULE_CALLBACK("renderer", START)
+{
+	static const auto debug = false;
+
+	std::cout << "[info]\t (module:renderer) initializing render backend" << std::endl;
+
+	std::cout << "[info]\t\t debug: " << debug << std::endl;
+
+	const auto app_info = vk::ApplicationInfo("App Name", VK_MAKE_VERSION(1, 0, 0), "Gengine Vk Render Backend", VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_0);
+
+	const auto extension_names = std::array
+	{
+		VK_KHR_SURFACE_EXTENSION_NAME,
+		#ifdef WIN32
+		VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+		#else
+		VK_KHR_XCB_SURFACE_EXTENSION_NAME,
+		#endif
+		VK_EXT_DEBUG_UTILS_EXTENSION_NAME
+	};
+
+	std::cout << "[info]\t\t driver extensions:" << std::endl;
+	
+	for (const auto & ext : extension_names)
+	{
+		std::cout << "[info]\t\t\t " << ext << std::endl;
+	}
+
+	const auto layer_names = std::array { "VK_LAYER_KHRONOS_validation" };
+
+	const auto instance_info = vk::InstanceCreateInfo({}, &app_info, static_cast<unsigned int>(debug), layer_names.data(), extension_names.size(), extension_names.data());
+
+	instance = vk::createInstance(instance_info);
+
+	return true;
+};
+
+MODULE_CALLBACK("renderer", STOP)
+{
+	std::cout << "[info]\t (module:renderer) shutting down render backend" << std::endl;
+
+	instance.destroy();
+
+	return true;
+};
+
 namespace gengine
 {
 
@@ -125,9 +173,7 @@ struct ShaderPipeline
 	vk::DeviceMemory ubo_mem;
 };
 
-}
-
-class RenderContextVk final : public gengine::RenderContext
+class RenderContextVk final : public RenderContext
 {
 public:
 
@@ -166,19 +212,19 @@ public:
 		cmdbuf.end();
 	}
 
-	auto bind_pipeline(gengine::ShaderPipeline* pso)->void override
+	auto bind_pipeline(ShaderPipeline* pso)->void override
 	{
 		cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pso->pipeline);
 		cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pso->pipeline_layout, 0, pso->descset, {});
 	}
 
-	auto bind_geometry_buffers(gengine::Buffer* vbo, gengine::Buffer* ebo)->void override
+	auto bind_geometry_buffers(Buffer* vbo, Buffer* ebo)->void override
 	{
 		cmdbuf.bindVertexBuffers(0, vbo->buffer, { 0 });
 		cmdbuf.bindIndexBuffer(ebo->buffer, 0, vk::IndexType::eUint32);
 	}
 
-	auto push_constants(gengine::ShaderPipeline* pso, const glm::mat4 transform, const float* view)->void override
+	auto push_constants(ShaderPipeline* pso, const glm::mat4 transform, const float* view)->void override
 	{
 		const auto push_constant_data = PushConstantData
 		{
@@ -209,12 +255,15 @@ private:
 	vk::Extent2D extent;
 };
 
-class RenderDeviceVk final : public gengine::RenderDevice
+class RenderDeviceVk final : public RenderDevice
 {
 public:
 
 	RenderDeviceVk(GLFWwindow* window)
 	{
+		auto graphics_queue_idx = 0u;
+		auto present_queue_idx = 0u;
+
 		// create surface
 		{
 			glfwCreateWindowSurface(instance, window, nullptr, &surface);
@@ -326,35 +375,42 @@ public:
 				extent = surface_caps.currentExtent;
 			}
 
-			present_mode = vk::PresentModeKHR::eFifo;
-
-			const auto available_modes = physical_device.getSurfacePresentModesKHR(surface);
-
-			for (const auto& mode : available_modes)
+			const auto present_mode = [&]
 			{
-				if (mode == vk::PresentModeKHR::eMailbox)
+				auto best_mode = vk::PresentModeKHR::eFifo;
+
+				const auto available_modes = physical_device.getSurfacePresentModesKHR(surface);
+
+				for (const auto& mode : available_modes)
 				{
-					present_mode = mode;
+					if (mode == vk::PresentModeKHR::eMailbox)
+					{
+						best_mode = mode;
+						break;
+					}
+					else if (mode == vk::PresentModeKHR::eImmediate)
+					{
+						best_mode = mode;
+					}
 				}
-				else if (mode == vk::PresentModeKHR::eImmediate)
-				{
-					present_mode = mode;
-				}
-			}
+
+				return best_mode;
+			}();
 
 			const auto pre_transform = (surface_caps.supportedTransforms & vk::SurfaceTransformFlagBitsKHR::eIdentity) ? vk::SurfaceTransformFlagBitsKHR::eIdentity : surface_caps.currentTransform;
 
 			const auto composite_alpha =
 				(surface_caps.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::ePreMultiplied) ? vk::CompositeAlphaFlagBitsKHR::ePreMultiplied :
 				(surface_caps.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::ePostMultiplied) ? vk::CompositeAlphaFlagBitsKHR::ePostMultiplied :
-				(surface_caps.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::eInherit) ? vk::CompositeAlphaFlagBitsKHR::eInherit : vk::CompositeAlphaFlagBitsKHR::eOpaque;
+				(surface_caps.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::eInherit) ? vk::CompositeAlphaFlagBitsKHR::eInherit :
+				vk::CompositeAlphaFlagBitsKHR::eOpaque;
 
 			auto swapchain_info = vk::SwapchainCreateInfoKHR({}, surface, surface_caps.minImageCount, surface_fmt, vk::ColorSpaceKHR::eSrgbNonlinear,
 				extent, 1, vk::ImageUsageFlagBits::eColorAttachment, vk::SharingMode::eExclusive, 0, nullptr, pre_transform, composite_alpha, present_mode, true, nullptr);
 
 			const auto queue_family_indices = std::array { graphics_queue_idx, present_queue_idx };
 
-			if (graphics_queue_idx != present_queue_idx)
+			if (graphics_queue != present_queue)
 			{
 				swapchain_info.imageSharingMode = vk::SharingMode::eConcurrent;
 				swapchain_info.queueFamilyIndexCount = queue_family_indices.size();
@@ -459,7 +515,7 @@ public:
 		instance.destroySurfaceKHR(surface);
 	}
 
-	auto create_buffer(const gengine::BufferInfo& info, const void* data)->gengine::Buffer* override
+	auto create_buffer(const BufferInfo& info, const void* data)->Buffer* override
 	{
 		// this assumes the user wants a device local buffer
 
@@ -482,14 +538,14 @@ public:
 		device.destroyBuffer(staging);
 		device.freeMemory(staging_mem);
 
-		return new gengine::Buffer
+		return new Buffer
 		{
 			buffer,
 			buffer_mem
 		};
 	}
 
-	auto destroy_buffer(gengine::Buffer* buffer)->void override 
+	auto destroy_buffer(Buffer* buffer)->void override 
 	{
 		device.destroyBuffer(buffer->buffer);
 		device.freeMemory(buffer->mem);
@@ -497,7 +553,7 @@ public:
 		delete buffer;
 	}
 
-	auto create_image(const gengine::ImageInfo& info, const void* image_data)->gengine::Image* override
+	auto create_image(const ImageInfo& info, const void* image_data)->Image* override
 	{
 		auto staging_buffer = vk::Buffer{};
 		auto staging_mem = vk::DeviceMemory{};
@@ -525,7 +581,7 @@ public:
 
 		const auto sampler = create_sampler();
 
-		return new gengine::Image
+		return new Image
 		{
 			image,
 			image_view,
@@ -534,7 +590,7 @@ public:
 		};
 	}
 
-	auto destroy_image(gengine::Image* image)->void override
+	auto destroy_image(Image* image)->void override
 	{
 		device.destroyImageView(image->view);
 		device.destroyImage(image->image);
@@ -544,7 +600,7 @@ public:
 		delete image;
 	}
 
-	auto create_pipeline(std::string_view vert_code, std::string_view frag_code, gengine::Image* albedo)->gengine::ShaderPipeline* override
+	auto create_pipeline(std::string_view vert_code, std::string_view frag_code, Image* albedo)->ShaderPipeline* override
 	{
 		// descriptors and shit
 
@@ -583,7 +639,7 @@ public:
 		proj[1][1] *= -1;
 
 		{
-			void * data = device.mapMemory(ubo_mem, 0, sizeof(glm::mat4));
+			auto data = device.mapMemory(ubo_mem, 0, sizeof(glm::mat4));
 			memcpy(data, &proj, sizeof(proj));
 			device.unmapMemory(ubo_mem);
 		}
@@ -681,7 +737,7 @@ public:
 
 		// note that here we assume that nothing fucked up, and that pipline.value is the actual pipeline object
 
-		return new gengine::ShaderPipeline
+		return new ShaderPipeline
 		{
 			pipeline_layout,
 			pipeline.value,
@@ -693,7 +749,7 @@ public:
 		};
 	}
 
-	auto destroy_pipeline(gengine::ShaderPipeline* pso)->void override
+	auto destroy_pipeline(ShaderPipeline* pso)->void override
 	{
 		device.waitIdle();
 
@@ -707,14 +763,14 @@ public:
 		delete pso;
 	}
 
-	auto get_swapchain_image()->gengine::Image* override
+	auto get_swapchain_image()->Image* override
 	{
 		image_idx = device.acquireNextImageKHR(swapchain, std::numeric_limits<uint64_t>::max(), image_available_semaphores[current_frame], nullptr).value;
 
 		return &swapchain_images[image_idx];
 	}
 
-	auto alloc_context()->gengine::RenderContext* override
+	auto alloc_context()->RenderContext* override
 	{
 		const auto ok = device.waitForFences(swapchain_fences[current_frame], true, std::numeric_limits<uint64_t>::max());
 
@@ -729,7 +785,7 @@ public:
 		return new RenderContextVk(cmdbuf, backbuffer_pass, backbuffers[image_idx], extent);
 	}
 
-	auto execute_context(gengine::RenderContext* foo)->void override
+	auto execute_context(RenderContext* foo)->void override
 	{
 		auto cmdlist = reinterpret_cast<RenderContextVk*>(foo);
 
@@ -747,7 +803,7 @@ public:
 		current_frame = (current_frame + 1) % FRAMES_IN_FLIGHT;
 	}
 
-	auto free_context(gengine::RenderContext* ctx)->void override
+	auto free_context(RenderContext* ctx)->void override
 	{
 		delete static_cast<RenderContextVk*>(ctx);
 	}
@@ -876,8 +932,6 @@ private:
 
 	vk::Format surface_fmt;
 
-	vk::PresentModeKHR present_mode;
-
 	vk::Extent2D extent;
 
 	vk::PhysicalDevice physical_device;
@@ -894,69 +948,28 @@ private:
 	vk::Queue present_queue;
 	vk::CommandPool cmd_pool;
 
-	unsigned int graphics_queue_idx;
-	unsigned int present_queue_idx;
-
 	std::vector<vk::Semaphore> image_available_semaphores;
 	std::vector<vk::Semaphore> render_finished_semaphores;
 	std::vector<vk::Fence> swapchain_fences;
 	std::vector<vk::Framebuffer> backbuffers;
 	std::vector<vk::CommandBuffer> cmd_buffers;
 
-	std::vector<gengine::Image> swapchain_images;
+	std::vector<Buffer> buffers;
+
+	std::vector<Image> swapchain_images;
 
 	unsigned int current_frame = 0;
 	unsigned int image_idx = 0;
 };
 
-auto gengine::RenderDevice::create(GLFWwindow* window)->gengine::RenderDevice*
+auto RenderDevice::create(GLFWwindow* window)->RenderDevice*
 {
 	return new RenderDeviceVk(window);
 }
 
-auto gengine::RenderDevice::destroy(gengine::RenderDevice* device)->void
+auto RenderDevice::destroy(RenderDevice* device)->void
 {
 	delete static_cast<RenderDeviceVk*>(device);
-}
-
-namespace gengine
-{
-
-auto init_renderer(bool debug)->void
-{
-	std::cout << "[info]\t initializing renderer" << std::endl;
-	std::cout << "[info]\t\t debug: " << debug << std::endl;
-
-	const auto app_info = vk::ApplicationInfo("App Name", VK_MAKE_VERSION(1, 0, 0), "Gengine Vk Render Backend", VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_0);
-
-	const auto extension_names = std::array
-	{
-		VK_KHR_SURFACE_EXTENSION_NAME,
-		#ifdef WIN32
-		VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-		#else
-		VK_KHR_XCB_SURFACE_EXTENSION_NAME,
-		#endif
-		VK_EXT_DEBUG_UTILS_EXTENSION_NAME
-	};
-
-	std::cout << "[info]\t\t driver extensions:" << std::endl;
-	
-	for (const auto & ext : extension_names)
-	{
-		std::cout << "[info]\t\t\t " << ext << std::endl;
-	}
-
-	const auto layer_names = std::array { "VK_LAYER_KHRONOS_validation" };
-
-	const auto instance_info = vk::InstanceCreateInfo({}, &app_info, static_cast<unsigned int>(debug), layer_names.data(), extension_names.size(), extension_names.data());
-
-	instance = vk::createInstance(instance_info);
-}
-
-auto shutdown_renderer()->void
-{
-	instance.destroy();
 }
 
 }
