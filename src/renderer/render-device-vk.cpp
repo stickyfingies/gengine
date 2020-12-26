@@ -100,7 +100,7 @@ const auto BUFFER_USAGE_TABLE = std::array
 
 MODULE_CALLBACK("renderer", START)
 {
-	static const auto debug = false;
+	static const auto debug = true;
 
 	std::cout << "[info]\t (module:renderer) initializing render backend" << std::endl;
 
@@ -650,7 +650,7 @@ public:
 		const auto ubo_write = vk::WriteDescriptorSet(descset, 0, 0, 1, vk::DescriptorType::eUniformBuffer, nullptr, &desc_ubo_info);
 
 		const auto desc_image_info = vk::DescriptorImageInfo(albedo->sampler, albedo->view, vk::ImageLayout::eShaderReadOnlyOptimal);
-		const auto albedo_write = vk::WriteDescriptorSet(descset, 0, 1, 1, vk::DescriptorType::eCombinedImageSampler, &desc_image_info);
+		const auto albedo_write = vk::WriteDescriptorSet(descset, 1, 0, 1, vk::DescriptorType::eCombinedImageSampler, &desc_image_info);
 
 		const auto descset_writes = std::array { ubo_write, albedo_write };
 
@@ -740,7 +740,7 @@ public:
 		return new ShaderPipeline
 		{
 			pipeline_layout,
-			pipeline.value,
+			pipeline,
 			descpool,
 			descset_layout,
 			descset,

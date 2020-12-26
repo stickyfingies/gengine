@@ -157,6 +157,8 @@ auto update_renderer(Camera& camera, gengine::RenderDevice* renderer, gengine::S
 
 auto main(int argc, char** argv)->int
 {
+	std::cout << "[info]\t " << argv[0] << std::endl;
+
 	// system startup
 
 	gengine::execute_module_callbacks(gengine::RuntimeStage::START);
@@ -181,10 +183,10 @@ auto main(int argc, char** argv)->int
 	auto collidables = std::vector<gengine::Collidable*>{};
 	auto render_components = std::vector<RenderComponent>{};
 
-	const auto& [map_vertices, map_indices] = gengine::load_vertex_buffer("../data/map.obj");
-	const auto& [spinny_vertices, spinny_indices] = gengine::load_vertex_buffer("../data/spinny.obj");
+	const auto& [map_vertices, map_indices] = gengine::load_vertex_buffer("../../data/map.obj");
+	const auto& [spinny_vertices, spinny_indices] = gengine::load_vertex_buffer("../../data/spinny.obj");
 
-	const auto texture = gengine::load_image("../data/albedo.png");
+	const auto texture = gengine::load_image("../../data/albedo.png");
 
 	const auto map_vbo = renderer->create_buffer({gengine::BufferInfo::Usage::VERTEX, sizeof(float), map_vertices.size()}, map_vertices.data());
 	const auto map_ebo = renderer->create_buffer({gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), map_indices.size()}, map_indices.data());
@@ -194,7 +196,7 @@ auto main(int argc, char** argv)->int
 
 	const auto albedo = renderer->create_image({texture.width, texture.height, texture.channel_count}, texture.data);
 
-	const auto pipeline = renderer->create_pipeline(gengine::load_file("../data/cube.vert.spv"), gengine::load_file("../data/cube.frag.spv"), albedo);
+	const auto pipeline = renderer->create_pipeline(gengine::load_file("../../data/cube.vert.spv"), gengine::load_file("../../data/cube.frag.spv"), albedo);
 
 	render_components.push_back({map_vbo, map_ebo, static_cast<unsigned int>(map_indices.size())});
 	render_components.push_back({spinny_vbo, spinny_ebo, static_cast<unsigned int>(spinny_indices.size())});

@@ -1,37 +1,133 @@
 [
 {
-  "directory": "/home/sethomas/Code/gengine/build",
-  "command": "/usr/bin/c++  -I/home/sethomas/Code/gengine/vendor/bullet3/src -I/home/sethomas/Code/gengine/include -std=c++17 -o CMakeFiles/gengine.dir/src/main.cpp.o -c /home/sethomas/Code/gengine/src/main.cpp",
-  "file": "/home/sethomas/Code/gengine/src/main.cpp"
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo /TP  -IC:\\VulkanSDK\\1.1.121.1\\Include -I..\\..\\..\\vendor\\bullet3\\src -I..\\..\\..\\include -I..\\..\\..\\vendor\\glfw\\include  /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1   -std:c++17 /FoCMakeFiles\\gengine.dir\\src\\main.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\src\\main.cpp",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/src/main.cpp"
 },
+
 {
-  "directory": "/home/sethomas/Code/gengine/build",
-  "command": "/usr/bin/c++  -I/home/sethomas/Code/gengine/vendor/bullet3/src -I/home/sethomas/Code/gengine/include -std=c++17 -o CMakeFiles/gengine.dir/src/module.cpp.o -c /home/sethomas/Code/gengine/src/module.cpp",
-  "file": "/home/sethomas/Code/gengine/src/module.cpp"
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo /TP  -IC:\\VulkanSDK\\1.1.121.1\\Include -I..\\..\\..\\vendor\\bullet3\\src -I..\\..\\..\\include -I..\\..\\..\\vendor\\glfw\\include  /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1   -std:c++17 /FoCMakeFiles\\gengine.dir\\src\\module.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\src\\module.cpp",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/src/module.cpp"
 },
+
 {
-  "directory": "/home/sethomas/Code/gengine/build",
-  "command": "/usr/bin/c++  -I/home/sethomas/Code/gengine/vendor/bullet3/src -I/home/sethomas/Code/gengine/include -std=c++17 -o CMakeFiles/gengine.dir/src/assets.cpp.o -c /home/sethomas/Code/gengine/src/assets.cpp",
-  "file": "/home/sethomas/Code/gengine/src/assets.cpp"
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo /TP  -IC:\\VulkanSDK\\1.1.121.1\\Include -I..\\..\\..\\vendor\\bullet3\\src -I..\\..\\..\\include -I..\\..\\..\\vendor\\glfw\\include  /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1   -std:c++17 /FoCMakeFiles\\gengine.dir\\src\\assets.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\src\\assets.cpp",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/src/assets.cpp"
 },
+
 {
-  "directory": "/home/sethomas/Code/gengine/build",
-  "command": "/usr/bin/c++  -I/home/sethomas/Code/gengine/vendor/bullet3/src -I/home/sethomas/Code/gengine/include -std=c++17 -o CMakeFiles/gengine.dir/src/physics.cpp.o -c /home/sethomas/Code/gengine/src/physics.cpp",
-  "file": "/home/sethomas/Code/gengine/src/physics.cpp"
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo /TP  -IC:\\VulkanSDK\\1.1.121.1\\Include -I..\\..\\..\\vendor\\bullet3\\src -I..\\..\\..\\include -I..\\..\\..\\vendor\\glfw\\include  /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1   -std:c++17 /FoCMakeFiles\\gengine.dir\\src\\physics.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\src\\physics.cpp",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/src/physics.cpp"
 },
+
 {
-  "directory": "/home/sethomas/Code/gengine/build",
-  "command": "/usr/bin/c++  -I/home/sethomas/Code/gengine/vendor/bullet3/src -I/home/sethomas/Code/gengine/include -std=c++17 -o CMakeFiles/gengine.dir/src/glad.cpp.o -c /home/sethomas/Code/gengine/src/glad.cpp",
-  "file": "/home/sethomas/Code/gengine/src/glad.cpp"
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo /TP  -IC:\\VulkanSDK\\1.1.121.1\\Include -I..\\..\\..\\vendor\\bullet3\\src -I..\\..\\..\\include -I..\\..\\..\\vendor\\glfw\\include  /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1   -std:c++17 /FoCMakeFiles\\gengine.dir\\src\\glad.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\src\\glad.cpp",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/src/glad.cpp"
 },
+
 {
-  "directory": "/home/sethomas/Code/gengine/build",
-  "command": "/usr/bin/c++  -I/home/sethomas/Code/gengine/vendor/bullet3/src -I/home/sethomas/Code/gengine/include -std=c++17 -o CMakeFiles/gengine.dir/src/renderer/render-device-vk.cpp.o -c /home/sethomas/Code/gengine/src/renderer/render-device-vk.cpp",
-  "file": "/home/sethomas/Code/gengine/src/renderer/render-device-vk.cpp"
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo /TP  -IC:\\VulkanSDK\\1.1.121.1\\Include -I..\\..\\..\\vendor\\bullet3\\src -I..\\..\\..\\include -I..\\..\\..\\vendor\\glfw\\include  /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1   -std:c++17 /FoCMakeFiles\\gengine.dir\\src\\renderer\\render-device-vk.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\src\\renderer\\render-device-vk.cpp",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/src/renderer/render-device-vk.cpp"
 },
+
 {
-  "directory": "/home/sethomas/Code/gengine/build",
-  "command": "/usr/bin/c++  -I/home/sethomas/Code/gengine/vendor/bullet3/src -I/home/sethomas/Code/gengine/include -std=c++17 -o CMakeFiles/gengine.dir/src/stb/stb_image.cpp.o -c /home/sethomas/Code/gengine/src/stb/stb_image.cpp",
-  "file": "/home/sethomas/Code/gengine/src/stb/stb_image.cpp"
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo /TP  -IC:\\VulkanSDK\\1.1.121.1\\Include -I..\\..\\..\\vendor\\bullet3\\src -I..\\..\\..\\include -I..\\..\\..\\vendor\\glfw\\include  /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1   -std:c++17 /FoCMakeFiles\\gengine.dir\\src\\stb\\stb_image.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\src\\stb\\stb_image.cpp",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/src/stb/stb_image.cpp"
+},
+
+{
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE -I..\\..\\..\\vendor\\glfw\\include -I..\\..\\..\\vendor\\glfw\\src -Ivendor\\glfw\\src  /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1   /W3 /Fovendor\\glfw\\src\\CMakeFiles\\glfw.dir\\context.c.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\vendor\\glfw\\src\\context.c",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/vendor/glfw/src/context.c"
+},
+
+{
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE -I..\\..\\..\\vendor\\glfw\\include -I..\\..\\..\\vendor\\glfw\\src -Ivendor\\glfw\\src  /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1   /W3 /Fovendor\\glfw\\src\\CMakeFiles\\glfw.dir\\init.c.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\vendor\\glfw\\src\\init.c",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/vendor/glfw/src/init.c"
+},
+
+{
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE -I..\\..\\..\\vendor\\glfw\\include -I..\\..\\..\\vendor\\glfw\\src -Ivendor\\glfw\\src  /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1   /W3 /Fovendor\\glfw\\src\\CMakeFiles\\glfw.dir\\input.c.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\vendor\\glfw\\src\\input.c",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/vendor/glfw/src/input.c"
+},
+
+{
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE -I..\\..\\..\\vendor\\glfw\\include -I..\\..\\..\\vendor\\glfw\\src -Ivendor\\glfw\\src  /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1   /W3 /Fovendor\\glfw\\src\\CMakeFiles\\glfw.dir\\monitor.c.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\vendor\\glfw\\src\\monitor.c",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/vendor/glfw/src/monitor.c"
+},
+
+{
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE -I..\\..\\..\\vendor\\glfw\\include -I..\\..\\..\\vendor\\glfw\\src -Ivendor\\glfw\\src  /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1   /W3 /Fovendor\\glfw\\src\\CMakeFiles\\glfw.dir\\vulkan.c.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\vendor\\glfw\\src\\vulkan.c",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/vendor/glfw/src/vulkan.c"
+},
+
+{
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE -I..\\..\\..\\vendor\\glfw\\include -I..\\..\\..\\vendor\\glfw\\src -Ivendor\\glfw\\src  /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1   /W3 /Fovendor\\glfw\\src\\CMakeFiles\\glfw.dir\\window.c.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\vendor\\glfw\\src\\window.c",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/vendor/glfw/src/window.c"
+},
+
+{
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE -I..\\..\\..\\vendor\\glfw\\include -I..\\..\\..\\vendor\\glfw\\src -Ivendor\\glfw\\src  /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1   /W3 /Fovendor\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_init.c.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\vendor\\glfw\\src\\win32_init.c",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/vendor/glfw/src/win32_init.c"
+},
+
+{
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE -I..\\..\\..\\vendor\\glfw\\include -I..\\..\\..\\vendor\\glfw\\src -Ivendor\\glfw\\src  /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1   /W3 /Fovendor\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_joystick.c.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\vendor\\glfw\\src\\win32_joystick.c",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/vendor/glfw/src/win32_joystick.c"
+},
+
+{
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE -I..\\..\\..\\vendor\\glfw\\include -I..\\..\\..\\vendor\\glfw\\src -Ivendor\\glfw\\src  /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1   /W3 /Fovendor\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_monitor.c.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\vendor\\glfw\\src\\win32_monitor.c",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/vendor/glfw/src/win32_monitor.c"
+},
+
+{
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE -I..\\..\\..\\vendor\\glfw\\include -I..\\..\\..\\vendor\\glfw\\src -Ivendor\\glfw\\src  /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1   /W3 /Fovendor\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_time.c.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\vendor\\glfw\\src\\win32_time.c",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/vendor/glfw/src/win32_time.c"
+},
+
+{
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE -I..\\..\\..\\vendor\\glfw\\include -I..\\..\\..\\vendor\\glfw\\src -Ivendor\\glfw\\src  /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1   /W3 /Fovendor\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_thread.c.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\vendor\\glfw\\src\\win32_thread.c",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/vendor/glfw/src/win32_thread.c"
+},
+
+{
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE -I..\\..\\..\\vendor\\glfw\\include -I..\\..\\..\\vendor\\glfw\\src -Ivendor\\glfw\\src  /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1   /W3 /Fovendor\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_window.c.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\vendor\\glfw\\src\\win32_window.c",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/vendor/glfw/src/win32_window.c"
+},
+
+{
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE -I..\\..\\..\\vendor\\glfw\\include -I..\\..\\..\\vendor\\glfw\\src -Ivendor\\glfw\\src  /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1   /W3 /Fovendor\\glfw\\src\\CMakeFiles\\glfw.dir\\wgl_context.c.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\vendor\\glfw\\src\\wgl_context.c",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/vendor/glfw/src/wgl_context.c"
+},
+
+{
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE -I..\\..\\..\\vendor\\glfw\\include -I..\\..\\..\\vendor\\glfw\\src -Ivendor\\glfw\\src  /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1   /W3 /Fovendor\\glfw\\src\\CMakeFiles\\glfw.dir\\egl_context.c.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\vendor\\glfw\\src\\egl_context.c",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/vendor/glfw/src/egl_context.c"
+},
+
+{
+  "directory": "C:/Users/Seth/Documents/GitHub/gengine/out/build/x64-Debug",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\Preview\\VC\\Tools\\MSVC\\1424~1.281\\bin\\HostX64\\x64\\cl.exe  /nologo -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE -I..\\..\\..\\vendor\\glfw\\include -I..\\..\\..\\vendor\\glfw\\src -Ivendor\\glfw\\src  /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1   /W3 /Fovendor\\glfw\\src\\CMakeFiles\\glfw.dir\\osmesa_context.c.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\Seth\\Documents\\GitHub\\gengine\\vendor\\glfw\\src\\osmesa_context.c",
+  "file": "C:/Users/Seth/Documents/GitHub/gengine/vendor/glfw/src/osmesa_context.c"
 }
 ]

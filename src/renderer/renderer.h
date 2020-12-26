@@ -22,8 +22,8 @@ namespace gengine
 		};
 
 		Usage usage;
-		unsigned long stride;
-		unsigned long element_count;
+		size_t stride;
+		size_t element_count;
 	};
 
 	struct ImageInfo

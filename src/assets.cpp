@@ -44,6 +44,7 @@ auto load_vertex_buffer(std::string_view path) -> std::tuple<std::vector<float>,
 
     if ((!scene) || (scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE) || (!scene->mRootNode))
     {
+		std::cerr << "[!ERR]\t\t unable to load scene!" << std::endl;
         return {};
     }
 

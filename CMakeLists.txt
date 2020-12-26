@@ -13,6 +13,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 find_package(Vulkan REQUIRED)
 
+add_subdirectory(vendor/glfw)
+add_subdirectory(vendor/assimp)
+add_subdirectory(vendor/bullet3)
+
 add_executable(${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME}
@@ -22,9 +26,12 @@ PUBLIC
 	${CMAKE_SOURCE_DIR}/include
 )
 
+if (UNIX)
+    target_link_libraries(${PROJECT_NAME} PRIVATE dl)
+endif (UNIX)
+
 target_link_libraries(${PROJECT_NAME}
 PRIVATE
-	dl
 	${Vulkan_LIBRARIES}
 	glfw
 	BulletDynamics
