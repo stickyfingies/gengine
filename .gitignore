@@ -36,8 +36,12 @@ dist/
 out/
 external/
 
+# Dependencies
+vcpkg/
+
 # IDE
 .vs/
 .vscode/
 .clangd/
+.cache/
 CMakeSettings.json

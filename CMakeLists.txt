@@ -4,18 +4,9 @@ include(GNUInstallDirs)
 
 project(gengine LANGUAGES CXX)
 
-# the following line may be commented to reduce iteration speeds but
-# is required for clean builds.
-
-# add_subdirectory(${CMAKE_SOURCE_DIR}/vendor/bullet3)
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+include(./vcpkg/scripts/buildsystems/vcpkg.cmake)
 
 find_package(Vulkan REQUIRED)
-
-add_subdirectory(vendor/glfw)
-add_subdirectory(vendor/assimp)
-add_subdirectory(vendor/bullet3)
 
 add_executable(${PROJECT_NAME})
 
@@ -30,15 +21,18 @@ if (UNIX)
     target_link_libraries(${PROJECT_NAME} PRIVATE dl)
 endif (UNIX)
 
+find_package(glfw3 CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
+
+find_package(assimp CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
+
+find_package(Bullet CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE LinearMath Bullet3Common BulletDynamics BulletCollision)
+
 target_link_libraries(${PROJECT_NAME}
 PRIVATE
 	${Vulkan_LIBRARIES}
-	glfw
-	BulletDynamics
-	BulletCollision
-	LinearMath
-	assimp
-	${ASSIMP_LIBRARIES}
 )
 
 target_sources(${PROJECT_NAME}
@@ -60,10 +54,3 @@ set_target_properties(${PROJECT_NAME}
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/bin"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/bin"
 )
-
-add_custom_target(
-    copy-compile-commands ALL
-    ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_BINARY_DIR}/compile_commands.json
-        ${CMAKE_CURRENT_LIST_DIR}
-    )

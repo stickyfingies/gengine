@@ -100,7 +100,7 @@ const auto BUFFER_USAGE_TABLE = std::array
 
 MODULE_CALLBACK("renderer", START)
 {
-	static const auto debug = true;
+	static const auto debug = false;
 
 	std::cout << "[info]\t (module:renderer) initializing render backend" << std::endl;
 
@@ -731,7 +731,7 @@ public:
 		// finally create the bloody cunt
 
 		const auto pipeline = device.createGraphicsPipeline(nullptr, pipeline_info);
-
+		
         device.destroyShaderModule(vert_module);
         device.destroyShaderModule(frag_module);
 
@@ -740,7 +740,7 @@ public:
 		return new ShaderPipeline
 		{
 			pipeline_layout,
-			pipeline,
+			pipeline.value,
 			descpool,
 			descset_layout,
 			descset,
