@@ -12,7 +12,7 @@ const auto SENSITIVITY = 0.1f;
 const auto ZOOM = 45.0f;
 
 class Camera {
-  public:
+public:
 	glm::vec3 Position;
 	glm::vec3 Front;
 	glm::vec3 Up;
@@ -26,20 +26,18 @@ class Camera {
 	float mouse_sensitivity = SENSITIVITY;
 	float zoom = ZOOM;
 
-	Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
-		   glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f))
-		: Front(glm::vec3(0.0f, 0.0f, -1.0f)) {
+	Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f))
+		: Front(glm::vec3(0.0f, 0.0f, -1.0f))
+	{
 		Position = position;
 		WorldUp = up;
 		update_camera_vectors();
 	}
 
-	auto get_view_matrix() -> glm::mat4 {
-		return glm::lookAt(Position, Position + Front, Up);
-	}
+	auto get_view_matrix() -> glm::mat4 { return glm::lookAt(Position, Position + Front, Up); }
 
-	auto process_mouse_movement(float xoffset, float yoffset,
-								bool constrainpitch = true) -> void {
+	auto process_mouse_movement(float xoffset, float yoffset, bool constrainpitch = true) -> void
+	{
 		xoffset *= mouse_sensitivity;
 		yoffset *= mouse_sensitivity;
 
@@ -59,7 +57,8 @@ class Camera {
 		update_camera_vectors();
 	}
 
-	auto process_mouse_scroll(float yoffset) -> void {
+	auto process_mouse_scroll(float yoffset) -> void
+	{
 		if (zoom >= 1.0f && zoom <= 45.0f) {
 			zoom -= yoffset;
 		}
@@ -71,14 +70,15 @@ class Camera {
 		}
 	}
 
-  private:
-	auto update_camera_vectors() -> void {
+private:
+	auto update_camera_vectors() -> void
+	{
 		// calculate new front vector
 
-		const auto new_front =
-			glm::vec3{cos(glm::radians(yaw)) * cos(glm::radians(pitch)),
-					  sin(glm::radians(pitch)),
-					  sin(glm::radians(yaw)) * cos(glm::radians(pitch))};
+		const auto new_front = glm::vec3{
+			cos(glm::radians(yaw)) * cos(glm::radians(pitch)),
+			sin(glm::radians(pitch)),
+			sin(glm::radians(yaw)) * cos(glm::radians(pitch))};
 
 		Front = glm::normalize(new_front);
 

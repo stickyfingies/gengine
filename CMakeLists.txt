@@ -1,21 +1,13 @@
 cmake_minimum_required(VERSION 3.12)
 
 include(GNUInstallDirs)
+include(./vcpkg/scripts/buildsystems/vcpkg.cmake)
 
 project(gengine LANGUAGES CXX)
 
-include(./vcpkg/scripts/buildsystems/vcpkg.cmake)
-
-find_package(Vulkan REQUIRED)
-
 add_executable(${PROJECT_NAME})
 
-target_include_directories(${PROJECT_NAME}
-PUBLIC
-	${Vulkan_INCLUDE_DIRS}
-	${CMAKE_SOURCE_DIR}/vendor/bullet3/src
-	${CMAKE_SOURCE_DIR}/include
-)
+# Libraries
 
 if (UNIX)
     target_link_libraries(${PROJECT_NAME} PRIVATE dl)
@@ -30,9 +22,15 @@ target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 find_package(Bullet CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE LinearMath Bullet3Common BulletDynamics BulletCollision)
 
-target_link_libraries(${PROJECT_NAME}
-PRIVATE
-	${Vulkan_LIBRARIES}
+find_package(Vulkan REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES})
+
+# Source files
+
+target_include_directories(${PROJECT_NAME}
+PUBLIC
+	${Vulkan_INCLUDE_DIRS}
+	${CMAKE_SOURCE_DIR}/include
 )
 
 target_sources(${PROJECT_NAME}
@@ -43,6 +41,8 @@ PRIVATE
 	src/renderer/render-device-vk.cpp
 	src/stb/stb_image.cpp
 )
+
+# Metadata
 
 set_target_properties(${PROJECT_NAME}
 	PROPERTIES

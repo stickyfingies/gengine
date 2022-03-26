@@ -37,9 +37,7 @@ public:
 	virtual auto bind_geometry_buffers(Buffer *vbo, Buffer *ebo) -> void = 0;
 
 	// very hacky temporary solution, just like the rest of the codebase
-	virtual auto push_constants(gengine::ShaderPipeline *pso,
-								const glm::mat4 transform, const float *view)
-		-> void = 0;
+	virtual auto push_constants(gengine::ShaderPipeline *pso, const glm::mat4 transform, const float *view) -> void = 0;
 
 	virtual auto draw(int vertex_count, int instance_count) -> void = 0;
 };
@@ -54,19 +52,16 @@ public:
 
 	// resource managemnet
 
-	virtual auto create_buffer(const BufferInfo &info, const void *data)
-		-> Buffer * = 0;
+	virtual auto create_buffer(const BufferInfo &info, const void *data) -> Buffer * = 0;
 
 	virtual auto destroy_buffer(Buffer *buffer) -> void = 0;
 
-	virtual auto create_image(const ImageInfo &info, const void *data)
-		-> Image * = 0;
+	virtual auto create_image(const ImageInfo &info, const void *data) -> Image * = 0;
 
 	virtual auto destroy_image(Image *image) -> void = 0;
 
-	virtual auto create_pipeline(const std::string_view vert_code,
-								 const std::string_view frag_code,
-								 Image *albedo) -> ShaderPipeline * = 0;
+	virtual auto create_pipeline(const std::string_view vert_code, const std::string_view frag_code, Image *albedo)
+		-> ShaderPipeline * = 0;
 
 	virtual auto destroy_pipeline(ShaderPipeline *pso) -> void = 0;
 

@@ -14,6 +14,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <vulkan/vulkan_core.h>
 
 #undef min
 #undef max
@@ -87,8 +88,8 @@ struct ShaderPipeline {
 
 class RenderContextVk final : public RenderContext {
 public:
-	RenderContextVk(vk::CommandBuffer cmdbuf, vk::RenderPass backbuffer_pass, vk::Framebuffer backbuffer,
-					vk::Extent2D extent)
+	RenderContextVk(
+		vk::CommandBuffer cmdbuf, vk::RenderPass backbuffer_pass, vk::Framebuffer backbuffer, vk::Extent2D extent)
 		: cmdbuf{cmdbuf}, backbuffer_pass{backbuffer_pass}, backbuffer{backbuffer}, extent{extent}
 	{
 		//
@@ -103,8 +104,8 @@ public:
 	{
 		cmdbuf.begin(vk::CommandBufferBeginInfo());
 
-		const auto clear_values = std::array<vk::ClearValue, 2>{vk::ClearColorValue(std::array{0.2f, 0.2f, 0.2f, 1.0f}),
-																vk::ClearDepthStencilValue(1.0f, 0.0f)};
+		const auto clear_values = std::array<vk::ClearValue, 2>{
+			vk::ClearColorValue(std::array{0.2f, 0.2f, 0.2f, 1.0f}), vk::ClearDepthStencilValue(1.0f, 0.0f)};
 
 		const auto pass_begin_info = vk::RenderPassBeginInfo(
 			backbuffer_pass, backbuffer, vk::Rect2D(vk::Offset2D(), extent), clear_values.size(), clear_values.data());
@@ -118,24 +119,24 @@ public:
 		cmdbuf.end();
 	}
 
-	auto bind_pipeline(ShaderPipeline *pso) -> void override
+	auto bind_pipeline(ShaderPipeline* pso) -> void override
 	{
 		cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pso->pipeline);
 		cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pso->pipeline_layout, 0, pso->descset, {});
 	}
 
-	auto bind_geometry_buffers(Buffer *vbo, Buffer *ebo) -> void override
+	auto bind_geometry_buffers(Buffer* vbo, Buffer* ebo) -> void override
 	{
 		cmdbuf.bindVertexBuffers(0, vbo->buffer, {0});
 		cmdbuf.bindIndexBuffer(ebo->buffer, 0, vk::IndexType::eUint32);
 	}
 
-	auto push_constants(ShaderPipeline *pso, const glm::mat4 transform, const float *view) -> void override
+	auto push_constants(ShaderPipeline* pso, const glm::mat4 transform, const float* view) -> void override
 	{
 		const auto push_constant_data = PushConstantData{transform, glm::make_mat4(view)};
 
-		cmdbuf.pushConstants(pso->pipeline_layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(PushConstantData),
-							 &push_constant_data);
+		cmdbuf.pushConstants(
+			pso->pipeline_layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(PushConstantData), &push_constant_data);
 	}
 
 	auto draw(int vertex_count, int instance_count) -> void override
@@ -156,7 +157,7 @@ private:
 
 class RenderDeviceVk final : public RenderDevice {
 public:
-	RenderDeviceVk(GLFWwindow *window)
+	RenderDeviceVk(GLFWwindow* window)
 	{
 		static const auto debug = false;
 
@@ -164,28 +165,37 @@ public:
 
 		std::cout << "[info]\t\t debug: " << debug << std::endl;
 
-		const auto app_info = vk::ApplicationInfo("App Name", VK_MAKE_VERSION(1, 0, 0), "Gengine Vk Render Backend",
-												  VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_0);
+		const auto app_info = vk::ApplicationInfo(
+			"App Name",
+			VK_MAKE_VERSION(1, 0, 0),
+			"Gengine Vk Render Backend",
+			VK_MAKE_VERSION(1, 0, 0),
+			VK_API_VERSION_1_0);
 
-		const auto extension_names = std::array{VK_KHR_SURFACE_EXTENSION_NAME,
+		const auto extension_names = std::array{
+			VK_KHR_SURFACE_EXTENSION_NAME,
 #ifdef WIN32
-												VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+			VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 #else
-												VK_KHR_XCB_SURFACE_EXTENSION_NAME,
+			VK_KHR_XCB_SURFACE_EXTENSION_NAME,
 #endif
-												VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
+			VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
 
 		std::cout << "[info]\t\t driver extensions:" << std::endl;
 
-		for (const auto &ext : extension_names) {
+		for (const auto& ext : extension_names) {
 			std::cout << "[info]\t\t\t " << ext << std::endl;
 		}
 
 		const auto layer_names = std::array{"VK_LAYER_KHRONOS_validation"};
 
-		const auto instance_info =
-			vk::InstanceCreateInfo({}, &app_info, static_cast<unsigned int>(debug), layer_names.data(),
-								   extension_names.size(), extension_names.data());
+		const auto instance_info = vk::InstanceCreateInfo(
+			{},
+			&app_info,
+			static_cast<unsigned int>(debug),
+			layer_names.data(),
+			extension_names.size(),
+			extension_names.data());
 
 		instance = vk::createInstance(instance_info);
 
@@ -193,9 +203,7 @@ public:
 		auto present_queue_idx = 0u;
 
 		// create surface
-		{
-			glfwCreateWindowSurface(instance, window, nullptr, &surface);
-		}
+		glfwCreateWindowSurface(instance, window, nullptr, &surface);
 
 		// choose physical device
 		{
@@ -219,8 +227,9 @@ public:
 
 			graphics_queue_idx = std::distance(
 				queue_family_properties.begin(),
-				std::find_if(queue_family_properties.begin(), queue_family_properties.end(),
-							 [](const auto &qfp) { return qfp.queueFlags & vk::QueueFlagBits::eGraphics; }));
+				std::find_if(queue_family_properties.begin(), queue_family_properties.end(), [](const auto& qfp) {
+					return qfp.queueFlags & vk::QueueFlagBits::eGraphics;
+				}));
 
 			present_queue_idx = physical_device.getSurfaceSupportKHR(graphics_queue_idx, surface)
 									? graphics_queue_idx
@@ -252,8 +261,8 @@ public:
 
 			const auto extension_names = std::array{"VK_KHR_swapchain"};
 
-			const auto device_info = vk::DeviceCreateInfo({}, 1, &device_queue_create_info, 0, nullptr,
-														  extension_names.size(), extension_names.data());
+			const auto device_info = vk::DeviceCreateInfo(
+				{}, 1, &device_queue_create_info, 0, nullptr, extension_names.size(), extension_names.data());
 
 			device = physical_device.createDevice(device_info);
 
@@ -290,10 +299,12 @@ public:
 			const auto surface_caps = physical_device.getSurfaceCapabilitiesKHR(surface);
 
 			if (surface_caps.currentExtent.width == std::numeric_limits<uint32_t>::max()) {
-				extent.width = std::clamp(static_cast<uint32_t>(width), surface_caps.minImageExtent.width,
-										  surface_caps.maxImageExtent.width);
-				extent.height = std::clamp(static_cast<uint32_t>(height), surface_caps.minImageExtent.height,
-										   surface_caps.maxImageExtent.height);
+				extent.width = std::clamp(
+					static_cast<uint32_t>(width), surface_caps.minImageExtent.width, surface_caps.maxImageExtent.width);
+				extent.height = std::clamp(
+					static_cast<uint32_t>(height),
+					surface_caps.minImageExtent.height,
+					surface_caps.maxImageExtent.height);
 			}
 			else {
 				extent = surface_caps.currentExtent;
@@ -304,7 +315,7 @@ public:
 
 				const auto available_modes = physical_device.getSurfacePresentModesKHR(surface);
 
-				for (const auto &mode : available_modes) {
+				for (const auto& mode : available_modes) {
 					if (mode == vk::PresentModeKHR::eMailbox) {
 						best_mode = mode;
 						break;
@@ -331,9 +342,22 @@ public:
 					: vk::CompositeAlphaFlagBitsKHR::eOpaque;
 
 			auto swapchain_info = vk::SwapchainCreateInfoKHR(
-				{}, surface, surface_caps.minImageCount, surface_fmt, vk::ColorSpaceKHR::eSrgbNonlinear, extent, 1,
-				vk::ImageUsageFlagBits::eColorAttachment, vk::SharingMode::eExclusive, 0, nullptr, pre_transform,
-				composite_alpha, present_mode, true, nullptr);
+				{},
+				surface,
+				surface_caps.minImageCount,
+				surface_fmt,
+				vk::ColorSpaceKHR::eSrgbNonlinear,
+				extent,
+				1,
+				vk::ImageUsageFlagBits::eColorAttachment,
+				vk::SharingMode::eExclusive,
+				0,
+				nullptr,
+				pre_transform,
+				composite_alpha,
+				present_mode,
+				true,
+				nullptr);
 
 			const auto queue_family_indices = std::array{graphics_queue_idx, present_queue_idx};
 
@@ -345,7 +369,7 @@ public:
 
 			swapchain = device.createSwapchainKHR(swapchain_info);
 
-			for (const auto &image : device.getSwapchainImagesKHR(swapchain)) {
+			for (const auto& image : device.getSwapchainImagesKHR(swapchain)) {
 				swapchain_images.push_back(
 					{image, create_image_view(image, surface_fmt, vk::ImageAspectFlagBits::eColor), nullptr, nullptr});
 			}
@@ -362,9 +386,15 @@ public:
 
 		// create depth buffer
 		{
-			create_image_vk(extent.width, extent.height, vk::Format::eD24UnormS8Uint, vk::ImageTiling::eOptimal,
-							vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal,
-							depth_buffer, depth_mem);
+			create_image_vk(
+				extent.width,
+				extent.height,
+				vk::Format::eD24UnormS8Uint,
+				vk::ImageTiling::eOptimal,
+				vk::ImageUsageFlagBits::eDepthStencilAttachment,
+				vk::MemoryPropertyFlagBits::eDeviceLocal,
+				depth_buffer,
+				depth_mem);
 
 			depth_view = create_image_view(depth_buffer, vk::Format::eD24UnormS8Uint, vk::ImageAspectFlagBits::eDepth);
 		}
@@ -372,13 +402,25 @@ public:
 		// create render pass
 		{
 			const auto backbuffer_desc = vk::AttachmentDescription(
-				{}, surface_fmt, vk::SampleCountFlagBits::e1, vk::AttachmentLoadOp::eClear,
-				vk::AttachmentStoreOp::eStore, vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-				vk::ImageLayout::eUndefined, vk::ImageLayout::ePresentSrcKHR);
+				{},
+				surface_fmt,
+				vk::SampleCountFlagBits::e1,
+				vk::AttachmentLoadOp::eClear,
+				vk::AttachmentStoreOp::eStore,
+				vk::AttachmentLoadOp::eDontCare,
+				vk::AttachmentStoreOp::eDontCare,
+				vk::ImageLayout::eUndefined,
+				vk::ImageLayout::ePresentSrcKHR);
 			const auto depth_desc = vk::AttachmentDescription(
-				{}, vk::Format::eD24UnormS8Uint, vk::SampleCountFlagBits::e1, vk::AttachmentLoadOp::eClear,
-				vk::AttachmentStoreOp::eDontCare, vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-				vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+				{},
+				vk::Format::eD24UnormS8Uint,
+				vk::SampleCountFlagBits::e1,
+				vk::AttachmentLoadOp::eClear,
+				vk::AttachmentStoreOp::eDontCare,
+				vk::AttachmentLoadOp::eDontCare,
+				vk::AttachmentStoreOp::eDontCare,
+				vk::ImageLayout::eUndefined,
+				vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
 			const auto attachments = std::array{backbuffer_desc, depth_desc};
 
@@ -386,20 +428,26 @@ public:
 			const auto depth_ref = vk::AttachmentReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
 			const auto attachment_refs = std::array{backbuffer_ref};
 
-			const auto fwd_subpass =
-				vk::SubpassDescription({}, vk::PipelineBindPoint::eGraphics, 0, nullptr, attachment_refs.size(),
-									   attachment_refs.data(), nullptr, &depth_ref);
+			const auto fwd_subpass = vk::SubpassDescription(
+				{},
+				vk::PipelineBindPoint::eGraphics,
+				0,
+				nullptr,
+				attachment_refs.size(),
+				attachment_refs.data(),
+				nullptr,
+				&depth_ref);
 			const auto subpasses = std::array{fwd_subpass};
 
-			const auto render_pass_info = vk::RenderPassCreateInfo({}, attachments.size(), attachments.data(),
-																   subpasses.size(), subpasses.data());
+			const auto render_pass_info = vk::RenderPassCreateInfo(
+				{}, attachments.size(), attachments.data(), subpasses.size(), subpasses.data());
 
 			backbuffer_pass = device.createRenderPass(render_pass_info);
 		}
 
 		// create framebuffers
 		{
-			for (const auto &image : swapchain_images) {
+			for (const auto& image : swapchain_images) {
 				const auto attachments = std::array{image.view, depth_view};
 
 				const auto framebuffer_info = vk::FramebufferCreateInfo(
@@ -421,7 +469,7 @@ public:
 			device.destroyFence(swapchain_fences[i]);
 		}
 
-		for (const auto &backbuffer : backbuffers) {
+		for (const auto& backbuffer : backbuffers) {
 			device.destroyFramebuffer(backbuffer);
 		}
 
@@ -431,7 +479,7 @@ public:
 
 		device.destroyRenderPass(backbuffer_pass);
 
-		for (const auto &image : swapchain_images) {
+		for (const auto& image : swapchain_images) {
 			device.destroyImageView(image.view);
 		}
 
@@ -448,24 +496,33 @@ public:
 		instance.destroy();
 	}
 
-	auto create_buffer(const BufferInfo &info, const void *data) -> Buffer * override
+	auto create_buffer(const BufferInfo& info, const void* data) -> Buffer* override
 	{
 		// this assumes the user wants a device local buffer
 
 		auto staging = vk::Buffer{};
 		auto staging_mem = vk::DeviceMemory{};
 
-		createBufferVk(device, physical_device, info.element_count * info.stride, vk::BufferUsageFlagBits::eTransferSrc,
-					   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, staging,
-					   staging_mem);
+		createBufferVk(
+			device,
+			physical_device,
+			info.element_count * info.stride,
+			vk::BufferUsageFlagBits::eTransferSrc,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+			staging,
+			staging_mem);
 
 		auto buffer = vk::Buffer{};
 		auto buffer_mem = vk::DeviceMemory{};
 
-		createBufferVk(device, physical_device, info.element_count * info.stride,
-					   BUFFER_USAGE_TABLE[static_cast<unsigned int>(info.usage)] |
-						   vk::BufferUsageFlagBits::eTransferDst,
-					   vk::MemoryPropertyFlagBits::eDeviceLocal, buffer, buffer_mem);
+		createBufferVk(
+			device,
+			physical_device,
+			info.element_count * info.stride,
+			BUFFER_USAGE_TABLE[static_cast<unsigned int>(info.usage)] | vk::BufferUsageFlagBits::eTransferDst,
+			vk::MemoryPropertyFlagBits::eDeviceLocal,
+			buffer,
+			buffer_mem);
 
 		auto data_dst = device.mapMemory(staging_mem, 0, info.element_count * info.stride);
 		memcpy(data_dst, data, info.element_count * info.stride);
@@ -479,7 +536,7 @@ public:
 		return new Buffer{buffer, buffer_mem};
 	}
 
-	auto destroy_buffer(Buffer *buffer) -> void override
+	auto destroy_buffer(Buffer* buffer) -> void override
 	{
 		device.destroyBuffer(buffer->buffer);
 		device.freeMemory(buffer->mem);
@@ -487,16 +544,21 @@ public:
 		delete buffer;
 	}
 
-	auto create_image(const ImageInfo &info, const void *image_data) -> Image * override
+	auto create_image(const ImageInfo& info, const void* image_data) -> Image* override
 	{
 		auto staging_buffer = vk::Buffer{};
 		auto staging_mem = vk::DeviceMemory{};
 
 		const auto image_size = info.width * info.height * info.channel_count;
 
-		createBufferVk(device, physical_device, image_size, vk::BufferUsageFlagBits::eTransferSrc,
-					   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-					   staging_buffer, staging_mem);
+		createBufferVk(
+			device,
+			physical_device,
+			image_size,
+			vk::BufferUsageFlagBits::eTransferSrc,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+			staging_buffer,
+			staging_mem);
 
 		auto data = device.mapMemory(staging_mem, 0, image_size);
 		memcpy(data, image_data, image_size);
@@ -506,14 +568,23 @@ public:
 		auto image = vk::Image{};
 		auto image_mem = vk::DeviceMemory{};
 
-		create_image_vk(info.width, info.height, vk::Format::eR8G8B8A8Unorm, vk::ImageTiling::eOptimal,
-						vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-						vk::MemoryPropertyFlagBits::eDeviceLocal, image, image_mem);
-		transition_image_layout(image, vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eUndefined,
-								vk::ImageLayout::eTransferDstOptimal);
+		create_image_vk(
+			info.width,
+			info.height,
+			vk::Format::eR8G8B8A8Unorm,
+			vk::ImageTiling::eOptimal,
+			vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+			vk::MemoryPropertyFlagBits::eDeviceLocal,
+			image,
+			image_mem);
+		transition_image_layout(
+			image, vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
 		copy_buffer_to_image(staging_buffer, image, info.width, info.height);
-		transition_image_layout(image, vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eTransferDstOptimal,
-								vk::ImageLayout::eShaderReadOnlyOptimal);
+		transition_image_layout(
+			image,
+			vk::Format::eR8G8B8A8Unorm,
+			vk::ImageLayout::eTransferDstOptimal,
+			vk::ImageLayout::eShaderReadOnlyOptimal);
 
 		device.destroyBuffer(staging_buffer);
 		device.freeMemory(staging_mem);
@@ -525,7 +596,7 @@ public:
 		return new Image{image, image_view, image_mem, sampler};
 	}
 
-	auto destroy_image(Image *image) -> void override
+	auto destroy_image(Image* image) -> void override
 	{
 		device.destroyImageView(image->view);
 		device.destroyImage(image->image);
@@ -535,16 +606,16 @@ public:
 		delete image;
 	}
 
-	auto create_pipeline(std::string_view vert_code, std::string_view frag_code, Image *albedo)
-		-> ShaderPipeline * override
+	auto create_pipeline(std::string_view vert_code, std::string_view frag_code, Image* albedo)
+		-> ShaderPipeline* override
 	{
 		// descriptors and shit
 
 		const auto uniform_binding =
 			vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex);
 
-		const auto albedo_binding = vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eCombinedImageSampler, 1,
-																   vk::ShaderStageFlagBits::eFragment);
+		const auto albedo_binding = vk::DescriptorSetLayoutBinding(
+			1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment);
 
 		const auto bindings = std::array{uniform_binding, albedo_binding};
 
@@ -572,9 +643,14 @@ public:
 		auto ubo = vk::Buffer{};
 		auto ubo_mem = vk::DeviceMemory{};
 
-		createBufferVk(device, physical_device, sizeof(glm::mat4), vk::BufferUsageFlagBits::eUniformBuffer,
-					   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, ubo,
-					   ubo_mem);
+		createBufferVk(
+			device,
+			physical_device,
+			sizeof(glm::mat4),
+			vk::BufferUsageFlagBits::eUniformBuffer,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+			ubo,
+			ubo_mem);
 
 		auto proj = glm::perspective(glm::radians(90.0f), 0.8888f, 0.1f, 10000.0f);
 		proj[1][1] *= -1;
@@ -615,12 +691,12 @@ public:
 		// compile shaders
 
 		const auto vert_module_info =
-			vk::ShaderModuleCreateInfo({}, vert_code.size(), reinterpret_cast<const uint32_t *>(vert_code.data()));
+			vk::ShaderModuleCreateInfo({}, vert_code.size(), reinterpret_cast<const uint32_t*>(vert_code.data()));
 
 		const auto vert_module = device.createShaderModule(vert_module_info);
 
 		const auto frag_module_info =
-			vk::ShaderModuleCreateInfo({}, frag_code.size(), reinterpret_cast<const uint32_t *>(frag_code.data()));
+			vk::ShaderModuleCreateInfo({}, frag_code.size(), reinterpret_cast<const uint32_t*>(frag_code.data()));
 
 		const auto frag_module = device.createShaderModule(frag_module_info);
 
@@ -651,27 +727,56 @@ public:
 		const auto viewport_state = vk::PipelineViewportStateCreateInfo({}, 1, &viewport, 1, &scissor);
 
 		const auto rasterizer = vk::PipelineRasterizationStateCreateInfo(
-			{}, false, false, vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eClockwise, false,
-			0.0f, 0.0f, 0.0f, 1.0f);
+			{},
+			false,
+			false,
+			vk::PolygonMode::eFill,
+			vk::CullModeFlagBits::eBack,
+			vk::FrontFace::eClockwise,
+			false,
+			0.0f,
+			0.0f,
+			0.0f,
+			1.0f);
 
 		const auto multisampling = vk::PipelineMultisampleStateCreateInfo({}, vk::SampleCountFlagBits::e1);
 
 		const auto depth_stencil = vk::PipelineDepthStencilStateCreateInfo({}, true, true, vk::CompareOp::eLess);
 
 		const auto color_blend_attachments = std::array{vk::PipelineColorBlendAttachmentState(
-			false, vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd, vk::BlendFactor::eZero,
-			vk::BlendFactor::eZero, vk::BlendOp::eAdd,
+			false,
+			vk::BlendFactor::eZero,
+			vk::BlendFactor::eZero,
+			vk::BlendOp::eAdd,
+			vk::BlendFactor::eZero,
+			vk::BlendFactor::eZero,
+			vk::BlendOp::eAdd,
 			vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
 				vk::ColorComponentFlagBits::eA)};
 
-		const auto color_blending =
-			vk::PipelineColorBlendStateCreateInfo({}, false, vk::LogicOp::eCopy, color_blend_attachments.size(),
-												  color_blend_attachments.data(), {0.0f, 0.0f, 0.0f, 0.0f});
+		const auto color_blending = vk::PipelineColorBlendStateCreateInfo(
+			{},
+			false,
+			vk::LogicOp::eCopy,
+			color_blend_attachments.size(),
+			color_blend_attachments.data(),
+			{0.0f, 0.0f, 0.0f, 0.0f});
 
-		const auto pipeline_info =
-			vk::GraphicsPipelineCreateInfo({}, shader_stages.size(), shader_stages.data(), &vertex_input_info,
-										   &input_assembly, nullptr, &viewport_state, &rasterizer, &multisampling,
-										   &depth_stencil, &color_blending, nullptr, pipeline_layout, backbuffer_pass);
+		const auto pipeline_info = vk::GraphicsPipelineCreateInfo(
+			{},
+			shader_stages.size(),
+			shader_stages.data(),
+			&vertex_input_info,
+			&input_assembly,
+			nullptr,
+			&viewport_state,
+			&rasterizer,
+			&multisampling,
+			&depth_stencil,
+			&color_blending,
+			nullptr,
+			pipeline_layout,
+			backbuffer_pass);
 
 		// finally create the bloody cunt
 
@@ -684,11 +789,17 @@ public:
 		// pipline.value is the actual pipeline object
 
 		return new ShaderPipeline{
-			pipeline_layout, pipeline.value, descpool, descset_layout, descset, ubo, ubo_mem,
+			pipeline_layout,
+			pipeline.value,
+			descpool,
+			descset_layout,
+			descset,
+			ubo,
+			ubo_mem,
 		};
 	}
 
-	auto destroy_pipeline(ShaderPipeline *pso) -> void override
+	auto destroy_pipeline(ShaderPipeline* pso) -> void override
 	{
 		device.waitIdle();
 
@@ -702,17 +813,18 @@ public:
 		delete pso;
 	}
 
-	auto get_swapchain_image() -> Image * override
+	auto get_swapchain_image() -> Image* override
 	{
-		image_idx = device
-						.acquireNextImageKHR(swapchain, std::numeric_limits<uint64_t>::max(),
-											 image_available_semaphores[current_frame], nullptr)
-						.value;
+		image_idx =
+			device
+				.acquireNextImageKHR(
+					swapchain, std::numeric_limits<uint64_t>::max(), image_available_semaphores[current_frame], nullptr)
+				.value;
 
 		return &swapchain_images[image_idx];
 	}
 
-	auto alloc_context() -> RenderContext * override
+	auto alloc_context() -> RenderContext* override
 	{
 		const auto ok =
 			device.waitForFences(swapchain_fences[current_frame], true, std::numeric_limits<uint64_t>::max());
@@ -721,25 +833,32 @@ public:
 
 		cmd_buffers[current_frame].reset({});
 
-		image_idx = device
-						.acquireNextImageKHR(swapchain, std::numeric_limits<uint64_t>::max(),
-											 image_available_semaphores[current_frame], nullptr)
-						.value;
+		const auto next_image = device.acquireNextImageKHR(
+			swapchain, std::numeric_limits<uint64_t>::max(), image_available_semaphores[current_frame], nullptr);
 
-		const auto &cmdbuf = cmd_buffers[current_frame];
+		const auto image_status = next_image.result;
+		image_idx = next_image.value;
+
+		const auto& cmdbuf = cmd_buffers[current_frame];
 
 		return new RenderContextVk(cmdbuf, backbuffer_pass, backbuffers[image_idx], extent);
 	}
 
-	auto execute_context(RenderContext *foo) -> void override
+	auto execute_context(RenderContext* foo) -> void override
 	{
-		auto cmdlist = reinterpret_cast<RenderContextVk *>(foo);
+		auto cmdlist = reinterpret_cast<RenderContextVk*>(foo);
 
 		const vk::PipelineStageFlags wait_dst_stage_mask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 
 		const auto cmdbuf = cmdlist->get_cmdbuf();
-		const auto submit_info = vk::SubmitInfo(1, &image_available_semaphores[current_frame], &wait_dst_stage_mask, 1,
-												&cmdbuf, 1, &render_finished_semaphores[current_frame]);
+		const auto submit_info = vk::SubmitInfo(
+			1,
+			&image_available_semaphores[current_frame],
+			&wait_dst_stage_mask,
+			1,
+			&cmdbuf,
+			1,
+			&render_finished_semaphores[current_frame]);
 
 		graphics_queue.submit({submit_info}, swapchain_fences[current_frame]);
 
@@ -751,7 +870,7 @@ public:
 		current_frame = (current_frame + 1) % FRAMES_IN_FLIGHT;
 	}
 
-	auto free_context(RenderContext *ctx) -> void override { delete static_cast<RenderContextVk *>(ctx); }
+	auto free_context(RenderContext* ctx) -> void override { delete static_cast<RenderContextVk*>(ctx); }
 
 private:
 	auto begin_one_time_cmdbuf() -> vk::CommandBuffer
@@ -782,20 +901,26 @@ private:
 		device.freeCommandBuffers(cmd_pool, cmdbuf);
 	}
 
-	auto create_image_vk(unsigned int width, unsigned int height, vk::Format format, vk::ImageTiling tiling,
-						 vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image &image,
-						 vk::DeviceMemory &mem) -> void
+	auto create_image_vk(
+		unsigned int width,
+		unsigned int height,
+		vk::Format format,
+		vk::ImageTiling tiling,
+		vk::ImageUsageFlags usage,
+		vk::MemoryPropertyFlags properties,
+		vk::Image& image,
+		vk::DeviceMemory& mem) -> void
 	{
-		const auto image_info = vk::ImageCreateInfo({}, vk::ImageType::e2D, format, {width, height, 1}, 1, 1,
-													vk::SampleCountFlagBits::e1, tiling, usage);
+		const auto image_info = vk::ImageCreateInfo(
+			{}, vk::ImageType::e2D, format, {width, height, 1}, 1, 1, vk::SampleCountFlagBits::e1, tiling, usage);
 
 		image = device.createImage(image_info);
 
 		const auto mem_reqs = device.getImageMemoryRequirements(image);
 
-		const auto alloc_info =
-			vk::MemoryAllocateInfo(mem_reqs.size, findMemoryType(physical_device, mem_reqs.memoryTypeBits,
-																 static_cast<VkMemoryPropertyFlags>(properties)));
+		const auto alloc_info = vk::MemoryAllocateInfo(
+			mem_reqs.size,
+			findMemoryType(physical_device, mem_reqs.memoryTypeBits, static_cast<VkMemoryPropertyFlags>(properties)));
 
 		mem = device.allocateMemory(alloc_info);
 
@@ -804,8 +929,8 @@ private:
 
 	auto create_image_view(vk::Image image, vk::Format format, vk::ImageAspectFlags aspect) -> vk::ImageView
 	{
-		const auto component_mapping = vk::ComponentMapping(vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG,
-															vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA);
+		const auto component_mapping = vk::ComponentMapping(
+			vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA);
 		const auto subresource = vk::ImageSubresourceRange(aspect, 0, 1, 0, 1);
 		const auto view_info =
 			vk::ImageViewCreateInfo({}, image, vk::ImageViewType::e2D, format, component_mapping, subresource);
@@ -816,9 +941,20 @@ private:
 	auto create_sampler() -> vk::Sampler
 	{
 		const auto sampler_info = vk::SamplerCreateInfo(
-			{}, vk::Filter::eLinear, vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear,
-			vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat, 0.0f, 16,
-			true, false, vk::CompareOp::eAlways, 0.0f, 0.0f);
+			{},
+			vk::Filter::eLinear,
+			vk::Filter::eLinear,
+			vk::SamplerMipmapMode::eLinear,
+			vk::SamplerAddressMode::eRepeat,
+			vk::SamplerAddressMode::eRepeat,
+			vk::SamplerAddressMode::eRepeat,
+			0.0f,
+			true,
+			16,
+			false,
+			vk::CompareOp::eAlways,
+			0.0f,
+			0.0f);
 
 		return device.createSampler(sampler_info);
 	}
@@ -834,8 +970,9 @@ private:
 		end_one_time_cmdbuf(cmdbuf);
 	}
 
-	auto transition_image_layout(vk::Image image, vk::Format format, vk::ImageLayout old_layout,
-								 vk::ImageLayout new_layout) -> void
+	auto
+	transition_image_layout(vk::Image image, vk::Format format, vk::ImageLayout old_layout, vk::ImageLayout new_layout)
+		-> void
 	{
 		auto src_stage = vk::PipelineStageFlags{};
 		auto dst_stage = vk::PipelineStageFlags{};
@@ -849,8 +986,9 @@ private:
 			src_stage = vk::PipelineStageFlagBits::eTopOfPipe;
 			dst_stage = vk::PipelineStageFlagBits::eTransfer;
 		}
-		else if (old_layout == vk::ImageLayout::eTransferDstOptimal &&
-				 new_layout == vk::ImageLayout::eShaderReadOnlyOptimal) {
+		else if (
+			old_layout == vk::ImageLayout::eTransferDstOptimal &&
+			new_layout == vk::ImageLayout::eShaderReadOnlyOptimal) {
 			src_access_mask = vk::AccessFlagBits::eTransferWrite;
 			dst_access_mask = vk::AccessFlagBits::eShaderRead;
 
@@ -861,9 +999,15 @@ private:
 		auto cmdbuf = begin_one_time_cmdbuf();
 
 		const auto subresource = vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
-		const auto barrier =
-			vk::ImageMemoryBarrier(src_access_mask, dst_access_mask, old_layout, new_layout, VK_QUEUE_FAMILY_IGNORED,
-								   VK_QUEUE_FAMILY_IGNORED, image, subresource);
+		const auto barrier = vk::ImageMemoryBarrier(
+			src_access_mask,
+			dst_access_mask,
+			old_layout,
+			new_layout,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			image,
+			subresource);
 
 		cmdbuf.pipelineBarrier(src_stage, dst_stage, vk::DependencyFlags{}, nullptr, nullptr, barrier);
 
@@ -919,8 +1063,8 @@ private:
 	unsigned int image_idx = 0;
 };
 
-auto RenderDevice::create(GLFWwindow *window) -> RenderDevice * { return new RenderDeviceVk(window); }
+auto RenderDevice::create(GLFWwindow* window) -> RenderDevice* { return new RenderDeviceVk(window); }
 
-auto RenderDevice::destroy(RenderDevice *device) -> void { delete static_cast<RenderDeviceVk *>(device); }
+auto RenderDevice::destroy(RenderDevice* device) -> void { delete static_cast<RenderDeviceVk*>(device); }
 
 } // namespace gengine

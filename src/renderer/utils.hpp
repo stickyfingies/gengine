@@ -19,9 +19,14 @@ inline auto findMemoryType(VkPhysicalDevice physical_device, uint32_t type_filte
 	return 0;
 }
 
-inline auto createBufferVk(vk::Device device, vk::PhysicalDevice physical_device, vk::DeviceSize size,
-						   vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Buffer &buffer,
-						   vk::DeviceMemory &mem) -> void
+inline auto createBufferVk(
+	vk::Device device,
+	vk::PhysicalDevice physical_device,
+	vk::DeviceSize size,
+	vk::BufferUsageFlags usage,
+	vk::MemoryPropertyFlags properties,
+	vk::Buffer &buffer,
+	vk::DeviceMemory &mem) -> void
 {
 	const auto buffer_info = vk::BufferCreateInfo({}, size, usage);
 
@@ -29,13 +34,14 @@ inline auto createBufferVk(vk::Device device, vk::PhysicalDevice physical_device
 
 	const auto mem_reqs = device.getBufferMemoryRequirements(buffer);
 
-	const auto alloc_info =
-		vk::MemoryAllocateInfo(mem_reqs.size, findMemoryType(physical_device, mem_reqs.memoryTypeBits,
-															 static_cast<VkMemoryPropertyFlags>(properties)));
+	const auto alloc_info = vk::MemoryAllocateInfo(
+		mem_reqs.size,
+		findMemoryType(physical_device, mem_reqs.memoryTypeBits, static_cast<VkMemoryPropertyFlags>(properties)));
 
 	mem = device.allocateMemory(alloc_info);
 
 	device.bindBufferMemory(buffer, mem, 0);
 
-	std::cout << "[info]\t created buffer of size: " << size << std::endl;
+	std::cout << "[info]\t created buffer { size: " << size << ", usage: " << static_cast<uint32_t>(usage) << " }"
+			  << std::endl;
 }

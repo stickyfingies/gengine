@@ -8,3 +8,5 @@ AlignAfterOpenBracket: AlwaysBreak
 BinPackArguments: false
 BinPackParameters: false
 AlignTrailingComments: true
+DerivePointerAlignment: false
+PointerAlignment: Left
