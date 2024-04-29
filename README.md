@@ -1,6 +1,6 @@
 # GameEngine
 
-![PyBullet](https://a11ybadges.com/badge?logo=code&text=PyBullet&badgeColor=orange)
+![Bullet](https://a11ybadges.com/badge?text=Bullet&badgeColor=goldenrod&logo=crosshair)
 ![Vulkan](https://a11ybadges.com/badge?logo=vulkan)
 ![C++](https://a11ybadges.com/badge?logo=cplusplus)
 ![CMake](https://a11ybadges.com/badge?logo=cmake)
