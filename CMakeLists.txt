@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.29)
+
+project(gengine LANGUAGES CXX)
 
 include(GNUInstallDirs)
 include(./vcpkg/scripts/buildsystems/vcpkg.cmake)
-
-project(gengine LANGUAGES CXX)
 
 add_executable(${PROJECT_NAME})
 
@@ -16,14 +16,15 @@ endif (UNIX)
 find_package(glfw3 CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
 
-find_package(assimp CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
-
 find_package(Bullet CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE LinearMath Bullet3Common BulletDynamics BulletCollision)
+target_link_libraries(${PROJECT_NAME} PRIVATE BulletDynamics BulletCollision Bullet3Common LinearMath)
+target_link_directories(${PROJECT_NAME} PRIVATE ${BULLET_LIBRARY_DIRS})
 
 find_package(Vulkan REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES})
+
+find_package(assimp CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 
 # Source files
 
