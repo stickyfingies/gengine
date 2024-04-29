@@ -27,7 +27,11 @@ auto load_image(std::string_view path) -> ImageAsset
 	std::cout << "[info]\t\t size=" << width << "x" << height << std::endl;
 	std::cout << "[info]\t\t channels=" << channel_count << std::endl;
 
-	return {static_cast<uint32_t>(width), static_cast<uint32_t>(height), static_cast<uint32_t>(channel_count), data};
+	return {
+		static_cast<uint32_t>(width),
+		static_cast<uint32_t>(height),
+		static_cast<uint32_t>(channel_count),
+		data};
 }
 
 auto unload_image(const ImageAsset& asset) -> void { stbi_image_free(asset.data); }
@@ -40,8 +44,8 @@ auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode*
 		const auto mesh_idx = node->mMeshes[i];
 		const auto mesh = scene->mMeshes[mesh_idx];
 
-		std::cout << "[info]\t\t mesh " << i << ": { vertices: " << mesh->mNumVertices << ", faces: " << mesh->mNumFaces
-				  << " }" << std::endl;
+		std::cout << "[info]\t\t mesh " << i << ": { vertices: " << mesh->mNumVertices
+				  << ", faces: " << mesh->mNumFaces << " }" << std::endl;
 
 		auto vertices = std::vector<float>{};
 		auto vertices_aux = std::vector<float>{};

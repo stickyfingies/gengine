@@ -21,6 +21,7 @@ if [ ! -d "vcpkg" ] || [ ! -z "${ARG_INSTALL_DEPENDENCIES}" ]; then
     ./vcpkg/vcpkg install glfw3
     ./vcpkg/vcpkg install bullet3
     ./vcpkg/vcpkg install assimp
+    ./vcpkg/vcpkg install glm
 fi
 
 function configure() {

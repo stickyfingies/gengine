@@ -13,6 +13,9 @@ if (UNIX)
     target_link_libraries(${PROJECT_NAME} PRIVATE dl)
 endif (UNIX)
 
+find_package(glm CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
+
 find_package(glfw3 CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
 
@@ -31,7 +34,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 target_include_directories(${PROJECT_NAME}
 PUBLIC
 	${Vulkan_INCLUDE_DIRS}
-	${CMAKE_SOURCE_DIR}/include
 )
 
 target_sources(${PROJECT_NAME}
