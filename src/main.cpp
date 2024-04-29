@@ -209,7 +209,7 @@ auto main(int argc, char** argv) -> int
 	// const auto& [map_t, map_vertices, _, map_indices] = map_geometries[0];
 	// const auto& [spinny_t, spinny_vertices, __, spinny_indices] = spinny_geometries[0];
 
-	const auto texture = gengine::load_image("../../data/albedo.png");
+	const auto texture = gengine::load_image("./data/albedo.png");
 
 	// create game resources
 
@@ -226,7 +226,7 @@ auto main(int argc, char** argv) -> int
 	const auto albedo = renderer->create_image({texture.width, texture.height, texture.channel_count}, texture.data);
 
 	const auto pipeline = renderer->create_pipeline(
-		gengine::load_file("../../data/cube.vert.spv"), gengine::load_file("../../data/cube.frag.spv"), albedo);
+		gengine::load_file("./data/cube.vert.spv"), gengine::load_file("./data/cube.frag.spv"), albedo);
 
 	gengine::unload_image(texture);
 
@@ -265,10 +265,10 @@ auto main(int argc, char** argv) -> int
 		// collidables.push_back(physics_engine.create_mesh(mass, map_vertices, map_indices, transform));
 	}
 
-	create_game_object("../../data/spinny.obj", renderer, physics_engine, render_components, collidables, transforms);
-	create_game_object("../../data/spinny.obj", renderer, physics_engine, render_components, collidables, transforms);
+	create_game_object("./data/spinny.obj", renderer, physics_engine, render_components, collidables, transforms);
+	create_game_object("./data/spinny.obj", renderer, physics_engine, render_components, collidables, transforms);
 	create_game_object(
-		"../../data/map.obj", renderer, physics_engine, render_components, collidables, transforms, true);
+		"./data/map.obj", renderer, physics_engine, render_components, collidables, transforms, true);
 
 	// core game loop
 
