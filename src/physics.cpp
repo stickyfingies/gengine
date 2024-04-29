@@ -11,7 +11,7 @@
 
 namespace gengine {
 struct Collidable {
-	btTriangleIndexVertexArray* mesh;
+	btTriangleMesh* mesh;
 	btMotionState* motion_state;
 	btCollisionShape* shape;
 	btRigidBody* body;
@@ -160,25 +160,44 @@ auto PhysicsEngine::create_mesh(
 	auto perspective = glm::vec4{};
 	glm::decompose(model_matrix, scale, rotation, translation, skew, perspective);
 
-	collidable->mesh = new btTriangleIndexVertexArray();
+	// Convert our optimized (vertex, index) buffer into non-optimized (vertex) buffer
 
-	auto indexed_mesh = btIndexedMesh{};
-	indexed_mesh.m_indexType = PHY_INTEGER;
-	indexed_mesh.m_numTriangles = indices.size() / 3;
-	indexed_mesh.m_numVertices = vertices.size();
-	indexed_mesh.m_triangleIndexBase = reinterpret_cast<const unsigned char*>(indices.data());
-	indexed_mesh.m_triangleIndexStride = 3 * sizeof(unsigned int);
-	indexed_mesh.m_vertexBase = reinterpret_cast<const unsigned char*>(vertices.data());
-	indexed_mesh.m_vertexStride = 32;
-	indexed_mesh.m_vertexType = PHY_FLOAT;
+	auto nonIndexedVertices = std::vector<float>();
+	for (int i = 0; i < indices.size(); i++) {
+		const auto idx = indices[i];
+		nonIndexedVertices.push_back(vertices[idx * 3 + 0]);
+		nonIndexedVertices.push_back(vertices[idx * 3 + 1]);
+		nonIndexedVertices.push_back(vertices[idx * 3 + 2]);
+	}
 
-	collidable->mesh->addIndexedMesh(indexed_mesh);
+	std::cout << vertices.size() << " vertices" << std::endl;
+	std::cout << indices.size() << " indices" << std::endl;
+	std::cout << nonIndexedVertices.size() << " non-indexed vertices " << std::endl;
 
-	// TODO - I'm flipping the 'Y' coordinates here in phys-land, but that's **wrong**.
-	// It's actually assimp that's flipping the models, because they're rendering upside down, too.
-	// Something about using different axes as the "up" axis.
+	// Populate a triangle mesh using our non-optimized vertex buffer
+
+	collidable->mesh = new btTriangleMesh();
+	for (int i = 0; i < nonIndexedVertices.size(); i += 9) {
+		const auto v0 = btVector3(nonIndexedVertices[i + 0], nonIndexedVertices[i + 1], nonIndexedVertices[i + 2]);
+		const auto v1 = btVector3(nonIndexedVertices[i + 3], nonIndexedVertices[i + 4], nonIndexedVertices[i + 5]);
+		const auto v2 = btVector3(nonIndexedVertices[i + 6], nonIndexedVertices[i + 7], nonIndexedVertices[i + 8]);
+		collidable->mesh->addTriangle(v0, v1, v2, true);
+	}
+
+	// // auto indexed_mesh = btIndexedMesh{};
+	// // indexed_mesh.m_numTriangles = indices.size() / 3;
+	// // indexed_mesh.m_numVertices = vertices.size() / 3;
+	// // indexed_mesh.m_triangleIndexBase = reinterpret_cast<const unsigned char*>(indices.data());
+	// // indexed_mesh.m_vertexBase = reinterpret_cast<const unsigned char*>(vertices.data());
+	// // indexed_mesh.m_triangleIndexStride = 3 * sizeof(unsigned int);
+	// // indexed_mesh.m_vertexStride = 3 * sizeof(float);
+	// // indexed_mesh.m_vertexType = PHY_FLOAT;
+
+	// collidable->mesh = new btTriangleIndexVertexArray();
+	// collidable->mesh->addIndexedMesh(indexed_mesh, PHY_INTEGER);
+
 	collidable->scale = scale;
-	collidable->shape = new btBvhTriangleMeshShape(collidable->mesh, false);
+	collidable->shape = new btBvhTriangleMeshShape(collidable->mesh, true);
 	collidable->shape->setLocalScaling(btVector3(1, 1, 1));
 
 	auto trans = btTransform{};
@@ -198,6 +217,8 @@ auto PhysicsEngine::create_mesh(
 	std::cout << "[info]\t Creating physics mesh" << std::endl;
 
 	dynamics_world->addRigidBody(collidable->body);
+
+	std::cout << "[info]\t Created physics mesh" << std::endl;
 
 	return collidable;
 }

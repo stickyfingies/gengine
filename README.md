@@ -20,7 +20,11 @@ $ cmake -B build -S .
 $ cmake --build build
 ```
 
+## Resources
+- [Interleaved or Separate Vertex Buffers](https://www.reddit.com/r/vulkan/comments/rtpdvu/interleaved_vs_separate_vertex_buffers/)
+
 ## Todo
 - [x] switch from Renderer to RenderDevice
+- [ ] Un-leave vertex positions from other buffer data
 - [ ] unify command buffers on both sides of API wall (?)
 - [ ] Remove that **atrocious** `MODULE_CALLBACK` garbage (what was I thinking??)

@@ -132,24 +132,42 @@ auto create_game_object(
 	gengine::PhysicsEngine& physics_engine,
 	std::vector<RenderComponent>& render_components,
 	std::vector<gengine::Collidable*>& collidables,
-	std::vector<glm::mat4>& transforms) -> void
+	std::vector<glm::mat4>& transforms,
+	bool makeMesh = false) -> void
 {
 	const auto geometries = gengine::load_vertex_buffer(path);
 	for (const auto& geom : geometries) {
 		std::cout << "Fuck" << std::endl;
-		const auto& [t, vertices, indices] = geom;
+		const auto& [t, vertices, vertices_aux, indices] = geom;
+
+		auto gpu_data = std::vector<float>{};
+
+		for (int i = 0; i < vertices.size() / 3; i++) {
+			const auto v = (i * 3);
+			gpu_data.push_back(vertices[v + 0]);
+			gpu_data.push_back(vertices[v + 1]);
+			gpu_data.push_back(vertices[v + 2]);
+			const auto a = (i * 5);
+			gpu_data.push_back(vertices_aux[a + 0]);
+			gpu_data.push_back(vertices_aux[a + 1]);
+			gpu_data.push_back(vertices_aux[a + 2]);
+			gpu_data.push_back(vertices_aux[a + 3]);
+			gpu_data.push_back(vertices_aux[a + 4]);
+		}
 
 		const auto vbo = renderer->create_buffer(
-			{gengine::BufferInfo::Usage::VERTEX, sizeof(float), vertices.size()}, vertices.data());
+			{gengine::BufferInfo::Usage::VERTEX, sizeof(float), gpu_data.size()}, gpu_data.data());
 		const auto ebo = renderer->create_buffer(
 			{gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()}, indices.data());
 
 		render_components.push_back({vbo, ebo, indices.size()});
+		std::cout << "Render component: " << render_components.size() << std::endl;
 
-		auto tr = glm::mat4(1.0f);
-
-		transforms.push_back(tr);
-		collidables.push_back(physics_engine.create_mesh(0.0f, vertices, indices, tr));
+		if (makeMesh) {
+			auto tr = glm::mat4(1.0f);
+			transforms.push_back(tr);
+			collidables.push_back(physics_engine.create_mesh(0.0f, vertices, indices, tr));
+		}
 	}
 }
 
@@ -185,25 +203,25 @@ auto main(int argc, char** argv) -> int
 	auto collidables = std::vector<gengine::Collidable*>{};
 	auto render_components = std::vector<RenderComponent>{};
 
-	const auto map_geometries = gengine::load_vertex_buffer("../../data/map.obj");
-	const auto spinny_geometries = gengine::load_vertex_buffer("../../data/spinny.obj");
+	// const auto map_geometries = gengine::load_vertex_buffer("../../data/map.obj");
+	// const auto spinny_geometries = gengine::load_vertex_buffer("../../data/spinny.obj");
 
-	const auto& [map_t, map_vertices, map_indices] = map_geometries[0];
-	const auto& [spinny_t, spinny_vertices, spinny_indices] = spinny_geometries[0];
+	// const auto& [map_t, map_vertices, _, map_indices] = map_geometries[0];
+	// const auto& [spinny_t, spinny_vertices, __, spinny_indices] = spinny_geometries[0];
 
 	const auto texture = gengine::load_image("../../data/albedo.png");
 
 	// create game resources
 
-	const auto map_vbo = renderer->create_buffer(
-		{gengine::BufferInfo::Usage::VERTEX, sizeof(float), map_vertices.size()}, map_vertices.data());
-	const auto map_ebo = renderer->create_buffer(
-		{gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), map_indices.size()}, map_indices.data());
+	// const auto map_vbo = renderer->create_buffer(
+	// 	{gengine::BufferInfo::Usage::VERTEX, sizeof(float), map_vertices.size()}, map_vertices.data());
+	// const auto map_ebo = renderer->create_buffer(
+	// 	{gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), map_indices.size()}, map_indices.data());
 
-	const auto spinny_vbo = renderer->create_buffer(
-		{gengine::BufferInfo::Usage::VERTEX, sizeof(float), spinny_vertices.size()}, spinny_vertices.data());
-	const auto spinny_ebo = renderer->create_buffer(
-		{gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), spinny_indices.size()}, spinny_indices.data());
+	// const auto spinny_vbo = renderer->create_buffer(
+	// 	{gengine::BufferInfo::Usage::VERTEX, sizeof(float), spinny_vertices.size()}, spinny_vertices.data());
+	// const auto spinny_ebo = renderer->create_buffer(
+	// 	{gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), spinny_indices.size()}, spinny_indices.data());
 
 	const auto albedo = renderer->create_image({texture.width, texture.height, texture.channel_count}, texture.data);
 
@@ -212,8 +230,8 @@ auto main(int argc, char** argv) -> int
 
 	gengine::unload_image(texture);
 
-	render_components.push_back({spinny_vbo, spinny_ebo, spinny_indices.size()}); // player
-	render_components.push_back({spinny_vbo, spinny_ebo, spinny_indices.size()});
+	// render_components.push_back({spinny_vbo, spinny_ebo, spinny_indices.size()}); // player
+	// render_components.push_back({spinny_vbo, spinny_ebo, spinny_indices.size()});
 	// render_components.push_back({map_vbo, map_ebo, map_indices.size()});
 
 	// Create physics bodies
@@ -247,7 +265,10 @@ auto main(int argc, char** argv) -> int
 		// collidables.push_back(physics_engine.create_mesh(mass, map_vertices, map_indices, transform));
 	}
 
-	create_game_object("../../data/map.obj", renderer, physics_engine, render_components, collidables, transforms);
+	create_game_object("../../data/spinny.obj", renderer, physics_engine, render_components, collidables, transforms);
+	create_game_object("../../data/spinny.obj", renderer, physics_engine, render_components, collidables, transforms);
+	create_game_object(
+		"../../data/map.obj", renderer, physics_engine, render_components, collidables, transforms, true);
 
 	// core game loop
 
@@ -296,10 +317,10 @@ auto main(int argc, char** argv) -> int
 
 	renderer->destroy_image(albedo);
 
-	renderer->destroy_buffer(map_vbo);
-	renderer->destroy_buffer(map_ebo);
-	renderer->destroy_buffer(spinny_vbo);
-	renderer->destroy_buffer(spinny_ebo);
+	// renderer->destroy_buffer(map_vbo);
+	// renderer->destroy_buffer(map_ebo);
+	// renderer->destroy_buffer(spinny_vbo);
+	// renderer->destroy_buffer(spinny_ebo);
 
 	// system shutdown
 

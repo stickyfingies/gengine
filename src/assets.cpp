@@ -44,6 +44,7 @@ auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode*
 				  << " }" << std::endl;
 
 		auto vertices = std::vector<float>{};
+		auto vertices_aux = std::vector<float>{};
 		auto indices = std::vector<unsigned int>{};
 
 		// accumulate vertices
@@ -53,13 +54,15 @@ auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode*
 			vertices.push_back(-mesh->mVertices[j].y);
 			vertices.push_back(mesh->mVertices[j].z);
 
-			vertices.push_back(mesh->mNormals[j].x);
-			vertices.push_back(mesh->mNormals[j].y);
-			vertices.push_back(mesh->mNormals[j].z);
+			vertices_aux.push_back(mesh->mNormals[j].x);
+			vertices_aux.push_back(mesh->mNormals[j].y);
+			vertices_aux.push_back(mesh->mNormals[j].z);
 
-			vertices.push_back(mesh->mTextureCoords[0][j].x);
-			vertices.push_back(mesh->mTextureCoords[0][j].y);
+			vertices_aux.push_back(mesh->mTextureCoords[0][j].x);
+			vertices_aux.push_back(mesh->mTextureCoords[0][j].y);
 		}
+
+		std::cout << "Vertices count: " << vertices.size() << std::endl;
 
 		// extract indices from faces
 
@@ -70,7 +73,7 @@ auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode*
 			}
 		}
 
-		assets.push_back({transform, vertices, indices});
+		assets.push_back({transform, vertices, vertices_aux, indices});
 	}
 
 	for (auto i = 0; i < node->mNumChildren; ++i) {

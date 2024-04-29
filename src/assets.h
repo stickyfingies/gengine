@@ -10,7 +10,8 @@ namespace gengine {
 
 struct GeometryAsset {
 	glm::mat4 transform;
-	std::vector<float> vertices;
+	std::vector<float> vertices; // raw positions
+	std::vector<float> vertices_aux; // normals, uvs
 	std::vector<unsigned int> indices;
 };
 
