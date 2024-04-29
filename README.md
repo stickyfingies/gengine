@@ -5,7 +5,7 @@
 ![C++](https://a11ybadges.com/badge?logo=cplusplus)
 ![CMake](https://a11ybadges.com/badge?logo=cmake)
 
-A hobby game engine (ish-thing) with physics, user input, and graphics.  I've actually written a game, called [The Grove](https://github.com/stickyfingies/grove/), that runs on my own engine written in Typescript.  My goal for this project is to re-write core Grove functionality in C++ and transpile it with WebAssembly.
+A hobby real-time 3D simulation with physics, user input, and graphics.
 
 ![Screenshot](./screenshot.png "Screenshot")
 
@@ -16,12 +16,12 @@ Download the project using git.
 
 ```sh
 git clone https://github.com/stickyfingies/gengine.git
+chmod +x ./build.sh
 ```
 
 Build the project to create an executable.
 
 ```sh
-chmod +x ./build.sh
 ./build.sh
 ```
 
