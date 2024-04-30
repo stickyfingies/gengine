@@ -137,15 +137,16 @@ auto create_game_object(
 {
 	const auto geometries = gengine::load_vertex_buffer(path);
 	for (const auto& geom : geometries) {
-		std::cout << "Fuck" << std::endl;
 		const auto& [t, vertices, vertices_aux, indices] = geom;
 
-		auto gpu_data = std::vector<float>{};
+		// TODO: parameterize this separately
+		const auto flip_y_coords = makeMesh;
 
+		auto gpu_data = std::vector<float>{};
 		for (int i = 0; i < vertices.size() / 3; i++) {
 			const auto v = (i * 3);
 			gpu_data.push_back(vertices[v + 0]);
-			gpu_data.push_back(vertices[v + 1]);
+			gpu_data.push_back((flip_y_coords ? -1 : 1) * vertices[v + 1]);
 			gpu_data.push_back(vertices[v + 2]);
 			const auto a = (i * 5);
 			gpu_data.push_back(vertices_aux[a + 0]);
@@ -161,8 +162,8 @@ auto create_game_object(
 			{gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()}, indices.data());
 
 		render_components.push_back({vbo, ebo, indices.size()});
-		std::cout << "Render component: " << render_components.size() << std::endl;
 
+		// Generate a physics model when makeMesh == true
 		if (makeMesh) {
 			auto tr = glm::mat4(1.0f);
 			transforms.push_back(tr);
