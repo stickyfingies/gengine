@@ -736,25 +736,31 @@ public:
 		const auto ok = device.waitForFences(
 			swapchain_fences[current_frame], true, std::numeric_limits<uint64_t>::max());
 
-		const auto next_image = device.acquireNextImageKHR(
-			swapchain,
-			std::numeric_limits<uint64_t>::max(),
-			image_available_semaphores[current_frame],
-			nullptr);
+		try {
+			const auto next_image = device.acquireNextImageKHR(
+				swapchain,
+				std::numeric_limits<uint64_t>::max(),
+				image_available_semaphores[current_frame],
+				nullptr);
 
-		if (next_image.result == vk::Result::eErrorOutOfDateKHR) {
+			if (next_image.result == vk::Result::eErrorOutOfDateKHR) {
+				re_create_swapchain();
+				return nullptr;
+			}
+
+			image_idx = next_image.value;
+
+			device.resetFences({swapchain_fences[current_frame]});
+
+			const auto& cmdbuf = cmd_buffers[current_frame];
+			cmdbuf.reset({});
+
+			return new RenderContextVk(cmdbuf, backbuffer_pass, backbuffers[image_idx], extent);
+		}
+		catch (vk::OutOfDateKHRError) {
 			re_create_swapchain();
 			return nullptr;
 		}
-
-		image_idx = next_image.value;
-
-		device.resetFences({swapchain_fences[current_frame]});
-
-		const auto& cmdbuf = cmd_buffers[current_frame];
-		cmdbuf.reset({});
-
-		return new RenderContextVk(cmdbuf, backbuffer_pass, backbuffers[image_idx], extent);
 	}
 
 	auto execute_context(RenderContext* foo) -> void override
@@ -1000,6 +1006,8 @@ private:
 		else {
 			extent = surface_caps.currentExtent;
 		}
+
+		std::cout << extent.width << " x " << extent.height << std::endl;
 
 		const auto present_mode = [&] {
 			auto best_mode = vk::PresentModeKHR::eFifo;
