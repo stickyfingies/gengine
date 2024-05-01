@@ -911,7 +911,7 @@ private:
 			vk::SamplerAddressMode::eRepeat,
 			vk::SamplerAddressMode::eRepeat,
 			0.0f,
-			true,
+			false,
 			16,
 			false,
 			vk::CompareOp::eAlways,

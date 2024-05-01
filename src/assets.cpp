@@ -38,7 +38,19 @@ auto unload_image(const ImageAsset& asset) -> void { stbi_image_free(asset.data)
 
 auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode* node) -> void
 {
-	const auto transform = glm::transpose(glm::make_mat4(&node->mTransformation.a1));
+	std::vector<aiNode*> parents{};
+	aiNode* parent = node->mParent;
+	while (parent != nullptr) {
+		parents.push_back(parent);
+		parent = parent->mParent;
+	}
+	auto worldTransform = glm::mat4{1.0f};
+	for (int i = parents.size() - 1; i >= 0; i--) {
+		const auto tr = glm::transpose(glm::make_mat4(&parents[i]->mTransformation.a1));
+		worldTransform *= tr;
+	}
+
+	const auto transform = worldTransform; //glm::transpose(glm::make_mat4(&node->mTransformation.a1));
 
 	for (auto i = 0; i < node->mNumMeshes; ++i) {
 		const auto mesh_idx = node->mMeshes[i];
@@ -55,7 +67,7 @@ auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode*
 
 		for (auto j = 0; j < mesh->mNumVertices; ++j) {
 			vertices.push_back(mesh->mVertices[j].x);
-			vertices.push_back(-mesh->mVertices[j].y);
+			vertices.push_back(mesh->mVertices[j].y);
 			vertices.push_back(mesh->mVertices[j].z);
 
 			vertices_aux.push_back(mesh->mNormals[j].x);
@@ -86,7 +98,8 @@ auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode*
 	}
 }
 
-auto load_vertex_buffer(std::string_view path) -> std::vector<GeometryAsset>
+auto load_vertex_buffer(std::string_view path, bool flipUVs, bool flipWindingOrder)
+	-> std::vector<GeometryAsset>
 {
 	// TODO - Fix ASSIMP flipping models upside down on import
 	static auto importer = Assimp::Importer{};
@@ -95,7 +108,12 @@ auto load_vertex_buffer(std::string_view path) -> std::vector<GeometryAsset>
 
 	std::cout << "[info]\t loading scene " << path.data() << std::endl;
 
-	const auto scene = importer.ReadFile(path.data(), aiProcess_Triangulate | aiProcess_GenNormals);
+	uint32_t importFlags = aiProcess_Triangulate | aiProcess_GenNormals;
+	if (flipUVs)
+		importFlags |= aiProcess_FlipUVs;
+	if (flipWindingOrder)
+		importFlags |= aiProcess_FlipWindingOrder;
+	const auto scene = importer.ReadFile(path.data(), importFlags);
 	if ((!scene) || (scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE) || (!scene->mRootNode)) {
 		std::cerr << "[!ERR]\t\t unable to load scene!" << std::endl;
 		return {};

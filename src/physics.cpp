@@ -27,7 +27,10 @@ PhysicsEngine::PhysicsEngine()
 	broadphase = new btDbvtBroadphase();
 
 	dynamics_world = new btDiscreteDynamicsWorld(
-		new btCollisionDispatcher(collision_cfg), broadphase, new btSequentialImpulseConstraintSolver(), collision_cfg);
+		new btCollisionDispatcher(collision_cfg),
+		broadphase,
+		new btSequentialImpulseConstraintSolver(),
+		collision_cfg);
 
 	dynamics_world->setGravity(btVector3(0, -9.8, 0));
 }
@@ -53,7 +56,8 @@ auto PhysicsEngine::create_box(float mass, const glm::mat4& model_matrix) -> Col
 	collidable->scale = scale;
 	collidable->shape = new btBoxShape(btVector3(scale.x, scale.y, scale.z));
 
-	const auto new_transform = glm::translate(glm::mat4(1.0f), translation) * glm::mat4_cast(glm::conjugate(rotation));
+	const auto new_transform =
+		glm::translate(glm::mat4(1.0f), translation) * glm::mat4_cast(glm::conjugate(rotation));
 
 	auto trans = btTransform{};
 	trans.setFromOpenGLMatrix(glm::value_ptr(new_transform));
@@ -66,7 +70,8 @@ auto PhysicsEngine::create_box(float mass, const glm::mat4& model_matrix) -> Col
 		collidable->shape->calculateLocalInertia(mass, inertia);
 	}
 
-	collidable->body = new btRigidBody(btScalar(mass), collidable->motion_state, collidable->shape, inertia);
+	collidable->body =
+		new btRigidBody(btScalar(mass), collidable->motion_state, collidable->shape, inertia);
 	collidable->body->setFriction(0.4);
 	collidable->body->setRollingFriction(0.3);
 	collidable->body->setSpinningFriction(0.3);
@@ -76,7 +81,8 @@ auto PhysicsEngine::create_box(float mass, const glm::mat4& model_matrix) -> Col
 	return collidable;
 }
 
-auto PhysicsEngine::create_sphere(float const size, float mass, const glm::mat4& model_matrix) -> Collidable*
+auto PhysicsEngine::create_sphere(float const size, float mass, const glm::mat4& model_matrix)
+	-> Collidable*
 {
 	auto collidable = new Collidable{};
 
@@ -101,7 +107,8 @@ auto PhysicsEngine::create_sphere(float const size, float mass, const glm::mat4&
 		collidable->shape->calculateLocalInertia(mass, inertia);
 	}
 
-	collidable->body = new btRigidBody(btScalar(mass), collidable->motion_state, collidable->shape, inertia);
+	collidable->body =
+		new btRigidBody(btScalar(mass), collidable->motion_state, collidable->shape, inertia);
 	collidable->body->setFriction(0.3);
 	collidable->body->setRollingFriction(0.3);
 	collidable->body->setSpinningFriction(0.3);
@@ -136,7 +143,8 @@ auto PhysicsEngine::create_capsule(float mass, const glm::mat4& model_matrix) ->
 		collidable->shape->calculateLocalInertia(mass, inertia);
 	}
 
-	collidable->body = new btRigidBody(btScalar(mass), collidable->motion_state, collidable->shape, inertia);
+	collidable->body =
+		new btRigidBody(btScalar(mass), collidable->motion_state, collidable->shape, inertia);
 	collidable->body->setFriction(0.3);
 	collidable->body->setAngularFactor(0.0);
 
@@ -159,16 +167,16 @@ auto PhysicsEngine::create_mesh(
 	auto skew = glm::vec3{};
 	auto perspective = glm::vec4{};
 	glm::decompose(model_matrix, scale, rotation, translation, skew, perspective);
-
+	std::cout << "Frog: " << rotation.x << ", " << rotation.y << ", " << rotation.z << std::endl;
 	// Convert our optimized (vertex, index) buffer into non-optimized (vertex) buffer
 
 	auto nonIndexedVertices = std::vector<float>();
 	for (int i = 0; i < indices.size(); i++) {
 		const auto idx = indices[i];
-		nonIndexedVertices.push_back(vertices[idx * 3 + 0]);
+		nonIndexedVertices.push_back(-vertices[idx * 3 + 0]);
 		nonIndexedVertices.push_back(vertices[idx * 3 + 1]);
 		nonIndexedVertices.push_back(vertices[idx * 3 + 2]);
-	}
+	} 
 
 	std::cout << vertices.size() << " vertices" << std::endl;
 	std::cout << indices.size() << " indices" << std::endl;
@@ -178,9 +186,12 @@ auto PhysicsEngine::create_mesh(
 
 	collidable->mesh = new btTriangleMesh();
 	for (int i = 0; i < nonIndexedVertices.size(); i += 9) {
-		const auto v0 = btVector3(nonIndexedVertices[i + 0], nonIndexedVertices[i + 1], nonIndexedVertices[i + 2]);
-		const auto v1 = btVector3(nonIndexedVertices[i + 3], nonIndexedVertices[i + 4], nonIndexedVertices[i + 5]);
-		const auto v2 = btVector3(nonIndexedVertices[i + 6], nonIndexedVertices[i + 7], nonIndexedVertices[i + 8]);
+		const auto v0 = btVector3(
+			nonIndexedVertices[i + 0], nonIndexedVertices[i + 1], nonIndexedVertices[i + 2]);
+		const auto v1 = btVector3(
+			nonIndexedVertices[i + 3], nonIndexedVertices[i + 4], nonIndexedVertices[i + 5]);
+		const auto v2 = btVector3(
+			nonIndexedVertices[i + 6], nonIndexedVertices[i + 7], nonIndexedVertices[i + 8]);
 		collidable->mesh->addTriangle(v0, v1, v2, true);
 	}
 
@@ -196,11 +207,15 @@ auto PhysicsEngine::create_mesh(
 	// collidable->mesh = new btTriangleIndexVertexArray();
 	// collidable->mesh->addIndexedMesh(indexed_mesh, PHY_INTEGER);
 
+	std::cout << scale.x << ", " << scale.y << ", " << scale.z << std::endl;
 	collidable->scale = scale;
 	collidable->shape = new btBvhTriangleMeshShape(collidable->mesh, true);
-	collidable->shape->setLocalScaling(btVector3(1, 1, 1));
+	collidable->shape->setLocalScaling(btVector3(scale.x, scale.y, scale.z));
 
 	auto trans = btTransform{};
+	trans.setIdentity();
+	trans.setOrigin(btVector3{translation.x, translation.y, translation.z});
+	trans.setRotation(btQuaternion{rotation.x, rotation.y, rotation.z, rotation.w});
 	trans.setFromOpenGLMatrix(glm::value_ptr(model_matrix));
 
 	collidable->motion_state = new btDefaultMotionState(trans);
@@ -244,7 +259,8 @@ auto PhysicsEngine::get_model_matrix(Collidable* collidable, glm::mat4& model_ma
 	const auto scale = collidable->scale;
 
 	model_matrix = glm::translate(glm::mat4(1.0f), glm::vec3(pos[0], pos[1], pos[2])) *
-				   glm::mat4_cast(glm::quat(rot[0], rot[1], rot[2], rot[3])) * glm::scale(glm::mat4(1.0), scale);
+				   glm::mat4_cast(glm::quat(rot[0], rot[1], rot[2], rot[3])); // *
+				//    glm::scale(glm::mat4(1.0 ), scale);
 }
 
 auto PhysicsEngine::apply_force(Collidable* collidable, glm::vec3 force) -> void
@@ -265,5 +281,8 @@ auto PhysicsEngine::raycast(glm::vec3 from, glm::vec3 to) -> bool
 	return res.hasHit();
 }
 
-auto PhysicsEngine::step(float dt, int max_steps) -> void { dynamics_world->stepSimulation(dt, max_steps); }
+auto PhysicsEngine::step(float dt, int max_steps) -> void
+{
+	dynamics_world->stepSimulation(dt, max_steps);
+}
 } // namespace gengine

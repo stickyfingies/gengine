@@ -1,3 +1,4 @@
+#include "glm/gtc/matrix_transform.hpp"
 #include <GLFW/glfw3.h>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
@@ -142,20 +143,19 @@ auto create_game_object(
 	std::vector<RenderComponent>& render_components,
 	std::vector<gengine::Collidable*>& collidables,
 	std::vector<glm::mat4>& transforms,
-	bool makeMesh = false) -> void
+	bool makeMesh = false,
+	bool flipUVs = false,
+	bool flipWindingOrder = false) -> void
 {
-	const auto geometries = gengine::load_vertex_buffer(path);
+	const auto geometries = gengine::load_vertex_buffer(path, flipUVs, flipWindingOrder);
 	for (const auto& geom : geometries) {
 		const auto& [t, vertices, vertices_aux, indices] = geom;
-
-		// TODO: parameterize this separately
-		const auto flip_y_coords = makeMesh;
 
 		auto gpu_data = std::vector<float>{};
 		for (int i = 0; i < vertices.size() / 3; i++) {
 			const auto v = (i * 3);
 			gpu_data.push_back(vertices[v + 0]);
-			gpu_data.push_back((flip_y_coords ? -1 : 1) * vertices[v + 1]);
+			gpu_data.push_back(-vertices[v + 1]);
 			gpu_data.push_back(vertices[v + 2]);
 			const auto a = (i * 5);
 			gpu_data.push_back(vertices_aux[a + 0]);
@@ -175,7 +175,9 @@ auto create_game_object(
 
 		// Generate a physics model when makeMesh == true
 		if (makeMesh) {
-			auto tr = glm::mat4(1.0f);
+			auto tr = glm::mat4{1.0f};
+			// auto tr = t;
+			tr = glm::rotate(tr, 3.14f, glm::vec3(0, 1, 0));
 			transforms.push_back(tr);
 			collidables.push_back(physics_engine.create_mesh(0.0f, vertices, indices, tr));
 		}
@@ -219,7 +221,6 @@ auto main(int argc, char** argv) -> int
 
 	// create game resources
 
-
 	const auto albedo = renderer->create_image(
 		{texture.width, texture.height, texture.channel_count}, texture.data);
 
@@ -254,9 +255,25 @@ auto main(int argc, char** argv) -> int
 	}
 
 	create_game_object(
-		"./data/spinny.obj", renderer, physics_engine, render_components, collidables, transforms);
+		"./data/spinny.obj",
+		renderer,
+		physics_engine,
+		render_components,
+		collidables,
+		transforms,
+		false,
+		false,
+		false);
 	create_game_object(
-		"./data/spinny.obj", renderer, physics_engine, render_components, collidables, transforms);
+		"./data/spinny.obj",
+		renderer,
+		physics_engine,
+		render_components,
+		collidables,
+		transforms,
+		false,
+		false,
+		false);
 	create_game_object(
 		"./data/map.obj",
 		renderer,
@@ -264,7 +281,9 @@ auto main(int argc, char** argv) -> int
 		render_components,
 		collidables,
 		transforms,
-		true);
+		true,
+		true,
+		false);
 
 	// core game loop
 

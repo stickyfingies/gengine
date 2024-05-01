@@ -28,7 +28,7 @@ auto load_image(std::string_view path) -> ImageAsset;
 
 auto unload_image(const ImageAsset& asset) -> void;
 
-auto load_vertex_buffer(std::string_view path) -> GeometryAssetList;
+auto load_vertex_buffer(std::string_view path, bool flipUVs = false, bool flipWindingOrder = false) -> GeometryAssetList;
 
 auto load_file(std::string_view path) -> std::string;
 } // namespace gengine

@@ -44,6 +44,7 @@ Finally, launch the app!
 
 ## Todo
 - [x] switch from Renderer to RenderDevice
+- [x] support resizable windows
 - [ ] Un-leave vertex positions from other buffer data
 - [ ] unify command buffers on both sides of API wall (?)
 - [ ] Remove that **atrocious** `MODULE_CALLBACK` garbage (what was I thinking??)
