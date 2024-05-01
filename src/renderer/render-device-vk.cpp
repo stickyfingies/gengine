@@ -121,6 +121,14 @@ public:
 			clear_values.data());
 
 		cmdbuf.beginRenderPass(pass_begin_info, vk::SubpassContents::eInline);
+
+		const auto viewport = vk::Viewport(0.0f, 0.0f, extent.width, extent.height, 0.0f, 1.0f);
+		const auto viewports = std::array{viewport};
+		cmdbuf.setViewport(0, viewports);
+
+		const auto scissor = vk::Rect2D({0, 0}, extent);
+		const auto scissors = std::array{scissor};
+		cmdbuf.setScissor(0, scissors);
 	}
 
 	auto end() -> void override
@@ -639,8 +647,8 @@ public:
 
 		const auto scissor = vk::Rect2D(vk::Offset2D(), extent);
 
-		const auto viewport_state =
-			vk::PipelineViewportStateCreateInfo({}, 1, &viewport, 1, &scissor);
+		const auto viewport_state = vk::PipelineViewportStateCreateInfo(
+			{}, 1, /* dynamic */ nullptr, 1, /* dynamic */ nullptr);
 
 		const auto rasterizer = vk::PipelineRasterizationStateCreateInfo(
 			{},
@@ -680,6 +688,12 @@ public:
 			color_blend_attachments.data(),
 			{0.0f, 0.0f, 0.0f, 0.0f});
 
+		const auto dynamic_states =
+			std::array{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+
+		vk::PipelineDynamicStateCreateInfo dynamic_state(
+			{}, dynamic_states.size(), dynamic_states.data());
+
 		const auto pipeline_info = vk::GraphicsPipelineCreateInfo(
 			{},
 			shader_stages.size(),
@@ -692,7 +706,7 @@ public:
 			&multisampling,
 			&depth_stencil,
 			&color_blending,
-			nullptr,
+			&dynamic_state,
 			pipeline_layout,
 			backbuffer_pass);
 
