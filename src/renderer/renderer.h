@@ -65,10 +65,6 @@ public:
 
 	virtual auto destroy_pipeline(ShaderPipeline *pso) -> void = 0;
 
-	// swapchain control
-
-	virtual auto get_swapchain_image() -> Image * = 0;
-
 	// gpu workload management
 
 	virtual auto alloc_context() -> RenderContext * = 0;

@@ -38,6 +38,8 @@ Finally, launch the app!
 
 ## Resources
 - [Vulkan Tutorial](https://vulkan-tutorial.com/)
+- [Vulkan Guide - Resources](https://vkguide.dev/docs/great_resources)
+- [Writing an efficient Vulkan renderer](https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/)
 - [Interleaved or Separate Vertex Buffers](https://www.reddit.com/r/vulkan/comments/rtpdvu/interleaved_vs_separate_vertex_buffers/)
 
 ## Todo

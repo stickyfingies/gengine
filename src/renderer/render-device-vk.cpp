@@ -34,18 +34,20 @@ struct Vertex {
 
 	static auto get_binding_desc() -> vk::VertexInputBindingDescription
 	{
-		const auto binding_desc = vk::VertexInputBindingDescription(0, sizeof(Vertex), vk::VertexInputRate::eVertex);
+		const auto binding_desc =
+			vk::VertexInputBindingDescription(0, sizeof(Vertex), vk::VertexInputRate::eVertex);
 
 		return binding_desc;
 	}
 
 	static auto get_attribute_descs() -> std::array<vk::VertexInputAttributeDescription, 3>
 	{
-		const auto pos_attr =
-			vk::VertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, pos));
-		const auto norm_attr =
-			vk::VertexInputAttributeDescription(1, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, norm));
-		const auto uv_attr = vk::VertexInputAttributeDescription(2, 0, vk::Format::eR32G32Sfloat, offsetof(Vertex, uv));
+		const auto pos_attr = vk::VertexInputAttributeDescription(
+			0, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, pos));
+		const auto norm_attr = vk::VertexInputAttributeDescription(
+			1, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, norm));
+		const auto uv_attr = vk::VertexInputAttributeDescription(
+			2, 0, vk::Format::eR32G32Sfloat, offsetof(Vertex, uv));
 
 		return {pos_attr, norm_attr, uv_attr};
 	}
@@ -89,7 +91,10 @@ struct ShaderPipeline {
 class RenderContextVk final : public RenderContext {
 public:
 	RenderContextVk(
-		vk::CommandBuffer cmdbuf, vk::RenderPass backbuffer_pass, vk::Framebuffer backbuffer, vk::Extent2D extent)
+		vk::CommandBuffer cmdbuf,
+		vk::RenderPass backbuffer_pass,
+		vk::Framebuffer backbuffer,
+		vk::Extent2D extent)
 		: cmdbuf{cmdbuf}, backbuffer_pass{backbuffer_pass}, backbuffer{backbuffer}, extent{extent}
 	{
 		//
@@ -105,10 +110,15 @@ public:
 		cmdbuf.begin(vk::CommandBufferBeginInfo());
 
 		const auto clear_values = std::array<vk::ClearValue, 2>{
-			vk::ClearColorValue(std::array{0.2f, 0.2f, 0.2f, 1.0f}), vk::ClearDepthStencilValue(1.0f, 0.0f)};
+			vk::ClearColorValue(std::array{0.2f, 0.2f, 0.2f, 1.0f}),
+			vk::ClearDepthStencilValue(1.0f, 0.0f)};
 
 		const auto pass_begin_info = vk::RenderPassBeginInfo(
-			backbuffer_pass, backbuffer, vk::Rect2D(vk::Offset2D(), extent), clear_values.size(), clear_values.data());
+			backbuffer_pass,
+			backbuffer,
+			vk::Rect2D(vk::Offset2D(), extent),
+			clear_values.size(),
+			clear_values.data());
 
 		cmdbuf.beginRenderPass(pass_begin_info, vk::SubpassContents::eInline);
 	}
@@ -122,7 +132,8 @@ public:
 	auto bind_pipeline(ShaderPipeline* pso) -> void override
 	{
 		cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pso->pipeline);
-		cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pso->pipeline_layout, 0, pso->descset, {});
+		cmdbuf.bindDescriptorSets(
+			vk::PipelineBindPoint::eGraphics, pso->pipeline_layout, 0, pso->descset, {});
 	}
 
 	auto bind_geometry_buffers(Buffer* vbo, Buffer* ebo) -> void override
@@ -131,12 +142,17 @@ public:
 		cmdbuf.bindIndexBuffer(ebo->buffer, 0, vk::IndexType::eUint32);
 	}
 
-	auto push_constants(ShaderPipeline* pso, const glm::mat4 transform, const float* view) -> void override
+	auto push_constants(ShaderPipeline* pso, const glm::mat4 transform, const float* view)
+		-> void override
 	{
 		const auto push_constant_data = PushConstantData{transform, glm::make_mat4(view)};
 
 		cmdbuf.pushConstants(
-			pso->pipeline_layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(PushConstantData), &push_constant_data);
+			pso->pipeline_layout,
+			vk::ShaderStageFlagBits::eVertex,
+			0,
+			sizeof(PushConstantData),
+			&push_constant_data);
 	}
 
 	auto draw(int vertex_count, int instance_count) -> void override
@@ -157,9 +173,9 @@ private:
 
 class RenderDeviceVk final : public RenderDevice {
 public:
-	RenderDeviceVk(GLFWwindow* window)
+	RenderDeviceVk(GLFWwindow* window) : window{window}
 	{
-		static const auto debug = false;
+		static const auto debug = true;
 
 		std::cout << "[info]\t (module:renderer) initializing render backend" << std::endl;
 
@@ -199,9 +215,6 @@ public:
 
 		instance = vk::createInstance(instance_info);
 
-		auto graphics_queue_idx = 0u;
-		auto present_queue_idx = 0u;
-
 		// create surface
 		glfwCreateWindowSurface(instance, window, nullptr, &surface);
 
@@ -216,9 +229,10 @@ public:
 			std::cout << "[info]\t selected physical device" << std::endl;
 			std::cout << "[info]\t\t name: " << properties.deviceName << std::endl;
 			std::cout << "[info]\t\t limits:" << std::endl;
-			std::cout << "[info]\t\t\t push constants: " << properties.limits.maxPushConstantsSize << " bytes"
-					  << std::endl;
-			std::cout << "[info]\t\t\t memory allocations: " << properties.limits.maxMemoryAllocationCount << std::endl;
+			std::cout << "[info]\t\t\t push constants: " << properties.limits.maxPushConstantsSize
+					  << " bytes" << std::endl;
+			std::cout << "[info]\t\t\t memory allocations: "
+					  << properties.limits.maxMemoryAllocationCount << std::endl;
 		}
 
 		// create logical device
@@ -227,9 +241,10 @@ public:
 
 			graphics_queue_idx = std::distance(
 				queue_family_properties.begin(),
-				std::find_if(queue_family_properties.begin(), queue_family_properties.end(), [](const auto& qfp) {
-					return qfp.queueFlags & vk::QueueFlagBits::eGraphics;
-				}));
+				std::find_if(
+					queue_family_properties.begin(),
+					queue_family_properties.end(),
+					[](const auto& qfp) { return qfp.queueFlags & vk::QueueFlagBits::eGraphics; }));
 
 			present_queue_idx = physical_device.getSurfaceSupportKHR(graphics_queue_idx, surface)
 									? graphics_queue_idx
@@ -262,7 +277,13 @@ public:
 			const auto extension_names = std::array{"VK_KHR_swapchain"};
 
 			const auto device_info = vk::DeviceCreateInfo(
-				{}, 1, &device_queue_create_info, 0, nullptr, extension_names.size(), extension_names.data());
+				{},
+				1,
+				&device_queue_create_info,
+				0,
+				nullptr,
+				extension_names.size(),
+				extension_names.data());
 
 			device = physical_device.createDevice(device_info);
 
@@ -272,132 +293,23 @@ public:
 
 		// create command pool / buffers
 		{
-			const auto pool_info =
-				vk::CommandPoolCreateInfo(vk::CommandPoolCreateFlagBits::eResetCommandBuffer, graphics_queue_idx);
+			const auto pool_info = vk::CommandPoolCreateInfo(
+				vk::CommandPoolCreateFlagBits::eResetCommandBuffer, graphics_queue_idx);
 
 			cmd_pool = device.createCommandPool(pool_info);
 
-			const auto alloc_info =
-				vk::CommandBufferAllocateInfo(cmd_pool, vk::CommandBufferLevel::ePrimary, FRAMES_IN_FLIGHT);
+			const auto alloc_info = vk::CommandBufferAllocateInfo(
+				cmd_pool, vk::CommandBufferLevel::ePrimary, FRAMES_IN_FLIGHT);
 			const auto alloced_buffers = device.allocateCommandBuffers(alloc_info);
 
 			cmd_buffers.insert(cmd_buffers.end(), alloced_buffers.begin(), alloced_buffers.end());
 		}
 
 		// create swapchain
-		{
-			auto width = 0;
-			auto height = 0;
-
-			glfwGetWindowSize(window, &width, &height);
-
-			const auto formats = physical_device.getSurfaceFormatsKHR(surface);
-
-			surface_fmt =
-				(formats[0].format == vk::Format::eUndefined) ? vk::Format::eB8G8R8A8Unorm : formats[0].format;
-
-			const auto surface_caps = physical_device.getSurfaceCapabilitiesKHR(surface);
-
-			if (surface_caps.currentExtent.width == std::numeric_limits<uint32_t>::max()) {
-				extent.width = std::clamp(
-					static_cast<uint32_t>(width), surface_caps.minImageExtent.width, surface_caps.maxImageExtent.width);
-				extent.height = std::clamp(
-					static_cast<uint32_t>(height),
-					surface_caps.minImageExtent.height,
-					surface_caps.maxImageExtent.height);
-			}
-			else {
-				extent = surface_caps.currentExtent;
-			}
-
-			const auto present_mode = [&] {
-				auto best_mode = vk::PresentModeKHR::eFifo;
-
-				const auto available_modes = physical_device.getSurfacePresentModesKHR(surface);
-
-				for (const auto& mode : available_modes) {
-					if (mode == vk::PresentModeKHR::eMailbox) {
-						best_mode = mode;
-						break;
-					}
-					else if (mode == vk::PresentModeKHR::eImmediate) {
-						best_mode = mode;
-					}
-				}
-
-				return best_mode;
-			}();
-
-			const auto pre_transform = (surface_caps.supportedTransforms & vk::SurfaceTransformFlagBitsKHR::eIdentity)
-										   ? vk::SurfaceTransformFlagBitsKHR::eIdentity
-										   : surface_caps.currentTransform;
-
-			const auto composite_alpha =
-				(surface_caps.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::ePreMultiplied)
-					? vk::CompositeAlphaFlagBitsKHR::ePreMultiplied
-				: (surface_caps.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::ePostMultiplied)
-					? vk::CompositeAlphaFlagBitsKHR::ePostMultiplied
-				: (surface_caps.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::eInherit)
-					? vk::CompositeAlphaFlagBitsKHR::eInherit
-					: vk::CompositeAlphaFlagBitsKHR::eOpaque;
-
-			auto swapchain_info = vk::SwapchainCreateInfoKHR(
-				{},
-				surface,
-				surface_caps.minImageCount,
-				surface_fmt,
-				vk::ColorSpaceKHR::eSrgbNonlinear,
-				extent,
-				1,
-				vk::ImageUsageFlagBits::eColorAttachment,
-				vk::SharingMode::eExclusive,
-				0,
-				nullptr,
-				pre_transform,
-				composite_alpha,
-				present_mode,
-				true,
-				nullptr);
-
-			const auto queue_family_indices = std::array{graphics_queue_idx, present_queue_idx};
-
-			if (graphics_queue != present_queue) {
-				swapchain_info.imageSharingMode = vk::SharingMode::eConcurrent;
-				swapchain_info.queueFamilyIndexCount = queue_family_indices.size();
-				swapchain_info.pQueueFamilyIndices = queue_family_indices.data();
-			}
-
-			swapchain = device.createSwapchainKHR(swapchain_info);
-
-			for (const auto& image : device.getSwapchainImagesKHR(swapchain)) {
-				swapchain_images.push_back(
-					{image, create_image_view(image, surface_fmt, vk::ImageAspectFlagBits::eColor), nullptr, nullptr});
-			}
-
-			// Create semaphores
-
-			for (auto i = 0; i < FRAMES_IN_FLIGHT; ++i) {
-				image_available_semaphores.push_back(device.createSemaphore({}));
-				render_finished_semaphores.push_back(device.createSemaphore({}));
-
-				swapchain_fences.push_back(device.createFence(vk::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled)));
-			}
-		}
+		create_swapchain();
 
 		// create depth buffer
-		{
-			create_image_vk(
-				extent.width,
-				extent.height,
-				vk::Format::eD24UnormS8Uint,
-				vk::ImageTiling::eOptimal,
-				vk::ImageUsageFlagBits::eDepthStencilAttachment,
-				vk::MemoryPropertyFlagBits::eDeviceLocal,
-				depth_buffer,
-				depth_mem);
-
-			depth_view = create_image_view(depth_buffer, vk::Format::eD24UnormS8Uint, vk::ImageAspectFlagBits::eDepth);
-		}
+		create_depth_buffer();
 
 		// create render pass
 		{
@@ -424,8 +336,10 @@ public:
 
 			const auto attachments = std::array{backbuffer_desc, depth_desc};
 
-			const auto backbuffer_ref = vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal);
-			const auto depth_ref = vk::AttachmentReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+			const auto backbuffer_ref =
+				vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal);
+			const auto depth_ref =
+				vk::AttachmentReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
 			const auto attachment_refs = std::array{backbuffer_ref};
 
 			const auto fwd_subpass = vk::SubpassDescription(
@@ -446,15 +360,16 @@ public:
 		}
 
 		// create framebuffers
-		{
-			for (const auto& image : swapchain_images) {
-				const auto attachments = std::array{image.view, depth_view};
+		create_backbuffers();
 
-				const auto framebuffer_info = vk::FramebufferCreateInfo(
-					{}, backbuffer_pass, attachments.size(), attachments.data(), extent.width, extent.height, 1);
+		// Create semaphores
 
-				backbuffers.push_back(device.createFramebuffer(framebuffer_info));
-			}
+		for (auto i = 0; i < FRAMES_IN_FLIGHT; ++i) {
+			image_available_semaphores.push_back(device.createSemaphore({}));
+			render_finished_semaphores.push_back(device.createSemaphore({}));
+
+			swapchain_fences.push_back(
+				device.createFence(vk::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled)));
 		}
 	}
 
@@ -462,28 +377,15 @@ public:
 	{
 		device.waitIdle();
 
+		destroy_swapchain();
+
 		for (auto i = 0; i < FRAMES_IN_FLIGHT; ++i) {
 			device.destroySemaphore(image_available_semaphores[i]);
 			device.destroySemaphore(render_finished_semaphores[i]);
-
 			device.destroyFence(swapchain_fences[i]);
 		}
 
-		for (const auto& backbuffer : backbuffers) {
-			device.destroyFramebuffer(backbuffer);
-		}
-
-		device.destroyImageView(depth_view);
-		device.destroyImage(depth_buffer);
-		device.freeMemory(depth_mem);
-
 		device.destroyRenderPass(backbuffer_pass);
-
-		for (const auto& image : swapchain_images) {
-			device.destroyImageView(image.view);
-		}
-
-		device.destroySwapchainKHR(swapchain);
 
 		device.destroyCommandPool(cmd_pool);
 
@@ -519,7 +421,8 @@ public:
 			device,
 			physical_device,
 			info.element_count * info.stride,
-			BUFFER_USAGE_TABLE[static_cast<unsigned int>(info.usage)] | vk::BufferUsageFlagBits::eTransferDst,
+			BUFFER_USAGE_TABLE[static_cast<unsigned int>(info.usage)] |
+				vk::BufferUsageFlagBits::eTransferDst,
 			vk::MemoryPropertyFlagBits::eDeviceLocal,
 			buffer,
 			buffer_mem);
@@ -578,7 +481,10 @@ public:
 			image,
 			image_mem);
 		transition_image_layout(
-			image, vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+			image,
+			vk::Format::eR8G8B8A8Unorm,
+			vk::ImageLayout::eUndefined,
+			vk::ImageLayout::eTransferDstOptimal);
 		copy_buffer_to_image(staging_buffer, image, info.width, info.height);
 		transition_image_layout(
 			image,
@@ -589,7 +495,8 @@ public:
 		device.destroyBuffer(staging_buffer);
 		device.freeMemory(staging_mem);
 
-		const auto image_view = create_image_view(image, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
+		const auto image_view =
+			create_image_view(image, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
 
 		const auto sampler = create_sampler();
 
@@ -611,25 +518,28 @@ public:
 	{
 		// descriptors and shit
 
-		const auto uniform_binding =
-			vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex);
+		const auto uniform_binding = vk::DescriptorSetLayoutBinding(
+			0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex);
 
 		const auto albedo_binding = vk::DescriptorSetLayoutBinding(
 			1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment);
 
 		const auto bindings = std::array{uniform_binding, albedo_binding};
 
-		const auto descset_layout_info = vk::DescriptorSetLayoutCreateInfo({}, bindings.size(), bindings.data());
+		const auto descset_layout_info =
+			vk::DescriptorSetLayoutCreateInfo({}, bindings.size(), bindings.data());
 
 		const auto descset_layout = device.createDescriptorSetLayout(descset_layout_info);
 
-		const auto sampler_size = vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1);
+		const auto sampler_size =
+			vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1);
 
 		const auto uniform_size = vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1);
 
 		const auto pool_sizes = std::array{sampler_size, uniform_size};
 
-		const auto descpool_info = vk::DescriptorPoolCreateInfo({}, 2, pool_sizes.size(), pool_sizes.data());
+		const auto descpool_info =
+			vk::DescriptorPoolCreateInfo({}, 2, pool_sizes.size(), pool_sizes.data());
 
 		const auto descpool = device.createDescriptorPool(descpool_info);
 
@@ -664,13 +574,13 @@ public:
 		// update descriptors
 
 		const auto desc_ubo_info = vk::DescriptorBufferInfo(ubo, 0, sizeof(glm::mat4));
-		const auto ubo_write =
-			vk::WriteDescriptorSet(descset, 0, 0, 1, vk::DescriptorType::eUniformBuffer, nullptr, &desc_ubo_info);
+		const auto ubo_write = vk::WriteDescriptorSet(
+			descset, 0, 0, 1, vk::DescriptorType::eUniformBuffer, nullptr, &desc_ubo_info);
 
-		const auto desc_image_info =
-			vk::DescriptorImageInfo(albedo->sampler, albedo->view, vk::ImageLayout::eShaderReadOnlyOptimal);
-		const auto albedo_write =
-			vk::WriteDescriptorSet(descset, 1, 0, 1, vk::DescriptorType::eCombinedImageSampler, &desc_image_info);
+		const auto desc_image_info = vk::DescriptorImageInfo(
+			albedo->sampler, albedo->view, vk::ImageLayout::eShaderReadOnlyOptimal);
+		const auto albedo_write = vk::WriteDescriptorSet(
+			descset, 1, 0, 1, vk::DescriptorType::eCombinedImageSampler, &desc_image_info);
 
 		const auto descset_writes = std::array{ubo_write, albedo_write};
 
@@ -683,27 +593,27 @@ public:
 
 		const auto push_const_ranges = std::array{push_const_range};
 
-		const auto pipeline_layout_info =
-			vk::PipelineLayoutCreateInfo({}, 1, &descset_layout, push_const_ranges.size(), push_const_ranges.data());
+		const auto pipeline_layout_info = vk::PipelineLayoutCreateInfo(
+			{}, 1, &descset_layout, push_const_ranges.size(), push_const_ranges.data());
 
 		const auto pipeline_layout = device.createPipelineLayout(pipeline_layout_info);
 
 		// compile shaders
 
-		const auto vert_module_info =
-			vk::ShaderModuleCreateInfo({}, vert_code.size(), reinterpret_cast<const uint32_t*>(vert_code.data()));
+		const auto vert_module_info = vk::ShaderModuleCreateInfo(
+			{}, vert_code.size(), reinterpret_cast<const uint32_t*>(vert_code.data()));
 
 		const auto vert_module = device.createShaderModule(vert_module_info);
 
-		const auto frag_module_info =
-			vk::ShaderModuleCreateInfo({}, frag_code.size(), reinterpret_cast<const uint32_t*>(frag_code.data()));
+		const auto frag_module_info = vk::ShaderModuleCreateInfo(
+			{}, frag_code.size(), reinterpret_cast<const uint32_t*>(frag_code.data()));
 
 		const auto frag_module = device.createShaderModule(frag_module_info);
 
-		const auto vert_shader_info =
-			vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eVertex, vert_module, "main");
-		const auto frag_shader_info =
-			vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eFragment, frag_module, "main");
+		const auto vert_shader_info = vk::PipelineShaderStageCreateInfo(
+			{}, vk::ShaderStageFlagBits::eVertex, vert_module, "main");
+		const auto frag_shader_info = vk::PipelineShaderStageCreateInfo(
+			{}, vk::ShaderStageFlagBits::eFragment, frag_module, "main");
 
 		const auto shader_stages = std::array{vert_shader_info, frag_shader_info};
 
@@ -716,15 +626,21 @@ public:
 		const auto vertex_input_info = vk::PipelineVertexInputStateCreateInfo(
 			{}, 1, &binding_desc, attribute_descs.size(), attribute_descs.data());
 
-		const auto input_assembly =
-			vk::PipelineInputAssemblyStateCreateInfo({}, vk::PrimitiveTopology::eTriangleList, false);
+		const auto input_assembly = vk::PipelineInputAssemblyStateCreateInfo(
+			{}, vk::PrimitiveTopology::eTriangleList, false);
 
-		const auto viewport =
-			vk::Viewport(0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height), 0.0f, 1.0f);
+		const auto viewport = vk::Viewport(
+			0.0f,
+			0.0f,
+			static_cast<float>(extent.width),
+			static_cast<float>(extent.height),
+			0.0f,
+			1.0f);
 
 		const auto scissor = vk::Rect2D(vk::Offset2D(), extent);
 
-		const auto viewport_state = vk::PipelineViewportStateCreateInfo({}, 1, &viewport, 1, &scissor);
+		const auto viewport_state =
+			vk::PipelineViewportStateCreateInfo({}, 1, &viewport, 1, &scissor);
 
 		const auto rasterizer = vk::PipelineRasterizationStateCreateInfo(
 			{},
@@ -739,9 +655,11 @@ public:
 			0.0f,
 			1.0f);
 
-		const auto multisampling = vk::PipelineMultisampleStateCreateInfo({}, vk::SampleCountFlagBits::e1);
+		const auto multisampling =
+			vk::PipelineMultisampleStateCreateInfo({}, vk::SampleCountFlagBits::e1);
 
-		const auto depth_stencil = vk::PipelineDepthStencilStateCreateInfo({}, true, true, vk::CompareOp::eLess);
+		const auto depth_stencil =
+			vk::PipelineDepthStencilStateCreateInfo({}, true, true, vk::CompareOp::eLess);
 
 		const auto color_blend_attachments = std::array{vk::PipelineColorBlendAttachmentState(
 			false,
@@ -751,8 +669,8 @@ public:
 			vk::BlendFactor::eZero,
 			vk::BlendFactor::eZero,
 			vk::BlendOp::eAdd,
-			vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
-				vk::ColorComponentFlagBits::eA)};
+			vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+				vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)};
 
 		const auto color_blending = vk::PipelineColorBlendStateCreateInfo(
 			{},
@@ -813,33 +731,28 @@ public:
 		delete pso;
 	}
 
-	auto get_swapchain_image() -> Image* override
-	{
-		image_idx =
-			device
-				.acquireNextImageKHR(
-					swapchain, std::numeric_limits<uint64_t>::max(), image_available_semaphores[current_frame], nullptr)
-				.value;
-
-		return &swapchain_images[image_idx];
-	}
-
 	auto alloc_context() -> RenderContext* override
 	{
-		const auto ok =
-			device.waitForFences(swapchain_fences[current_frame], true, std::numeric_limits<uint64_t>::max());
+		const auto ok = device.waitForFences(
+			swapchain_fences[current_frame], true, std::numeric_limits<uint64_t>::max());
+
+		const auto next_image = device.acquireNextImageKHR(
+			swapchain,
+			std::numeric_limits<uint64_t>::max(),
+			image_available_semaphores[current_frame],
+			nullptr);
+
+		if (next_image.result == vk::Result::eErrorOutOfDateKHR) {
+			re_create_swapchain();
+			return nullptr;
+		}
+
+		image_idx = next_image.value;
 
 		device.resetFences({swapchain_fences[current_frame]});
 
-		cmd_buffers[current_frame].reset({});
-
-		const auto next_image = device.acquireNextImageKHR(
-			swapchain, std::numeric_limits<uint64_t>::max(), image_available_semaphores[current_frame], nullptr);
-
-		const auto image_status = next_image.result;
-		image_idx = next_image.value;
-
 		const auto& cmdbuf = cmd_buffers[current_frame];
+		cmdbuf.reset({});
 
 		return new RenderContextVk(cmdbuf, backbuffer_pass, backbuffers[image_idx], extent);
 	}
@@ -848,7 +761,8 @@ public:
 	{
 		auto cmdlist = reinterpret_cast<RenderContextVk*>(foo);
 
-		const vk::PipelineStageFlags wait_dst_stage_mask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		const vk::PipelineStageFlags wait_dst_stage_mask =
+			vk::PipelineStageFlagBits::eColorAttachmentOutput;
 
 		const auto cmdbuf = cmdlist->get_cmdbuf();
 		const auto submit_info = vk::SubmitInfo(
@@ -862,20 +776,32 @@ public:
 
 		graphics_queue.submit({submit_info}, swapchain_fences[current_frame]);
 
-		const auto present_info =
-			vk::PresentInfoKHR(1, &render_finished_semaphores[current_frame], 1, &swapchain, &image_idx);
+		const auto present_info = vk::PresentInfoKHR(
+			1, &render_finished_semaphores[current_frame], 1, &swapchain, &image_idx);
 
-		const auto ok = present_queue.presentKHR(present_info);
+		try {
+			const auto result = present_queue.presentKHR(present_info);
+			if (result == vk::Result::eSuboptimalKHR) {
+				re_create_swapchain();
+			}
+		}
+		catch (vk::OutOfDateKHRError) {
+			re_create_swapchain();
+		}
 
 		current_frame = (current_frame + 1) % FRAMES_IN_FLIGHT;
 	}
 
-	auto free_context(RenderContext* ctx) -> void override { delete static_cast<RenderContextVk*>(ctx); }
+	auto free_context(RenderContext* ctx) -> void override
+	{
+		delete static_cast<RenderContextVk*>(ctx);
+	}
 
 private:
 	auto begin_one_time_cmdbuf() -> vk::CommandBuffer
 	{
-		const auto alloc_info = vk::CommandBufferAllocateInfo(cmd_pool, vk::CommandBufferLevel::ePrimary, 1);
+		const auto alloc_info =
+			vk::CommandBufferAllocateInfo(cmd_pool, vk::CommandBufferLevel::ePrimary, 1);
 
 		const auto cmdbuf = device.allocateCommandBuffers(alloc_info).at(0);
 
@@ -894,7 +820,8 @@ private:
 
 		graphics_queue.submit(submit_info, wait_fence);
 
-		const auto ok = device.waitForFences(wait_fence, true, std::numeric_limits<uint64_t>::max());
+		const auto ok =
+			device.waitForFences(wait_fence, true, std::numeric_limits<uint64_t>::max());
 
 		device.destroyFence(wait_fence);
 
@@ -912,7 +839,15 @@ private:
 		vk::DeviceMemory& mem) -> void
 	{
 		const auto image_info = vk::ImageCreateInfo(
-			{}, vk::ImageType::e2D, format, {width, height, 1}, 1, 1, vk::SampleCountFlagBits::e1, tiling, usage);
+			{},
+			vk::ImageType::e2D,
+			format,
+			{width, height, 1},
+			1,
+			1,
+			vk::SampleCountFlagBits::e1,
+			tiling,
+			usage);
 
 		image = device.createImage(image_info);
 
@@ -920,20 +855,27 @@ private:
 
 		const auto alloc_info = vk::MemoryAllocateInfo(
 			mem_reqs.size,
-			findMemoryType(physical_device, mem_reqs.memoryTypeBits, static_cast<VkMemoryPropertyFlags>(properties)));
+			findMemoryType(
+				physical_device,
+				mem_reqs.memoryTypeBits,
+				static_cast<VkMemoryPropertyFlags>(properties)));
 
 		mem = device.allocateMemory(alloc_info);
 
 		device.bindImageMemory(image, mem, 0);
 	}
 
-	auto create_image_view(vk::Image image, vk::Format format, vk::ImageAspectFlags aspect) -> vk::ImageView
+	auto create_image_view(vk::Image image, vk::Format format, vk::ImageAspectFlags aspect)
+		-> vk::ImageView
 	{
 		const auto component_mapping = vk::ComponentMapping(
-			vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA);
+			vk::ComponentSwizzle::eR,
+			vk::ComponentSwizzle::eG,
+			vk::ComponentSwizzle::eB,
+			vk::ComponentSwizzle::eA);
 		const auto subresource = vk::ImageSubresourceRange(aspect, 0, 1, 0, 1);
-		const auto view_info =
-			vk::ImageViewCreateInfo({}, image, vk::ImageViewType::e2D, format, component_mapping, subresource);
+		const auto view_info = vk::ImageViewCreateInfo(
+			{}, image, vk::ImageViewType::e2D, format, component_mapping, subresource);
 
 		return device.createImageView(view_info);
 	}
@@ -970,8 +912,8 @@ private:
 		end_one_time_cmdbuf(cmdbuf);
 	}
 
-	auto
-	transition_image_layout(vk::Image image, vk::Format format, vk::ImageLayout old_layout, vk::ImageLayout new_layout)
+	auto transition_image_layout(
+		vk::Image image, vk::Format format, vk::ImageLayout old_layout, vk::ImageLayout new_layout)
 		-> void
 	{
 		auto src_stage = vk::PipelineStageFlags{};
@@ -979,7 +921,8 @@ private:
 		auto src_access_mask = vk::AccessFlags{};
 		auto dst_access_mask = vk::AccessFlags{};
 
-		if (old_layout == vk::ImageLayout::eUndefined && new_layout == vk::ImageLayout::eTransferDstOptimal) {
+		if (old_layout == vk::ImageLayout::eUndefined &&
+			new_layout == vk::ImageLayout::eTransferDstOptimal) {
 			src_access_mask = {};
 			dst_access_mask = vk::AccessFlagBits::eTransferWrite;
 
@@ -998,7 +941,8 @@ private:
 
 		auto cmdbuf = begin_one_time_cmdbuf();
 
-		const auto subresource = vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+		const auto subresource =
+			vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
 		const auto barrier = vk::ImageMemoryBarrier(
 			src_access_mask,
 			dst_access_mask,
@@ -1009,23 +953,191 @@ private:
 			image,
 			subresource);
 
-		cmdbuf.pipelineBarrier(src_stage, dst_stage, vk::DependencyFlags{}, nullptr, nullptr, barrier);
+		cmdbuf.pipelineBarrier(
+			src_stage, dst_stage, vk::DependencyFlags{}, nullptr, nullptr, barrier);
 
 		end_one_time_cmdbuf(cmdbuf);
 	}
 
-	auto copy_buffer_to_image(vk::Buffer buffer, vk::Image image, unsigned int width, unsigned int height) -> void
+	auto copy_buffer_to_image(
+		vk::Buffer buffer, vk::Image image, unsigned int width, unsigned int height) -> void
 	{
 		auto cmdbuf = begin_one_time_cmdbuf();
 
-		const auto subresource = vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1);
-		const auto region =
-			vk::BufferImageCopy(0, 0, 0, subresource, vk::Offset3D{0, 0, 0}, vk::Extent3D{width, height, 1});
+		const auto subresource =
+			vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1);
+		const auto region = vk::BufferImageCopy(
+			0, 0, 0, subresource, vk::Offset3D{0, 0, 0}, vk::Extent3D{width, height, 1});
 
 		cmdbuf.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, region);
 
 		end_one_time_cmdbuf(cmdbuf);
 	}
+
+	auto create_swapchain() -> void
+	{
+		auto width = 0;
+		auto height = 0;
+		glfwGetWindowSize(window, &width, &height);
+
+		const auto formats = physical_device.getSurfaceFormatsKHR(surface);
+
+		surface_fmt = (formats[0].format == vk::Format::eUndefined) ? vk::Format::eB8G8R8A8Unorm
+																	: formats[0].format;
+
+		const auto surface_caps = physical_device.getSurfaceCapabilitiesKHR(surface);
+
+		if (surface_caps.currentExtent.width == std::numeric_limits<uint32_t>::max()) {
+			extent.width = std::clamp(
+				static_cast<uint32_t>(width),
+				surface_caps.minImageExtent.width,
+				surface_caps.maxImageExtent.width);
+			extent.height = std::clamp(
+				static_cast<uint32_t>(height),
+				surface_caps.minImageExtent.height,
+				surface_caps.maxImageExtent.height);
+		}
+		else {
+			extent = surface_caps.currentExtent;
+		}
+
+		const auto present_mode = [&] {
+			auto best_mode = vk::PresentModeKHR::eFifo;
+
+			const auto available_modes = physical_device.getSurfacePresentModesKHR(surface);
+
+			for (const auto& mode : available_modes) {
+				if (mode == vk::PresentModeKHR::eMailbox) {
+					best_mode = mode;
+					break;
+				}
+				else if (mode == vk::PresentModeKHR::eImmediate) {
+					best_mode = mode;
+				}
+			}
+
+			return best_mode;
+		}();
+
+		const auto pre_transform =
+			(surface_caps.supportedTransforms & vk::SurfaceTransformFlagBitsKHR::eIdentity)
+				? vk::SurfaceTransformFlagBitsKHR::eIdentity
+				: surface_caps.currentTransform;
+
+		const auto composite_alpha =
+			(surface_caps.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::ePreMultiplied)
+				? vk::CompositeAlphaFlagBitsKHR::ePreMultiplied
+			: (surface_caps.supportedCompositeAlpha &
+			   vk::CompositeAlphaFlagBitsKHR::ePostMultiplied)
+				? vk::CompositeAlphaFlagBitsKHR::ePostMultiplied
+			: (surface_caps.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::eInherit)
+				? vk::CompositeAlphaFlagBitsKHR::eInherit
+				: vk::CompositeAlphaFlagBitsKHR::eOpaque;
+
+		auto swapchain_info = vk::SwapchainCreateInfoKHR(
+			{},
+			surface,
+			surface_caps.minImageCount,
+			surface_fmt,
+			vk::ColorSpaceKHR::eSrgbNonlinear,
+			extent,
+			1,
+			vk::ImageUsageFlagBits::eColorAttachment,
+			vk::SharingMode::eExclusive,
+			0,
+			nullptr,
+			pre_transform,
+			composite_alpha,
+			present_mode,
+			true,
+			nullptr);
+
+		const auto queue_family_indices = std::array{graphics_queue_idx, present_queue_idx};
+
+		if (graphics_queue != present_queue) {
+			swapchain_info.imageSharingMode = vk::SharingMode::eConcurrent;
+			swapchain_info.queueFamilyIndexCount = queue_family_indices.size();
+			swapchain_info.pQueueFamilyIndices = queue_family_indices.data();
+		}
+
+		std::cout << "About to create swapchain" << std::endl;
+
+		swapchain = device.createSwapchainKHR(swapchain_info);
+
+		std::cout << "Created swapchain!" << std::endl;
+
+		for (const auto& image : device.getSwapchainImagesKHR(swapchain)) {
+			swapchain_images.push_back(
+				{image,
+				 create_image_view(image, surface_fmt, vk::ImageAspectFlagBits::eColor),
+				 nullptr,
+				 nullptr});
+		}
+	}
+
+	auto destroy_swapchain() -> void
+	{
+		device.destroyImageView(depth_view);
+		device.destroyImage(depth_buffer);
+		device.freeMemory(depth_mem);
+
+		for (const auto& backbuffer : backbuffers) {
+			device.destroyFramebuffer(backbuffer);
+		}
+		backbuffers.clear();
+
+		for (const auto& image : swapchain_images) {
+			device.destroyImageView(image.view);
+		}
+		swapchain_images.clear();
+
+		device.destroySwapchainKHR(swapchain);
+	}
+
+	auto create_depth_buffer() -> void
+	{
+		create_image_vk(
+			extent.width,
+			extent.height,
+			vk::Format::eD24UnormS8Uint,
+			vk::ImageTiling::eOptimal,
+			vk::ImageUsageFlagBits::eDepthStencilAttachment,
+			vk::MemoryPropertyFlagBits::eDeviceLocal,
+			depth_buffer,
+			depth_mem);
+
+		depth_view = create_image_view(
+			depth_buffer, vk::Format::eD24UnormS8Uint, vk::ImageAspectFlagBits::eDepth);
+	}
+
+	auto create_backbuffers() -> void
+	{
+		for (const auto& image : swapchain_images) {
+			const auto attachments = std::array{image.view, depth_view};
+
+			const auto framebuffer_info = vk::FramebufferCreateInfo(
+				{},
+				backbuffer_pass,
+				attachments.size(),
+				attachments.data(),
+				extent.width,
+				extent.height,
+				1);
+
+			backbuffers.push_back(device.createFramebuffer(framebuffer_info));
+		}
+	}
+
+	auto re_create_swapchain() -> void
+	{
+		device.waitIdle();
+		destroy_swapchain();
+		create_swapchain();
+		create_depth_buffer();
+		create_backbuffers();
+	}
+
+	GLFWwindow* window;
 
 	VkSurfaceKHR surface;
 
@@ -1061,10 +1173,19 @@ private:
 
 	unsigned int current_frame = 0;
 	unsigned int image_idx = 0;
+
+	uint32_t graphics_queue_idx = 0u;
+	uint32_t present_queue_idx = 0u;
 };
 
-auto RenderDevice::create(GLFWwindow* window) -> RenderDevice* { return new RenderDeviceVk(window); }
+auto RenderDevice::create(GLFWwindow* window) -> RenderDevice*
+{
+	return new RenderDeviceVk(window);
+}
 
-auto RenderDevice::destroy(RenderDevice* device) -> void { delete static_cast<RenderDeviceVk*>(device); }
+auto RenderDevice::destroy(RenderDevice* device) -> void
+{
+	delete static_cast<RenderDeviceVk*>(device);
+}
 
 } // namespace gengine

@@ -80,7 +80,8 @@ auto update_input(
 	}
 	if (glfwGetKey(window, GLFW_KEY_SPACE)) {
 		const auto on_ground = physics_engine.raycast(
-			camera.Position, glm::vec3(camera.Position.x, camera.Position.y - 5, camera.Position.z));
+			camera.Position,
+			glm::vec3(camera.Position.x, camera.Position.y - 5, camera.Position.z));
 
 		if (on_ground) {
 			physics_engine.apply_force(player, glm::vec3(0.0f, 15.0f, 0.0f) * (delta * 1000));
@@ -89,16 +90,21 @@ auto update_input(
 
 	if (glfwGetKey(window, GLFW_KEY_W)) {
 		physics_engine.apply_force(
-			player, glm::vec3(camera.Front.x, 0.0f, camera.Front.z) * (delta * 1000) * (1.0f + sprinting * 5.0f));
+			player,
+			glm::vec3(camera.Front.x, 0.0f, camera.Front.z) * (delta * 1000) *
+				(1.0f + sprinting * 5.0f));
 	}
 	else if (glfwGetKey(window, GLFW_KEY_S)) {
-		physics_engine.apply_force(player, glm::vec3(-camera.Front.x, 0.0f, -camera.Front.z) * (delta * 1000));
+		physics_engine.apply_force(
+			player, glm::vec3(-camera.Front.x, 0.0f, -camera.Front.z) * (delta * 1000));
 	}
 	if (glfwGetKey(window, GLFW_KEY_A)) {
-		physics_engine.apply_force(player, glm::vec3(-camera.Right.x, 0.0f, -camera.Right.z) * (delta * 1000));
+		physics_engine.apply_force(
+			player, glm::vec3(-camera.Right.x, 0.0f, -camera.Right.z) * (delta * 1000));
 	}
 	else if (glfwGetKey(window, GLFW_KEY_D)) {
-		physics_engine.apply_force(player, glm::vec3(camera.Right.x, 0.0f, camera.Right.z) * (delta * 1000));
+		physics_engine.apply_force(
+			player, glm::vec3(camera.Right.x, 0.0f, camera.Right.z) * (delta * 1000));
 	}
 }
 
@@ -112,6 +118,9 @@ auto update_renderer(
 	const auto view = camera.get_view_matrix();
 
 	const auto ctx = renderer->alloc_context();
+	if (!ctx) {
+		return;
+	}
 	ctx->begin();
 	ctx->bind_pipeline(pipeline);
 	for (auto i = 0; i < transforms.size(); ++i) {
@@ -159,7 +168,8 @@ auto create_game_object(
 		const auto vbo = renderer->create_buffer(
 			{gengine::BufferInfo::Usage::VERTEX, sizeof(float), gpu_data.size()}, gpu_data.data());
 		const auto ebo = renderer->create_buffer(
-			{gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()}, indices.data());
+			{gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()},
+			indices.data());
 
 		render_components.push_back({vbo, ebo, indices.size()});
 
@@ -176,7 +186,8 @@ auto create_game_object(
 
 auto main(int argc, char** argv) -> int
 {
-	std::cout << "[info]\t " << argv[0] << "[info]\t (module:main) startup, initializing window manager" << std::endl;
+	std::cout << "[info]\t " << argv[0]
+			  << "[info]\t (module:main) startup, initializing window manager" << std::endl;
 
 	glfwInit();
 
@@ -215,19 +226,24 @@ auto main(int argc, char** argv) -> int
 	// create game resources
 
 	// const auto map_vbo = renderer->create_buffer(
-	// 	{gengine::BufferInfo::Usage::VERTEX, sizeof(float), map_vertices.size()}, map_vertices.data());
-	// const auto map_ebo = renderer->create_buffer(
-	// 	{gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), map_indices.size()}, map_indices.data());
+	// 	{gengine::BufferInfo::Usage::VERTEX, sizeof(float), map_vertices.size()},
+	// map_vertices.data()); const auto map_ebo = renderer->create_buffer(
+	// 	{gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), map_indices.size()},
+	// map_indices.data());
 
 	// const auto spinny_vbo = renderer->create_buffer(
-	// 	{gengine::BufferInfo::Usage::VERTEX, sizeof(float), spinny_vertices.size()}, spinny_vertices.data());
-	// const auto spinny_ebo = renderer->create_buffer(
-	// 	{gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), spinny_indices.size()}, spinny_indices.data());
+	// 	{gengine::BufferInfo::Usage::VERTEX, sizeof(float), spinny_vertices.size()},
+	// spinny_vertices.data()); const auto spinny_ebo = renderer->create_buffer(
+	// 	{gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), spinny_indices.size()},
+	// spinny_indices.data());
 
-	const auto albedo = renderer->create_image({texture.width, texture.height, texture.channel_count}, texture.data);
+	const auto albedo = renderer->create_image(
+		{texture.width, texture.height, texture.channel_count}, texture.data);
 
 	const auto pipeline = renderer->create_pipeline(
-		gengine::load_file("./data/cube.vert.spv"), gengine::load_file("./data/cube.frag.spv"), albedo);
+		gengine::load_file("./data/cube.vert.spv"),
+		gengine::load_file("./data/cube.frag.spv"),
+		albedo);
 
 	gengine::unload_image(texture);
 
@@ -263,13 +279,22 @@ auto main(int argc, char** argv) -> int
 		// auto transform = glm::mat4(1.0f);
 
 		// transforms.push_back(transform);
-		// collidables.push_back(physics_engine.create_mesh(mass, map_vertices, map_indices, transform));
+		// collidables.push_back(physics_engine.create_mesh(mass, map_vertices, map_indices,
+		// transform));
 	}
 
-	create_game_object("./data/spinny.obj", renderer, physics_engine, render_components, collidables, transforms);
-	create_game_object("./data/spinny.obj", renderer, physics_engine, render_components, collidables, transforms);
 	create_game_object(
-		"./data/map.obj", renderer, physics_engine, render_components, collidables, transforms, true);
+		"./data/spinny.obj", renderer, physics_engine, render_components, collidables, transforms);
+	create_game_object(
+		"./data/spinny.obj", renderer, physics_engine, render_components, collidables, transforms);
+	create_game_object(
+		"./data/map.obj",
+		renderer,
+		physics_engine,
+		render_components,
+		collidables,
+		transforms,
+		true);
 
 	// core game loop
 
@@ -287,8 +312,8 @@ auto main(int argc, char** argv) -> int
 		// log average fps to console
 		if (glfwGetTime() - last_displayed_fps >= 1.0) {
 			std::cout << "[dbg ]\t ms/frame: " << 1000.0 / frame_count << std::endl;
-			std::cout << transforms.size() << ", " << collidables.size() << ", " << render_components.size()
-					  << std::endl;
+			std::cout << transforms.size() << ", " << collidables.size() << ", "
+					  << render_components.size() << std::endl;
 			last_displayed_fps = glfwGetTime();
 			frame_count = 0;
 		}
@@ -318,10 +343,10 @@ auto main(int argc, char** argv) -> int
 
 	renderer->destroy_image(albedo);
 
-	// renderer->destroy_buffer(map_vbo);
-	// renderer->destroy_buffer(map_ebo);
-	// renderer->destroy_buffer(spinny_vbo);
-	// renderer->destroy_buffer(spinny_ebo);
+	for (auto& renderComponent : render_components) {
+		renderer->destroy_buffer(renderComponent.vbo);
+		renderer->destroy_buffer(renderComponent.ebo);
+	}
 
 	// system shutdown
 
