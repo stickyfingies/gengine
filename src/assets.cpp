@@ -50,7 +50,8 @@ auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode*
 		worldTransform *= tr;
 	}
 
-	const auto transform = worldTransform; //glm::transpose(glm::make_mat4(&node->mTransformation.a1));
+	const auto transform =
+		worldTransform; // glm::transpose(glm::make_mat4(&node->mTransformation.a1));
 
 	for (auto i = 0; i < node->mNumMeshes; ++i) {
 		const auto mesh_idx = node->mMeshes[i];
@@ -89,7 +90,30 @@ auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode*
 			}
 		}
 
-		assets.push_back({transform, vertices, vertices_aux, indices});
+		// material stuff
+
+		const auto loadTextures = [](std::vector<std::string>& texturePaths,
+									 const aiMaterial* material,
+									 aiTextureType type) -> void {
+			for (uint32_t i = 0; i < material->GetTextureCount(type); i++) {
+				aiString path;
+				material->GetTexture(type, i, &path);
+				texturePaths.push_back(path.C_Str());
+			}
+		};
+
+		auto texturePaths = std::vector<std::string>{};
+
+		if (mesh->mMaterialIndex >= 0) {
+			const auto* material = scene->mMaterials[mesh->mMaterialIndex];
+			loadTextures(texturePaths, material, aiTextureType_DIFFUSE);
+		}
+
+		for (const auto& path : texturePaths) {
+			std::cout << "Texture: " << path << std::endl;
+		}
+
+		assets.push_back({transform, vertices, vertices_aux, indices, texturePaths});
 	}
 
 	for (auto i = 0; i < node->mNumChildren; ++i) {

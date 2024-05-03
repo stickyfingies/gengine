@@ -80,15 +80,15 @@ struct Image {
 struct ShaderPipeline {
 	vk::PipelineLayout pipeline_layout;
 	vk::Pipeline pipeline;
-	vk::DescriptorPool descpool;
-	vk::DescriptorSetLayout descset_layout;
-	vk::DescriptorSet descset;
-
 	vk::Buffer ubo;
 	vk::DeviceMemory ubo_mem;
 };
 
-class RenderContextVk final : public RenderContext {
+struct Descriptors {
+	vk::DescriptorSet descset;
+};
+
+class RenderContextVk final {
 public:
 	RenderContextVk(
 		vk::CommandBuffer cmdbuf,
@@ -105,7 +105,7 @@ public:
 		//
 	}
 
-	auto begin() -> void override
+	auto begin() -> void
 	{
 		cmdbuf.begin(vk::CommandBufferBeginInfo());
 
@@ -131,39 +131,19 @@ public:
 		cmdbuf.setScissor(0, scissors);
 	}
 
-	auto end() -> void override
+	auto end() -> void
 	{
 		cmdbuf.endRenderPass();
 		cmdbuf.end();
 	}
 
-	auto bind_pipeline(ShaderPipeline* pso) -> void override
-	{
-		cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pso->pipeline);
-		cmdbuf.bindDescriptorSets(
-			vk::PipelineBindPoint::eGraphics, pso->pipeline_layout, 0, pso->descset, {});
-	}
-
-	auto bind_geometry_buffers(Buffer* vbo, Buffer* ebo) -> void override
+	auto bind_geometry_buffers(Buffer* vbo, Buffer* ebo) -> void
 	{
 		cmdbuf.bindVertexBuffers(0, vbo->buffer, {0});
 		cmdbuf.bindIndexBuffer(ebo->buffer, 0, vk::IndexType::eUint32);
 	}
 
-	auto push_constants(ShaderPipeline* pso, const glm::mat4 transform, const float* view)
-		-> void override
-	{
-		const auto push_constant_data = PushConstantData{transform, glm::make_mat4(view)};
-
-		cmdbuf.pushConstants(
-			pso->pipeline_layout,
-			vk::ShaderStageFlagBits::eVertex,
-			0,
-			sizeof(PushConstantData),
-			&push_constant_data);
-	}
-
-	auto draw(int vertex_count, int instance_count) -> void override
+	auto draw(int vertex_count, int instance_count) -> void
 	{
 		cmdbuf.drawIndexed(vertex_count, instance_count, 0, 0, 0);
 	}
@@ -172,8 +152,9 @@ public:
 
 	auto get_cmdbuf() -> vk::CommandBuffer { return cmdbuf; }
 
-private:
 	vk::CommandBuffer cmdbuf;
+
+private:
 	vk::RenderPass backbuffer_pass;
 	vk::Framebuffer backbuffer;
 	vk::Extent2D extent;
@@ -379,6 +360,10 @@ public:
 			swapchain_fences.push_back(
 				device.createFence(vk::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled)));
 		}
+
+		descset_layout = create_descriptor_set_layout();
+
+		descpool = create_descriptor_pool();
 	}
 
 	~RenderDeviceVk()
@@ -474,7 +459,6 @@ public:
 		auto data = device.mapMemory(staging_mem, 0, image_size);
 		memcpy(data, image_data, image_size);
 		device.unmapMemory(staging_mem);
-		;
 
 		auto image = vk::Image{};
 		auto image_mem = vk::DeviceMemory{};
@@ -521,24 +505,53 @@ public:
 		delete image;
 	}
 
-	auto create_pipeline(std::string_view vert_code, std::string_view frag_code, Image* albedo)
-		-> ShaderPipeline* override
+	auto create_renderable(
+		const std::vector<float>& vertices,
+		const std::vector<float>& vertices_aux,
+		const std::vector<uint32_t> indices) -> Renderable
 	{
-		// descriptors and shit
+		auto gpu_data = std::vector<float>{};
+		for (int i = 0; i < vertices.size() / 3; i++) {
+			const auto v = (i * 3);
+			gpu_data.push_back(vertices[v + 0]);
+			gpu_data.push_back(-vertices[v + 1]);
+			gpu_data.push_back(vertices[v + 2]);
+			const auto a = (i * 5);
+			gpu_data.push_back(vertices_aux[a + 0]);
+			gpu_data.push_back(vertices_aux[a + 1]);
+			gpu_data.push_back(vertices_aux[a + 2]);
+			gpu_data.push_back(vertices_aux[a + 3]);
+			gpu_data.push_back(vertices_aux[a + 4]);
+		}
 
+		const auto vbo = create_buffer(
+			{gengine::BufferInfo::Usage::VERTEX, sizeof(float), gpu_data.size()}, gpu_data.data());
+		const auto ebo = create_buffer(
+			{gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()},
+			indices.data());
+
+		return Renderable{vbo, ebo, indices.size()};
+	}
+
+	auto create_descriptor_set_layout() -> vk::DescriptorSetLayout
+	{
+		// Buffer
 		const auto uniform_binding = vk::DescriptorSetLayoutBinding(
 			0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex);
 
+		// Texture
 		const auto albedo_binding = vk::DescriptorSetLayoutBinding(
 			1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment);
 
+		// Boilerplate
 		const auto bindings = std::array{uniform_binding, albedo_binding};
-
 		const auto descset_layout_info =
 			vk::DescriptorSetLayoutCreateInfo({}, bindings.size(), bindings.data());
+		return device.createDescriptorSetLayout(descset_layout_info);
+	}
 
-		const auto descset_layout = device.createDescriptorSetLayout(descset_layout_info);
-
+	auto create_descriptor_pool() -> vk::DescriptorPool
+	{
 		const auto sampler_size =
 			vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1);
 
@@ -547,16 +560,41 @@ public:
 		const auto pool_sizes = std::array{sampler_size, uniform_size};
 
 		const auto descpool_info =
-			vk::DescriptorPoolCreateInfo({}, 2, pool_sizes.size(), pool_sizes.data());
+			vk::DescriptorPoolCreateInfo({}, 20, pool_sizes.size(), pool_sizes.data());
 
-		const auto descpool = device.createDescriptorPool(descpool_info);
+		return device.createDescriptorPool(descpool_info);
+	}
+
+	auto create_descriptors(ShaderPipeline* pipeline, Image* albedo) -> Descriptors* override
+	{
+		// Allocate sets
 
 		const auto descset_info = vk::DescriptorSetAllocateInfo(descpool, 1, &descset_layout);
 
 		const auto descset = device.allocateDescriptorSets(descset_info).at(0);
 
-		// update uniform buffers in pipeline creation because we're fucking
-		// monkeys
+		// update descriptors
+
+		const auto desc_ubo_info = vk::DescriptorBufferInfo(pipeline->ubo, 0, sizeof(glm::mat4));
+		const auto ubo_write = vk::WriteDescriptorSet(
+			descset, 0, 0, 1, vk::DescriptorType::eUniformBuffer, nullptr, &desc_ubo_info);
+
+		const auto desc_image_info = vk::DescriptorImageInfo(
+			albedo->sampler, albedo->view, vk::ImageLayout::eShaderReadOnlyOptimal);
+		const auto albedo_write = vk::WriteDescriptorSet(
+			descset, 1, 0, 1, vk::DescriptorType::eCombinedImageSampler, &desc_image_info);
+
+		const auto descset_writes = std::array{ubo_write, albedo_write};
+
+		device.updateDescriptorSets(descset_writes, {});
+
+		return new Descriptors{descset};
+	}
+
+	auto create_pipeline(std::string_view vert_code, std::string_view frag_code)
+		-> ShaderPipeline* override
+	{
+		// Create uniform buffer
 
 		auto ubo = vk::Buffer{};
 		auto ubo_mem = vk::DeviceMemory{};
@@ -578,21 +616,6 @@ public:
 			memcpy(data, &proj, sizeof(proj));
 			device.unmapMemory(ubo_mem);
 		}
-
-		// update descriptors
-
-		const auto desc_ubo_info = vk::DescriptorBufferInfo(ubo, 0, sizeof(glm::mat4));
-		const auto ubo_write = vk::WriteDescriptorSet(
-			descset, 0, 0, 1, vk::DescriptorType::eUniformBuffer, nullptr, &desc_ubo_info);
-
-		const auto desc_image_info = vk::DescriptorImageInfo(
-			albedo->sampler, albedo->view, vk::ImageLayout::eShaderReadOnlyOptimal);
-		const auto albedo_write = vk::WriteDescriptorSet(
-			descset, 1, 0, 1, vk::DescriptorType::eCombinedImageSampler, &desc_image_info);
-
-		const auto descset_writes = std::array{ubo_write, albedo_write};
-
-		device.updateDescriptorSets(descset_writes, {});
 
 		// push constant info
 
@@ -712,7 +735,7 @@ public:
 
 		// finally create the bloody cunt
 
-		const auto pipeline = device.createGraphicsPipeline(nullptr, pipeline_info);
+		const auto pipeline = device.createGraphicsPipeline(nullptr, pipeline_info).value;
 
 		device.destroyShaderModule(vert_module);
 		device.destroyShaderModule(frag_module);
@@ -722,10 +745,7 @@ public:
 
 		return new ShaderPipeline{
 			pipeline_layout,
-			pipeline.value,
-			descpool,
-			descset_layout,
-			descset,
+			pipeline,
 			ubo,
 			ubo_mem,
 		};
@@ -739,13 +759,51 @@ public:
 		device.destroyPipelineLayout(pso->pipeline_layout);
 		device.destroyBuffer(pso->ubo);
 		device.freeMemory(pso->ubo_mem);
-		device.destroyDescriptorPool(pso->descpool);
-		device.destroyDescriptorSetLayout(pso->descset_layout);
+		device.destroyDescriptorPool(descpool);
+		device.destroyDescriptorSetLayout(descset_layout);
 
 		delete pso;
 	}
 
-	auto alloc_context() -> RenderContext* override
+	auto render(
+		const glm::mat4& view,
+		ShaderPipeline* pso,
+		const std::vector<glm::mat4>& transforms,
+		const std::vector<Renderable>& renderables,
+		const std::vector<Descriptors*>& descriptors) -> void override
+	{
+		const auto ctx = alloc_context();
+		if (!ctx) {
+			return;
+		}
+		ctx->begin();
+
+		ctx->cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pso->pipeline);
+
+		for (auto i = 0; i < transforms.size(); ++i) {
+
+			ctx->cmdbuf.bindDescriptorSets(
+			vk::PipelineBindPoint::eGraphics, pso->pipeline_layout, 0, descriptors[i]->descset, {});
+
+			// Push constants
+			const auto push_constant_data = PushConstantData{transforms[i], view};
+			ctx->cmdbuf.pushConstants(
+				pso->pipeline_layout,
+				vk::ShaderStageFlagBits::eVertex,
+				0,
+				sizeof(PushConstantData),
+				&push_constant_data);
+
+			ctx->bind_geometry_buffers(renderables[i].vbo, renderables[i].ebo);
+			ctx->draw(renderables[i].index_count, 1);
+		}
+		ctx->end();
+
+		execute_context(ctx);
+		free_context(ctx);
+	}
+
+	auto alloc_context() -> RenderContextVk*
 	{
 		const auto ok = device.waitForFences(
 			swapchain_fences[current_frame], true, std::numeric_limits<uint64_t>::max());
@@ -777,7 +835,7 @@ public:
 		}
 	}
 
-	auto execute_context(RenderContext* foo) -> void override
+	auto execute_context(RenderContextVk* foo) -> void
 	{
 		auto cmdlist = reinterpret_cast<RenderContextVk*>(foo);
 
@@ -812,10 +870,7 @@ public:
 		current_frame = (current_frame + 1) % FRAMES_IN_FLIGHT;
 	}
 
-	auto free_context(RenderContext* ctx) -> void override
-	{
-		delete static_cast<RenderContextVk*>(ctx);
-	}
+	auto free_context(RenderContextVk* ctx) -> void { delete ctx; }
 
 private:
 	auto begin_one_time_cmdbuf() -> vk::CommandBuffer
@@ -1182,6 +1237,9 @@ private:
 	vk::Queue graphics_queue;
 	vk::Queue present_queue;
 	vk::CommandPool cmd_pool;
+
+	vk::DescriptorPool descpool;
+	vk::DescriptorSetLayout descset_layout;
 
 	std::vector<vk::Semaphore> image_available_semaphores;
 	std::vector<vk::Semaphore> render_finished_semaphores;

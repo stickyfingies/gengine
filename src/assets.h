@@ -13,6 +13,7 @@ struct GeometryAsset {
 	std::vector<float> vertices; // raw positions
 	std::vector<float> vertices_aux; // normals, uvs
 	std::vector<unsigned int> indices;
+	std::vector<std::string> texturePaths;
 };
 
 using GeometryAssetList = std::vector<GeometryAsset>;

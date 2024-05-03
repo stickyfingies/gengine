@@ -3,11 +3,13 @@
 #include <glm/glm.hpp>
 
 #include <string_view>
+#include <vector>
 
 struct GLFWwindow;
 
 namespace gengine {
 struct ShaderPipeline;
+struct Descriptors;
 struct Buffer;
 struct Image;
 struct RenderImage;
@@ -26,51 +28,47 @@ struct ImageInfo {
 	unsigned int channel_count;
 };
 
-class RenderContext {
-public:
-	virtual auto begin() -> void = 0;
-
-	virtual auto end() -> void = 0;
-
-	virtual auto bind_pipeline(ShaderPipeline *pso) -> void = 0;
-
-	virtual auto bind_geometry_buffers(Buffer *vbo, Buffer *ebo) -> void = 0;
-
-	// very hacky temporary solution, just like the rest of the codebase
-	virtual auto push_constants(gengine::ShaderPipeline *pso, const glm::mat4 transform, const float *view) -> void = 0;
-
-	virtual auto draw(int vertex_count, int instance_count) -> void = 0;
+struct Renderable {
+	gengine::Buffer* vbo;
+	gengine::Buffer* ebo;
+	unsigned long index_count;
 };
 
 class RenderDevice {
 public:
 	// device management
 
-	static auto create(GLFWwindow *window) -> RenderDevice *;
+	static auto create(GLFWwindow* window) -> RenderDevice*;
 
-	static auto destroy(RenderDevice *device) -> void;
+	static auto destroy(RenderDevice* device) -> void;
 
 	// resource managemnet
 
-	virtual auto create_buffer(const BufferInfo &info, const void *data) -> Buffer * = 0;
+	virtual auto create_buffer(const BufferInfo& info, const void* data) -> Buffer* = 0;
 
-	virtual auto destroy_buffer(Buffer *buffer) -> void = 0;
+	virtual auto destroy_buffer(Buffer* buffer) -> void = 0;
 
-	virtual auto create_image(const ImageInfo &info, const void *data) -> Image * = 0;
+	virtual auto create_image(const ImageInfo& info, const void* data) -> Image* = 0;
 
-	virtual auto destroy_image(Image *image) -> void = 0;
+	virtual auto destroy_image(Image* image) -> void = 0;
 
-	virtual auto create_pipeline(const std::string_view vert_code, const std::string_view frag_code, Image *albedo)
-		-> ShaderPipeline * = 0;
+	virtual auto create_pipeline(const std::string_view vert_code, const std::string_view frag_code)
+		-> ShaderPipeline* = 0;
 
-	virtual auto destroy_pipeline(ShaderPipeline *pso) -> void = 0;
+	virtual auto create_descriptors(ShaderPipeline* pipeline, Image* albedo) -> Descriptors* = 0;
 
-	// gpu workload management
+	virtual auto destroy_pipeline(ShaderPipeline* pso) -> void = 0;
 
-	virtual auto alloc_context() -> RenderContext * = 0;
+	virtual auto create_renderable(
+		const std::vector<float>& vertices,
+		const std::vector<float>& vertices_aux,
+		const std::vector<uint32_t> indices) -> Renderable = 0;
 
-	virtual auto execute_context(RenderContext *cmdlist) -> void = 0;
-
-	virtual auto free_context(RenderContext *cmdlist) -> void = 0;
+	virtual auto render(
+		const glm::mat4& view,
+		ShaderPipeline* pipeline,
+		const std::vector<glm::mat4>& transforms,
+		const std::vector<Renderable>& renderables,
+		const std::vector<Descriptors*>& descriptors) -> void = 0;
 };
 } // namespace gengine

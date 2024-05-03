@@ -259,8 +259,8 @@ auto PhysicsEngine::get_model_matrix(Collidable* collidable, glm::mat4& model_ma
 	const auto scale = collidable->scale;
 
 	model_matrix = glm::translate(glm::mat4(1.0f), glm::vec3(pos[0], pos[1], pos[2])) *
-				   glm::mat4_cast(glm::quat(rot[0], rot[1], rot[2], rot[3])); // *
-				//    glm::scale(glm::mat4(1.0 ), scale);
+				   glm::mat4_cast(glm::quat(rot[0], rot[1], rot[2], rot[3])) *
+				   glm::scale(glm::mat4(1.0 ), scale);
 }
 
 auto PhysicsEngine::apply_force(Collidable* collidable, glm::vec3 force) -> void

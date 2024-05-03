@@ -13,12 +13,6 @@
 #include <iostream>
 #include <vector>
 
-struct RenderComponent {
-	gengine::Buffer* vbo;
-	gengine::Buffer* ebo;
-	unsigned long index_count;
-};
-
 struct WindowData {
 	double mouse_x;
 	double mouse_y;
@@ -26,6 +20,8 @@ struct WindowData {
 	double delta_mouse_x;
 	double delta_mouse_y;
 };
+
+using gengine::Renderable;
 
 namespace {
 
@@ -109,38 +105,11 @@ auto update_input(
 	}
 }
 
-auto update_renderer(
-	Camera& camera,
-	gengine::RenderDevice* renderer,
-	gengine::ShaderPipeline* pipeline,
-	const std::vector<RenderComponent>& render_components,
-	const std::vector<glm::mat4>& transforms) -> void
-{
-	const auto view = camera.get_view_matrix();
-
-	const auto ctx = renderer->alloc_context();
-	if (!ctx) {
-		return;
-	}
-	ctx->begin();
-	ctx->bind_pipeline(pipeline);
-	for (auto i = 0; i < transforms.size(); ++i) {
-		ctx->push_constants(pipeline, transforms[i], glm::value_ptr(view));
-		ctx->bind_geometry_buffers(render_components[i].vbo, render_components[i].ebo);
-
-		ctx->draw(render_components[i].index_count, 1);
-	}
-	ctx->end();
-
-	renderer->execute_context(ctx);
-	renderer->free_context(ctx);
-}
-
 auto create_game_object(
 	std::string_view path,
 	gengine::RenderDevice* renderer,
 	gengine::PhysicsEngine& physics_engine,
-	std::vector<RenderComponent>& render_components,
+	std::vector<Renderable>& render_components,
 	std::vector<gengine::Collidable*>& collidables,
 	std::vector<glm::mat4>& transforms,
 	bool makeMesh = false,
@@ -149,29 +118,11 @@ auto create_game_object(
 {
 	const auto geometries = gengine::load_vertex_buffer(path, flipUVs, flipWindingOrder);
 	for (const auto& geom : geometries) {
-		const auto& [t, vertices, vertices_aux, indices] = geom;
+		const auto& [t, vertices, vertices_aux, indices, texPaths] = geom;
 
-		auto gpu_data = std::vector<float>{};
-		for (int i = 0; i < vertices.size() / 3; i++) {
-			const auto v = (i * 3);
-			gpu_data.push_back(vertices[v + 0]);
-			gpu_data.push_back(-vertices[v + 1]);
-			gpu_data.push_back(vertices[v + 2]);
-			const auto a = (i * 5);
-			gpu_data.push_back(vertices_aux[a + 0]);
-			gpu_data.push_back(vertices_aux[a + 1]);
-			gpu_data.push_back(vertices_aux[a + 2]);
-			gpu_data.push_back(vertices_aux[a + 3]);
-			gpu_data.push_back(vertices_aux[a + 4]);
-		}
+		const auto renderable = renderer->create_renderable(vertices, vertices_aux, indices);
 
-		const auto vbo = renderer->create_buffer(
-			{gengine::BufferInfo::Usage::VERTEX, sizeof(float), gpu_data.size()}, gpu_data.data());
-		const auto ebo = renderer->create_buffer(
-			{gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()},
-			indices.data());
-
-		render_components.push_back({vbo, ebo, indices.size()});
+		render_components.push_back(renderable);
 
 		// Generate a physics model when makeMesh == true
 		if (makeMesh) {
@@ -215,21 +166,33 @@ auto main(int argc, char** argv) -> int
 
 	auto transforms = std::vector<glm::mat4>{};
 	auto collidables = std::vector<gengine::Collidable*>{};
-	auto render_components = std::vector<RenderComponent>{};
+	auto render_components = std::vector<Renderable>{};
+	auto descriptors = std::vector<gengine::Descriptors*>{};
 
-	const auto texture = gengine::load_image("./data/albedo.png");
+	const auto texture_0 = gengine::load_image("./data/albedo.png");
+	const auto texture_1 = gengine::load_image("./data/crate.png");
 
 	// create game resources
 
 	const auto albedo = renderer->create_image(
-		{texture.width, texture.height, texture.channel_count}, texture.data);
+		{texture_0.width, texture_0.height, texture_0.channel_count}, texture_0.data);
+
+	const auto auxillary = renderer->create_image(
+		{texture_1.width, texture_1.height, texture_1.channel_count}, texture_1.data);
 
 	const auto pipeline = renderer->create_pipeline(
 		gengine::load_file("./data/cube.vert.spv"),
-		gengine::load_file("./data/cube.frag.spv"),
-		albedo);
+		gengine::load_file("./data/cube.frag.spv"));
 
-	gengine::unload_image(texture);
+	const auto descriptor_0 = renderer->create_descriptors(pipeline, albedo);
+	const auto descriptor_1 = renderer->create_descriptors(pipeline, auxillary);
+ 
+	descriptors.push_back(descriptor_1);
+	descriptors.push_back(descriptor_1);
+	descriptors.push_back(descriptor_0);
+
+	gengine::unload_image(texture_0);
+	gengine::unload_image(texture_1);
 
 	// Create physics bodies
 	{ // player
@@ -313,7 +276,7 @@ auto main(int argc, char** argv) -> int
 
 		update_input(window, camera, physics_engine, collidables[0], transforms, elapsed_time);
 
-		update_renderer(camera, renderer, pipeline, render_components, transforms);
+		renderer->render(camera.get_view_matrix(), pipeline, transforms, render_components, descriptors);
 
 		glfwSwapBuffers(window);
 
