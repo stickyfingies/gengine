@@ -17,6 +17,7 @@ layout (push_constant) uniform PushConstants
 {
 	mat4 model;
 	mat4 view;
+	vec3 matColor;
 };
 
 void main()

@@ -622,7 +622,7 @@ public:
 		// push constant info
 
 		const auto push_const_range =
-			vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex, 0, sizeof(PushConstantData));
+			vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, sizeof(PushConstantData));
 
 		const auto push_const_ranges = std::array{push_const_range};
 
@@ -791,7 +791,7 @@ public:
 			const auto push_constant_data = PushConstantData{transforms[i], view, descriptors[i]->color};
 			ctx->cmdbuf.pushConstants(
 				pso->pipeline_layout,
-				vk::ShaderStageFlagBits::eVertex,
+				vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
 				0,
 				sizeof(PushConstantData),
 				&push_constant_data);

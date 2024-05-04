@@ -72,8 +72,6 @@ Finally, the culmination of these are used to create a cohesive "game object" th
 - [Interleaved or Separate Vertex Buffers](https://www.reddit.com/r/vulkan/comments/rtpdvu/interleaved_vs_separate_vertex_buffers/)
 
 ## Todo
-- [x] switch from Renderer to RenderDevice
-- [x] support resizable windows
-- [ ] Un-leave vertex positions from other buffer data
-- [ ] unify command buffers on both sides of API wall (?)
-- [ ] Remove that **atrocious** `MODULE_CALLBACK` garbage (what was I thinking??)
+- [x] Resizable windows
+- [x] Colors and Textures
+- [ ] Separate vertex positions from the other buffer data
