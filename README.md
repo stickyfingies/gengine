@@ -71,7 +71,28 @@ Finally, the culmination of these are used to create a cohesive "game object" th
 - [Writing an efficient Vulkan renderer](https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/)
 - [Interleaved or Separate Vertex Buffers](https://www.reddit.com/r/vulkan/comments/rtpdvu/interleaved_vs_separate_vertex_buffers/)
 
-## Todo
+Dependencies
+---
+
+All software dependencies are installed and managed by [vcpkg](https://vcpkg.io/).
+
+- [glfw3](https://www.glfw.org/): cross-platform window creation and input
+- [bullet3](https://pybullet.org/wordpress/): physics simulation for video games
+- [assimp](http://assimp.org/): load and parse various 3d file formats
+- [glm](https://github.com/g-truc/glm): mathematics library for graphics software
+- [stb](https://github.com/nothings/stb): image loading & decoding from files and memory
+
+Roadmap
+---
+
 - [x] Resizable windows
 - [x] Colors and Textures
+- [ ] Integrate a GUI
+- [ ] Texture mip-mapping
 - [ ] Separate vertex positions from the other buffer data
+
+License
+---
+Copyright (c) 2019 Seth Traman.
+
+GPLv3.  See [COPYING](./COPYING).
