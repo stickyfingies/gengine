@@ -36,7 +36,36 @@ Finally, launch the app!
 - `-i` or `--install` will forcefully re-install dependencies.
 - `-w` or `--watch` automatigally compiles C++ files when they change.
 
+Architecture
+---
+
+```mermaid
+---
+title: Loading Objects from Asset Files
+---
+flowchart TB
+
+    Asset --> Matrix & Geometry & Texture
+
+    Geometry --> Collidable & Renderable
+
+    Texture --> Descriptor[Material]
+
+    Matrix --> Collidable
+
+    Collidable & Renderable & Descriptor --> GameObject
+```
+
+Gengine uses the [Asset Importer Library](https://assimp.org/) to pull geometry and texture data from static asset files.
+
+The geometry is passed into the physics engine to create a physically simulable representation of that shape.
+
+The geometry and the texture are passed into the rendering engine to create a structure that can be rendered on the GPU.
+
+Finally, the culmination of these are used to create a cohesive "game object" that is both visible and tangible.
+
 ## Resources
+- [Learn OpenGL](https://learnopengl.com/) <small>**Start here** — this tutorial taught me C++. It's that good.</small>
 - [Vulkan Tutorial](https://vulkan-tutorial.com/)
 - [Vulkan Guide - Resources](https://vkguide.dev/docs/great_resources)
 - [Writing an efficient Vulkan renderer](https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/)
