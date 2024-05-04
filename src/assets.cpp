@@ -21,16 +21,16 @@ auto load_image(std::string_view path) -> ImageAsset
 	auto height = 0;
 	auto channel_count = 0;
 
-	const auto data = stbi_load(path.data(), &width, &height, &channel_count, 0);
+	const auto data = stbi_load(path.data(), &width, &height, &channel_count, 4);
 
 	std::cout << "[info]\t loading image " << path.data() << std::endl;
 	std::cout << "[info]\t\t size=" << width << "x" << height << std::endl;
-	std::cout << "[info]\t\t channels=" << channel_count << std::endl;
+	std::cout << "[info]\t\t channels=" << channel_count << " (fixed to 4)" << std::endl;
 
 	return {
 		static_cast<uint32_t>(width),
 		static_cast<uint32_t>(height),
-		static_cast<uint32_t>(channel_count),
+		static_cast<uint32_t>(4),
 		data};
 }
 
@@ -146,7 +146,13 @@ auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode*
 			loadTextures(textures, material, aiTextureType_DIFFUSE);
 		}
 
-		assets.push_back({transform, vertices, vertices_aux, indices, textures, glm::vec3{material_color.r, material_color.g, material_color.b}});
+		assets.push_back(
+			{transform,
+			 vertices,
+			 vertices_aux,
+			 indices,
+			 textures,
+			 glm::vec3{material_color.r, material_color.g, material_color.b}});
 	}
 
 	for (auto i = 0; i < node->mNumChildren; ++i) {

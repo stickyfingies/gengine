@@ -135,7 +135,7 @@ auto create_game_object(
 		}
 		if (texture_0.width == 0)
 		{
-			texture_0 = gengine::load_image("./data/albedo.png");
+			texture_0 = gengine::load_image("./data/solid_white.png");
 		}
 
 		auto albedo = renderer->create_image(
