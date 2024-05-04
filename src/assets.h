@@ -8,22 +8,23 @@
 
 namespace gengine {
 
-struct GeometryAsset {
-	glm::mat4 transform;
-	std::vector<float> vertices; // raw positions
-	std::vector<float> vertices_aux; // normals, uvs
-	std::vector<unsigned int> indices;
-	std::vector<std::string> texturePaths;
-};
-
-using GeometryAssetList = std::vector<GeometryAsset>;
-
 struct ImageAsset {
 	unsigned int width;
 	unsigned int height;
 	unsigned int channel_count;
 	unsigned char* data;
 };
+
+struct GeometryAsset {
+	glm::mat4 transform;
+	std::vector<float> vertices; // raw positions
+	std::vector<float> vertices_aux; // normals, uvs
+	std::vector<unsigned int> indices;
+	std::vector<ImageAsset> textures;
+	glm::vec3 material_color;
+};
+
+using GeometryAssetList = std::vector<GeometryAsset>;
 
 auto load_image(std::string_view path) -> ImageAsset;
 

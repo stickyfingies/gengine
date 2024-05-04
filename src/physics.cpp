@@ -167,7 +167,7 @@ auto PhysicsEngine::create_mesh(
 	auto skew = glm::vec3{};
 	auto perspective = glm::vec4{};
 	glm::decompose(model_matrix, scale, rotation, translation, skew, perspective);
-	std::cout << "Frog: " << rotation.x << ", " << rotation.y << ", " << rotation.z << std::endl;
+	
 	// Convert our optimized (vertex, index) buffer into non-optimized (vertex) buffer
 
 	auto nonIndexedVertices = std::vector<float>();

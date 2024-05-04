@@ -34,6 +34,25 @@ auto load_image(std::string_view path) -> ImageAsset
 		data};
 }
 
+auto load_image_from_memory(const unsigned char* buffer, uint32_t buffer_len) -> ImageAsset
+{
+	auto width = 0;
+	auto height = 0;
+	auto channel_count = 0;
+
+	const auto data = stbi_load_from_memory(buffer, buffer_len, &width, &height, &channel_count, 4);
+
+	std::cout << "[info]\t loading image from memory" << std::endl;
+	std::cout << "[info]\t\t size=" << width << "x" << height << std::endl;
+	std::cout << "[info]\t\t channels=" << channel_count << " (fixed to 4)" << std::endl;
+
+	return {
+		static_cast<uint32_t>(width),
+		static_cast<uint32_t>(height),
+		static_cast<uint32_t>(4),
+		data};
+}
+
 auto unload_image(const ImageAsset& asset) -> void { stbi_image_free(asset.data); }
 
 auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode* node) -> void
@@ -92,28 +111,42 @@ auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode*
 
 		// material stuff
 
-		const auto loadTextures = [](std::vector<std::string>& texturePaths,
-									 const aiMaterial* material,
-									 aiTextureType type) -> void {
+		const auto loadTextures = [scene](
+									  std::vector<ImageAsset>& texturePaths,
+									  const aiMaterial* material,
+									  aiTextureType type) -> void {
 			for (uint32_t i = 0; i < material->GetTextureCount(type); i++) {
 				aiString path;
 				material->GetTexture(type, i, &path);
-				texturePaths.push_back(path.C_Str());
+				if (auto texture = scene->GetEmbeddedTexture(path.C_Str())) {
+					// Embedded texture
+
+					std::string path_string = path.C_Str();
+					const auto index = std::atoi(path_string.substr(1).c_str());
+					const auto embed = scene->mTextures[index];
+
+					std::cout << embed->mWidth << " x " << embed->mHeight << std::endl;
+
+					texturePaths.push_back(gengine::load_image_from_memory(
+						reinterpret_cast<const unsigned char*>(embed->pcData), embed->mWidth));
+				}
+				else {
+					// Regular texture
+					texturePaths.push_back(gengine::load_image(path.C_Str()));
+				}
 			}
 		};
 
-		auto texturePaths = std::vector<std::string>{};
+		auto textures = std::vector<ImageAsset>{};
+		aiColor3D material_color(1.f, 1.f, 1.f);
 
 		if (mesh->mMaterialIndex >= 0) {
 			const auto* material = scene->mMaterials[mesh->mMaterialIndex];
-			loadTextures(texturePaths, material, aiTextureType_DIFFUSE);
+			material->Get(AI_MATKEY_COLOR_DIFFUSE, material_color);
+			loadTextures(textures, material, aiTextureType_DIFFUSE);
 		}
 
-		for (const auto& path : texturePaths) {
-			std::cout << "Texture: " << path << std::endl;
-		}
-
-		assets.push_back({transform, vertices, vertices_aux, indices, texturePaths});
+		assets.push_back({transform, vertices, vertices_aux, indices, textures, glm::vec3{material_color.r, material_color.g, material_color.b}});
 	}
 
 	for (auto i = 0; i < node->mNumChildren; ++i) {

@@ -56,6 +56,7 @@ struct Vertex {
 struct PushConstantData {
 	glm::mat4 model;
 	glm::mat4 view;
+	glm::vec3 color;
 };
 
 const auto BUFFER_USAGE_TABLE =
@@ -86,6 +87,7 @@ struct ShaderPipeline {
 
 struct Descriptors {
 	vk::DescriptorSet descset;
+	glm::vec3 color;
 };
 
 class RenderContextVk final {
@@ -553,9 +555,9 @@ public:
 	auto create_descriptor_pool() -> vk::DescriptorPool
 	{
 		const auto sampler_size =
-			vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1);
+			vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 10);
 
-		const auto uniform_size = vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1);
+		const auto uniform_size = vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 10);
 
 		const auto pool_sizes = std::array{sampler_size, uniform_size};
 
@@ -565,7 +567,7 @@ public:
 		return device.createDescriptorPool(descpool_info);
 	}
 
-	auto create_descriptors(ShaderPipeline* pipeline, Image* albedo) -> Descriptors* override
+	auto create_descriptors(ShaderPipeline* pipeline, Image* albedo, const glm::vec3& color) -> Descriptors* override
 	{
 		// Allocate sets
 
@@ -588,7 +590,7 @@ public:
 
 		device.updateDescriptorSets(descset_writes, {});
 
-		return new Descriptors{descset};
+		return new Descriptors{descset, color};
 	}
 
 	auto create_pipeline(std::string_view vert_code, std::string_view frag_code)
@@ -786,7 +788,7 @@ public:
 			vk::PipelineBindPoint::eGraphics, pso->pipeline_layout, 0, descriptors[i]->descset, {});
 
 			// Push constants
-			const auto push_constant_data = PushConstantData{transforms[i], view};
+			const auto push_constant_data = PushConstantData{transforms[i], view, descriptors[i]->color};
 			ctx->cmdbuf.pushConstants(
 				pso->pipeline_layout,
 				vk::ShaderStageFlagBits::eVertex,

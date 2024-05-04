@@ -55,7 +55,7 @@ public:
 	virtual auto create_pipeline(const std::string_view vert_code, const std::string_view frag_code)
 		-> ShaderPipeline* = 0;
 
-	virtual auto create_descriptors(ShaderPipeline* pipeline, Image* albedo) -> Descriptors* = 0;
+	virtual auto create_descriptors(ShaderPipeline* pipeline, Image* albedo, const glm::vec3& color) -> Descriptors* = 0;
 
 	virtual auto destroy_pipeline(ShaderPipeline* pso) -> void = 0;
 

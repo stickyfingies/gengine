@@ -110,6 +110,9 @@ auto create_game_object(
 	gengine::RenderDevice* renderer,
 	gengine::PhysicsEngine& physics_engine,
 	std::vector<Renderable>& render_components,
+	std::vector<gengine::Image*>& images,
+	std::vector<gengine::Descriptors*>& descriptors,
+	gengine::ShaderPipeline* pipeline,
 	std::vector<gengine::Collidable*>& collidables,
 	std::vector<glm::mat4>& transforms,
 	bool makeMesh = false,
@@ -118,17 +121,39 @@ auto create_game_object(
 {
 	const auto geometries = gengine::load_vertex_buffer(path, flipUVs, flipWindingOrder);
 	for (const auto& geom : geometries) {
-		const auto& [t, vertices, vertices_aux, indices, texPaths] = geom;
+		const auto& [t, vertices, vertices_aux, indices, textures, color] = geom;
 
 		const auto renderable = renderer->create_renderable(vertices, vertices_aux, indices);
 
 		render_components.push_back(renderable);
 
+		// Materials
+
+		gengine::ImageAsset texture_0{};
+		if (textures.size() > 0) {
+			texture_0 = textures[0];
+		}
+		if (texture_0.width == 0)
+		{
+			texture_0 = gengine::load_image("./data/albedo.png");
+		}
+
+		auto albedo = renderer->create_image(
+			{texture_0.width, texture_0.height, texture_0.channel_count}, texture_0.data);
+
+		images.push_back(albedo);
+
+		const auto descriptor_0 = renderer->create_descriptors(pipeline, albedo, color);
+
+		descriptors.push_back(descriptor_0);
+
+		gengine::unload_image(texture_0);
+
 		// Generate a physics model when makeMesh == true
 		if (makeMesh) {
-			auto tr = glm::mat4{1.0f};
-			// auto tr = t;
-			tr = glm::rotate(tr, 3.14f, glm::vec3(0, 1, 0));
+			// auto tr = glm::mat4{1.0f};
+			auto tr = t;
+			// tr = glm::rotate(tr, 3.14f, glm::vec3(0, 1, 0));
 			transforms.push_back(tr);
 			collidables.push_back(physics_engine.create_mesh(0.0f, vertices, indices, tr));
 		}
@@ -167,32 +192,13 @@ auto main(int argc, char** argv) -> int
 	auto transforms = std::vector<glm::mat4>{};
 	auto collidables = std::vector<gengine::Collidable*>{};
 	auto render_components = std::vector<Renderable>{};
+	auto images = std::vector<gengine::Image*>();
 	auto descriptors = std::vector<gengine::Descriptors*>{};
-
-	const auto texture_0 = gengine::load_image("./data/albedo.png");
-	const auto texture_1 = gengine::load_image("./data/crate.png");
 
 	// create game resources
 
-	const auto albedo = renderer->create_image(
-		{texture_0.width, texture_0.height, texture_0.channel_count}, texture_0.data);
-
-	const auto auxillary = renderer->create_image(
-		{texture_1.width, texture_1.height, texture_1.channel_count}, texture_1.data);
-
 	const auto pipeline = renderer->create_pipeline(
-		gengine::load_file("./data/cube.vert.spv"),
-		gengine::load_file("./data/cube.frag.spv"));
-
-	const auto descriptor_0 = renderer->create_descriptors(pipeline, albedo);
-	const auto descriptor_1 = renderer->create_descriptors(pipeline, auxillary);
- 
-	descriptors.push_back(descriptor_1);
-	descriptors.push_back(descriptor_1);
-	descriptors.push_back(descriptor_0);
-
-	gengine::unload_image(texture_0);
-	gengine::unload_image(texture_1);
+		gengine::load_file("./data/cube.vert.spv"), gengine::load_file("./data/cube.frag.spv"));
 
 	// Create physics bodies
 	{ // player
@@ -222,6 +228,9 @@ auto main(int argc, char** argv) -> int
 		renderer,
 		physics_engine,
 		render_components,
+		images,
+		descriptors,
+		pipeline,
 		collidables,
 		transforms,
 		false,
@@ -232,16 +241,22 @@ auto main(int argc, char** argv) -> int
 		renderer,
 		physics_engine,
 		render_components,
+		images,
+		descriptors,
+		pipeline,
 		collidables,
 		transforms,
 		false,
 		false,
 		false);
 	create_game_object(
-		"./data/map.obj",
+		"./data/skjar-isles/skjarisles.glb",
 		renderer,
 		physics_engine,
 		render_components,
+		images,
+		descriptors,
+		pipeline,
 		collidables,
 		transforms,
 		true,
@@ -255,6 +270,8 @@ auto main(int argc, char** argv) -> int
 
 	auto last_time = glfwGetTime();
 
+	std::cout << "[info]\t SUCCESS!! Created scene with " << transforms.size() << " objects" << std::endl;
+
 	while (!glfwWindowShouldClose(window)) {
 		++frame_count;
 
@@ -264,8 +281,6 @@ auto main(int argc, char** argv) -> int
 		// log average fps to console
 		if (glfwGetTime() - last_displayed_fps >= 1.0) {
 			std::cout << "[dbg ]\t ms/frame: " << 1000.0 / frame_count << std::endl;
-			std::cout << transforms.size() << ", " << collidables.size() << ", "
-					  << render_components.size() << std::endl;
 			last_displayed_fps = glfwGetTime();
 			frame_count = 0;
 		}
@@ -276,7 +291,8 @@ auto main(int argc, char** argv) -> int
 
 		update_input(window, camera, physics_engine, collidables[0], transforms, elapsed_time);
 
-		renderer->render(camera.get_view_matrix(), pipeline, transforms, render_components, descriptors);
+		renderer->render(
+			camera.get_view_matrix(), pipeline, transforms, render_components, descriptors);
 
 		glfwSwapBuffers(window);
 
@@ -293,11 +309,15 @@ auto main(int argc, char** argv) -> int
 
 	renderer->destroy_pipeline(pipeline);
 
-	renderer->destroy_image(albedo);
+	// renderer->destroy_image(albedo);
 
 	for (auto& renderComponent : render_components) {
 		renderer->destroy_buffer(renderComponent.vbo);
 		renderer->destroy_buffer(renderComponent.ebo);
+	}
+
+	for (auto& image : images) {
+		renderer->destroy_image(image);
 	}
 
 	// system shutdown
