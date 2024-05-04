@@ -465,36 +465,144 @@ public:
 		auto image = vk::Image{};
 		auto image_mem = vk::DeviceMemory{};
 
+		auto mipLevels = 0u;
+
 		create_image_vk(
 			info.width,
 			info.height,
 			vk::Format::eR8G8B8A8Unorm,
 			vk::ImageTiling::eOptimal,
-			vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+			vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst |
+				vk::ImageUsageFlagBits::eSampled,
 			vk::MemoryPropertyFlagBits::eDeviceLocal,
 			image,
-			image_mem);
+			image_mem,
+			mipLevels);
 		transition_image_layout(
 			image,
 			vk::Format::eR8G8B8A8Unorm,
 			vk::ImageLayout::eUndefined,
-			vk::ImageLayout::eTransferDstOptimal);
-		copy_buffer_to_image(staging_buffer, image, info.width, info.height);
-		transition_image_layout(
-			image,
-			vk::Format::eR8G8B8A8Unorm,
 			vk::ImageLayout::eTransferDstOptimal,
-			vk::ImageLayout::eShaderReadOnlyOptimal);
+			mipLevels);
+		copy_buffer_to_image(staging_buffer, image, info.width, info.height);
+		generate_mipmaps(image, info.width, info.height, mipLevels);
+		// transition_image_layout(
+		// 	image,
+		// 	vk::Format::eR8G8B8A8Unorm,
+		// 	vk::ImageLayout::eTransferDstOptimal,
+		// 	vk::ImageLayout::eShaderReadOnlyOptimal,
+		// 	mipLevels);
 
 		device.destroyBuffer(staging_buffer);
 		device.freeMemory(staging_mem);
 
-		const auto image_view =
-			create_image_view(image, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
+		const auto image_view = create_image_view(
+			image, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor, mipLevels);
 
-		const auto sampler = create_sampler();
+		const auto sampler = create_sampler(mipLevels);
 
 		return new Image{image, image_view, image_mem, sampler};
+	}
+
+	auto generate_mipmaps(vk::Image image, uint32_t width, uint32_t height, uint32_t mipLevels)
+		-> void
+	{
+		auto cmdbuf = begin_one_time_cmdbuf();
+
+		uint32_t mipWidth = width;
+		uint32_t mipHeight = height;
+
+		for (auto i = 1; i < mipLevels; i++) {
+			const auto subresource =
+				vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, i - 1, 1, 0, 1);
+			const auto barrier = vk::ImageMemoryBarrier(
+				vk::AccessFlagBits::eTransferWrite,
+				vk::AccessFlagBits::eTransferRead,
+				vk::ImageLayout::eTransferDstOptimal,
+				vk::ImageLayout::eTransferSrcOptimal,
+				vk::QueueFamilyIgnored,
+				vk::QueueFamilyIgnored,
+				image,
+				subresource);
+
+			cmdbuf.pipelineBarrier(
+				vk::PipelineStageFlagBits::eTransfer,
+				vk::PipelineStageFlagBits::eTransfer,
+				{},
+				{},
+				{},
+				{barrier});
+
+			const auto src_subresource =
+				vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, i - 1, 0, 1);
+			const auto dst_subresource =
+				vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, i, 0, 1);
+			const auto src_offsets =
+				std::array{vk::Offset3D{0, 0, 0}, vk::Offset3D{mipWidth, mipHeight, 1}};
+			const auto dst_offsets = std::array{
+				vk::Offset3D{0, 0, 0},
+				vk::Offset3D{
+					mipWidth > 1 ? mipWidth / 2 : 1u, mipHeight > 1 ? mipHeight / 2 : 1u, 1}};
+			const auto blit =
+				vk::ImageBlit(src_subresource, src_offsets, dst_subresource, dst_offsets);
+
+			cmdbuf.blitImage(
+				image,
+				vk::ImageLayout::eTransferSrcOptimal,
+				image,
+				vk::ImageLayout::eTransferDstOptimal,
+				{blit},
+				vk::Filter::eLinear);
+
+			const auto subresource2 =
+				vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, i - 1, 1, 0, 1);
+			const auto barrier2 = vk::ImageMemoryBarrier(
+				vk::AccessFlagBits::eTransferRead,
+				vk::AccessFlagBits::eShaderRead,
+				vk::ImageLayout::eTransferSrcOptimal,
+				vk::ImageLayout::eShaderReadOnlyOptimal,
+				vk::QueueFamilyIgnored,
+				vk::QueueFamilyIgnored,
+				image,
+				subresource2);
+
+			cmdbuf.pipelineBarrier(
+				vk::PipelineStageFlagBits::eTransfer,
+				vk::PipelineStageFlagBits::eFragmentShader,
+				{},
+				{},
+				{},
+				{barrier2});
+
+			if (mipWidth > 1) {
+				mipWidth /= 2;
+			}
+			if (mipHeight > 1) {
+				mipHeight /= 2;
+			}
+		}
+
+		const auto subresource =
+			vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, mipLevels - 1, 1, 0, 1);
+		const auto barrier = vk::ImageMemoryBarrier(
+			vk::AccessFlagBits::eTransferWrite,
+			vk::AccessFlagBits::eShaderRead,
+			vk::ImageLayout::eTransferDstOptimal,
+			vk::ImageLayout::eShaderReadOnlyOptimal,
+			vk::QueueFamilyIgnored,
+			vk::QueueFamilyIgnored,
+			image,
+			subresource);
+
+		cmdbuf.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTransfer,
+			vk::PipelineStageFlagBits::eFragmentShader,
+			{},
+			{},
+			{},
+			{barrier});
+
+		end_one_time_cmdbuf(cmdbuf);
 	}
 
 	auto destroy_image(Image* image) -> void override
@@ -567,7 +675,8 @@ public:
 		return device.createDescriptorPool(descpool_info);
 	}
 
-	auto create_descriptors(ShaderPipeline* pipeline, Image* albedo, const glm::vec3& color) -> Descriptors* override
+	auto create_descriptors(ShaderPipeline* pipeline, Image* albedo, const glm::vec3& color)
+		-> Descriptors* override
 	{
 		// Allocate sets
 
@@ -621,8 +730,10 @@ public:
 
 		// push constant info
 
-		const auto push_const_range =
-			vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, sizeof(PushConstantData));
+		const auto push_const_range = vk::PushConstantRange(
+			vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+			0,
+			sizeof(PushConstantData));
 
 		const auto push_const_ranges = std::array{push_const_range};
 
@@ -785,10 +896,15 @@ public:
 		for (auto i = 0; i < transforms.size(); ++i) {
 
 			ctx->cmdbuf.bindDescriptorSets(
-			vk::PipelineBindPoint::eGraphics, pso->pipeline_layout, 0, descriptors[i]->descset, {});
+				vk::PipelineBindPoint::eGraphics,
+				pso->pipeline_layout,
+				0,
+				descriptors[i]->descset,
+				{});
 
 			// Push constants
-			const auto push_constant_data = PushConstantData{transforms[i], view, descriptors[i]->color};
+			const auto push_constant_data =
+				PushConstantData{transforms[i], view, descriptors[i]->color};
 			ctx->cmdbuf.pushConstants(
 				pso->pipeline_layout,
 				vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
@@ -913,14 +1029,20 @@ private:
 		vk::ImageUsageFlags usage,
 		vk::MemoryPropertyFlags properties,
 		vk::Image& image,
-		vk::DeviceMemory& mem) -> void
+		vk::DeviceMemory& mem,
+		uint32_t& mipLevels) -> void
 	{
+		if (mipLevels == 0) {
+			mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
+			std::cout << "Assigning " << mipLevels << " mip levels." << std::endl;
+		}
+
 		const auto image_info = vk::ImageCreateInfo(
 			{},
 			vk::ImageType::e2D,
 			format,
 			{width, height, 1},
-			1,
+			mipLevels, // mip levels
 			1,
 			vk::SampleCountFlagBits::e1,
 			tiling,
@@ -942,7 +1064,8 @@ private:
 		device.bindImageMemory(image, mem, 0);
 	}
 
-	auto create_image_view(vk::Image image, vk::Format format, vk::ImageAspectFlags aspect)
+	auto create_image_view(
+		vk::Image image, vk::Format format, vk::ImageAspectFlags aspect, uint32_t mipLevels)
 		-> vk::ImageView
 	{
 		const auto component_mapping = vk::ComponentMapping(
@@ -950,14 +1073,14 @@ private:
 			vk::ComponentSwizzle::eG,
 			vk::ComponentSwizzle::eB,
 			vk::ComponentSwizzle::eA);
-		const auto subresource = vk::ImageSubresourceRange(aspect, 0, 1, 0, 1);
+		const auto subresource = vk::ImageSubresourceRange(aspect, 0, mipLevels, 0, 1);
 		const auto view_info = vk::ImageViewCreateInfo(
 			{}, image, vk::ImageViewType::e2D, format, component_mapping, subresource);
 
 		return device.createImageView(view_info);
 	}
 
-	auto create_sampler() -> vk::Sampler
+	auto create_sampler(uint32_t mipLevels) -> vk::Sampler
 	{
 		const auto sampler_info = vk::SamplerCreateInfo(
 			{},
@@ -973,7 +1096,7 @@ private:
 			false,
 			vk::CompareOp::eAlways,
 			0.0f,
-			0.0f);
+			static_cast<float>(mipLevels));
 
 		return device.createSampler(sampler_info);
 	}
@@ -990,8 +1113,11 @@ private:
 	}
 
 	auto transition_image_layout(
-		vk::Image image, vk::Format format, vk::ImageLayout old_layout, vk::ImageLayout new_layout)
-		-> void
+		vk::Image image,
+		vk::Format format,
+		vk::ImageLayout old_layout,
+		vk::ImageLayout new_layout,
+		uint32_t mipCount) -> void
 	{
 		auto src_stage = vk::PipelineStageFlags{};
 		auto dst_stage = vk::PipelineStageFlags{};
@@ -1019,7 +1145,7 @@ private:
 		auto cmdbuf = begin_one_time_cmdbuf();
 
 		const auto subresource =
-			vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+			vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, mipCount, 0, 1);
 		const auto barrier = vk::ImageMemoryBarrier(
 			src_access_mask,
 			dst_access_mask,
@@ -1150,7 +1276,7 @@ private:
 		for (const auto& image : device.getSwapchainImagesKHR(swapchain)) {
 			swapchain_images.push_back(
 				{image,
-				 create_image_view(image, surface_fmt, vk::ImageAspectFlagBits::eColor),
+				 create_image_view(image, surface_fmt, vk::ImageAspectFlagBits::eColor, 1),
 				 nullptr,
 				 nullptr});
 		}
@@ -1177,6 +1303,7 @@ private:
 
 	auto create_depth_buffer() -> void
 	{
+		auto mipLevels = 1u;
 		create_image_vk(
 			extent.width,
 			extent.height,
@@ -1185,10 +1312,11 @@ private:
 			vk::ImageUsageFlagBits::eDepthStencilAttachment,
 			vk::MemoryPropertyFlagBits::eDeviceLocal,
 			depth_buffer,
-			depth_mem);
+			depth_mem,
+			mipLevels);
 
 		depth_view = create_image_view(
-			depth_buffer, vk::Format::eD24UnormS8Uint, vk::ImageAspectFlagBits::eDepth);
+			depth_buffer, vk::Format::eD24UnormS8Uint, vk::ImageAspectFlagBits::eDepth, mipLevels);
 	}
 
 	auto create_backbuffers() -> void

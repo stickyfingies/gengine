@@ -87,8 +87,8 @@ Roadmap
 
 - [x] Resizable windows
 - [x] Colors and Textures
+- [x] Texture mip-mapping
 - [ ] Integrate a GUI
-- [ ] Texture mip-mapping
 - [ ] Separate vertex positions from the other buffer data
 
 License
