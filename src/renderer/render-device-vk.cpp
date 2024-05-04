@@ -1086,9 +1086,11 @@ private:
 			const auto available_modes = physical_device.getSurfacePresentModesKHR(surface);
 
 			for (const auto& mode : available_modes) {
+				if (mode == best_mode) {
+					break;
+				}
 				if (mode == vk::PresentModeKHR::eMailbox) {
 					best_mode = mode;
-					break;
 				}
 				else if (mode == vk::PresentModeKHR::eImmediate) {
 					best_mode = mode;
