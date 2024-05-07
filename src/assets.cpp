@@ -13,13 +13,21 @@
 #include <iostream>
 #include <sstream>
 
+static std::vector<std::string> images_loaded{};
+
 namespace gengine {
+
+auto get_loaded_images() -> std::vector<std::string> {
+	return images_loaded;
+}
 
 auto load_image(std::string_view path) -> ImageAsset
 {
 	auto width = 0;
 	auto height = 0;
 	auto channel_count = 0;
+
+	images_loaded.push_back({path.begin(), path.end()});
 
 	const auto data = stbi_load(path.data(), &width, &height, &channel_count, 4);
 
@@ -39,6 +47,8 @@ auto load_image_from_memory(const unsigned char* buffer, uint32_t buffer_len) ->
 	auto width = 0;
 	auto height = 0;
 	auto channel_count = 0;
+
+	images_loaded.push_back("Memory Texture");
 
 	const auto data = stbi_load_from_memory(buffer, buffer_len, &width, &height, &channel_count, 4);
 

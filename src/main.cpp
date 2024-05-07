@@ -10,6 +10,8 @@
 #include "physics.h"
 #include "renderer/renderer.h"
 
+#include <imgui.h>
+
 #include <iostream>
 #include <vector>
 
@@ -133,8 +135,7 @@ auto create_game_object(
 		if (textures.size() > 0) {
 			texture_0 = textures[0];
 		}
-		if (texture_0.width == 0)
-		{
+		if (texture_0.width == 0) {
 			texture_0 = gengine::load_image("./data/solid_white.png");
 		}
 
@@ -270,7 +271,10 @@ auto main(int argc, char** argv) -> int
 
 	auto last_time = glfwGetTime();
 
-	std::cout << "[info]\t SUCCESS!! Created scene with " << transforms.size() << " objects" << std::endl;
+	std::cout << "[info]\t SUCCESS!! Created scene with " << transforms.size() << " objects"
+			  << std::endl;
+
+	float ms_per_frame = 0.0f;
 
 	while (!glfwWindowShouldClose(window)) {
 		++frame_count;
@@ -280,7 +284,8 @@ auto main(int argc, char** argv) -> int
 
 		// log average fps to console
 		if (glfwGetTime() - last_displayed_fps >= 1.0) {
-			std::cout << "[dbg ]\t ms/frame: " << 1000.0 / frame_count << std::endl;
+			ms_per_frame = 1000.0 / frame_count;
+			std::cout << "[dbg ]\t ms/frame: " << ms_per_frame << std::endl;
 			last_displayed_fps = glfwGetTime();
 			frame_count = 0;
 		}
@@ -292,7 +297,19 @@ auto main(int argc, char** argv) -> int
 		update_input(window, camera, physics_engine, collidables[0], transforms, elapsed_time);
 
 		renderer->render(
-			camera.get_view_matrix(), pipeline, transforms, render_components, descriptors);
+			camera.get_view_matrix(), pipeline, transforms, render_components, descriptors, [&]() {
+				using namespace ImGui;
+				Begin("Debug Menu");
+				Text("ms / frame: %.2f", ms_per_frame);
+				Text("Objects: %i", transforms.size());
+				End();
+				Begin("Textures");
+				const auto images_loaded = gengine::get_loaded_images();
+				for (const auto& image : images_loaded) {
+					Text(image.data());
+				}
+				End();
+			});
 
 		glfwSwapBuffers(window);
 

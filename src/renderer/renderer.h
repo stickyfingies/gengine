@@ -4,6 +4,7 @@
 
 #include <string_view>
 #include <vector>
+#include <functional>
 
 struct GLFWwindow;
 
@@ -69,6 +70,7 @@ public:
 		ShaderPipeline* pipeline,
 		const std::vector<glm::mat4>& transforms,
 		const std::vector<Renderable>& renderables,
-		const std::vector<Descriptors*>& descriptors) -> void = 0;
+		const std::vector<Descriptors*>& descriptors,
+		std::function<void()> gui_code) -> void = 0;
 };
 } // namespace gengine

@@ -22,6 +22,7 @@ if [ ! -d "vcpkg" ] || [ ! -z "${ARG_INSTALL_DEPENDENCIES}" ]; then
     ./vcpkg/vcpkg install bullet3
     ./vcpkg/vcpkg install assimp
     ./vcpkg/vcpkg install glm
+    ./vcpkg/vcpkg install imgui[core,glfw-binding,vulkan-binding]
 fi
 
 function configure() {

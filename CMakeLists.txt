@@ -29,6 +29,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES})
 find_package(assimp CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 
+find_package(imgui CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE imgui::imgui)
+
 # Source files
 
 target_include_directories(${PROJECT_NAME}

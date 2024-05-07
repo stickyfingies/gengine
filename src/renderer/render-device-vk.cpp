@@ -12,9 +12,14 @@
 #include <algorithm>
 #include <array>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <vector>
 #include <vulkan/vulkan_core.h>
+
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
 
 #undef min
 #undef max
@@ -366,11 +371,17 @@ public:
 		descset_layout = create_descriptor_set_layout();
 
 		descpool = create_descriptor_pool();
+
+		init_imgui();
 	}
 
 	~RenderDeviceVk()
 	{
 		device.waitIdle();
+
+		ImGui_ImplVulkan_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
 
 		destroy_swapchain();
 
@@ -379,6 +390,8 @@ public:
 			device.destroySemaphore(render_finished_semaphores[i]);
 			device.destroyFence(swapchain_fences[i]);
 		}
+
+		device.destroyDescriptorPool(imgui_pool);
 
 		device.destroyRenderPass(backbuffer_pass);
 
@@ -391,6 +404,45 @@ public:
 		std::cout << "[info]\t (module:renderer) shutting down render backend" << std::endl;
 
 		instance.destroy();
+	}
+
+	auto init_imgui() -> void
+	{
+		const vk::DescriptorPoolSize pool_sizes[]{
+			{vk::DescriptorType::eSampler, 1000},
+			{vk::DescriptorType::eCombinedImageSampler, 1000},
+			{vk::DescriptorType::eSampledImage, 1000},
+			{vk::DescriptorType::eStorageImage, 1000},
+			{vk::DescriptorType::eUniformTexelBuffer, 1000},
+			{vk::DescriptorType::eStorageTexelBuffer, 1000},
+			{vk::DescriptorType::eUniformBuffer, 1000},
+			{vk::DescriptorType::eStorageBuffer, 1000},
+			{vk::DescriptorType::eUniformBufferDynamic, 1000},
+			{vk::DescriptorType::eStorageBufferDynamic, 1000},
+			{vk::DescriptorType::eInputAttachment, 1000}};
+
+		vk::DescriptorPoolCreateInfo pool_info(
+			vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, 1000, pool_sizes);
+		imgui_pool = device.createDescriptorPool(pool_info);
+
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO();
+		ImGui::StyleColorsDark();
+
+		ImGui_ImplGlfw_InitForVulkan(window, true);
+		ImGui_ImplVulkan_InitInfo init_info = {};
+		init_info.Instance = instance;
+		init_info.PhysicalDevice = physical_device;
+		init_info.Device = device;
+		init_info.QueueFamily = graphics_queue_idx;
+		init_info.Queue = graphics_queue;
+		init_info.DescriptorPool = imgui_pool;
+		init_info.Subpass = 0;
+		init_info.MinImageCount = 2;
+		init_info.ImageCount = FRAMES_IN_FLIGHT;
+		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+		ImGui_ImplVulkan_Init(&init_info, backbuffer_pass);
 	}
 
 	auto create_buffer(const BufferInfo& info, const void* data) -> Buffer* override
@@ -485,13 +537,9 @@ public:
 			vk::ImageLayout::eTransferDstOptimal,
 			mipLevels);
 		copy_buffer_to_image(staging_buffer, image, info.width, info.height);
+
+		// This also handles the final image layout transition
 		generate_mipmaps(image, info.width, info.height, mipLevels);
-		// transition_image_layout(
-		// 	image,
-		// 	vk::Format::eR8G8B8A8Unorm,
-		// 	vk::ImageLayout::eTransferDstOptimal,
-		// 	vk::ImageLayout::eShaderReadOnlyOptimal,
-		// 	mipLevels);
 
 		device.destroyBuffer(staging_buffer);
 		device.freeMemory(staging_mem);
@@ -509,8 +557,8 @@ public:
 	{
 		auto cmdbuf = begin_one_time_cmdbuf();
 
-		uint32_t mipWidth = width;
-		uint32_t mipHeight = height;
+		int32_t mipWidth = width;
+		int32_t mipHeight = height;
 
 		for (auto i = 1; i < mipLevels; i++) {
 			const auto subresource =
@@ -542,7 +590,7 @@ public:
 			const auto dst_offsets = std::array{
 				vk::Offset3D{0, 0, 0},
 				vk::Offset3D{
-					mipWidth > 1 ? mipWidth / 2 : 1u, mipHeight > 1 ? mipHeight / 2 : 1u, 1}};
+					mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1}};
 			const auto blit =
 				vk::ImageBlit(src_subresource, src_offsets, dst_subresource, dst_offsets);
 
@@ -883,8 +931,15 @@ public:
 		ShaderPipeline* pso,
 		const std::vector<glm::mat4>& transforms,
 		const std::vector<Renderable>& renderables,
-		const std::vector<Descriptors*>& descriptors) -> void override
+		const std::vector<Descriptors*>& descriptors,
+		std::function<void()> gui_code) -> void override
 	{
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		gui_code();
+
 		const auto ctx = alloc_context();
 		if (!ctx) {
 			return;
@@ -915,6 +970,11 @@ public:
 			ctx->bind_geometry_buffers(renderables[i].vbo, renderables[i].ebo);
 			ctx->draw(renderables[i].index_count, 1);
 		}
+
+		ImGui::Render();
+		ImDrawData* draw_data = ImGui::GetDrawData();
+		ImGui_ImplVulkan_RenderDrawData(draw_data, ctx->cmdbuf);
+
 		ctx->end();
 
 		execute_context(ctx);
@@ -1372,6 +1432,8 @@ private:
 
 	vk::DescriptorPool descpool;
 	vk::DescriptorSetLayout descset_layout;
+
+	vk::DescriptorPool imgui_pool;
 
 	std::vector<vk::Semaphore> image_available_semaphores;
 	std::vector<vk::Semaphore> render_finished_semaphores;
