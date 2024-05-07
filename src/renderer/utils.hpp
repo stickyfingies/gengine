@@ -3,14 +3,16 @@
 #include "vulkan-headers.hpp"
 #include <iostream>
 
-inline auto findMemoryType(VkPhysicalDevice physical_device, uint32_t type_filter, VkMemoryPropertyFlags properties)
+inline auto findMemoryType(
+	VkPhysicalDevice physical_device, uint32_t type_filter, VkMemoryPropertyFlags properties)
 	-> uint32_t
 {
 	auto mem_properties = VkPhysicalDeviceMemoryProperties{};
 	vkGetPhysicalDeviceMemoryProperties(physical_device, &mem_properties);
 
 	for (auto i = 0; i < mem_properties.memoryTypeCount; ++i) {
-		if ((type_filter & (1 << i)) && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties) {
+		if ((type_filter & (1 << i)) &&
+			(mem_properties.memoryTypes[i].propertyFlags & properties) == properties) {
 			return i;
 		}
 	}
@@ -25,8 +27,8 @@ inline auto createBufferVk(
 	vk::DeviceSize size,
 	vk::BufferUsageFlags usage,
 	vk::MemoryPropertyFlags properties,
-	vk::Buffer &buffer,
-	vk::DeviceMemory &mem) -> void
+	vk::Buffer& buffer,
+	vk::DeviceMemory& mem) -> void
 {
 	const auto buffer_info = vk::BufferCreateInfo({}, size, usage);
 
@@ -36,12 +38,14 @@ inline auto createBufferVk(
 
 	const auto alloc_info = vk::MemoryAllocateInfo(
 		mem_reqs.size,
-		findMemoryType(physical_device, mem_reqs.memoryTypeBits, static_cast<VkMemoryPropertyFlags>(properties)));
+		findMemoryType(
+			physical_device,
+			mem_reqs.memoryTypeBits,
+			static_cast<VkMemoryPropertyFlags>(properties)));
 
 	mem = device.allocateMemory(alloc_info);
 
 	device.bindBufferMemory(buffer, mem, 0);
 
-	std::cout << "[info]\t created buffer { size: " << size << ", usage: " << static_cast<uint32_t>(usage) << " }"
-			  << std::endl;
+	std::cout << "[info]\t GPU Buffer (" << size << " bytes) " << to_string(usage) << std::endl;
 }

@@ -5,6 +5,8 @@
 #include <string_view>
 #include <tuple>
 #include <vector>
+#include <string>
+#include <unordered_map>
 
 namespace gengine {
 
@@ -13,6 +15,7 @@ struct ImageAsset {
 	unsigned int height;
 	unsigned int channel_count;
 	unsigned char* data;
+	std::string path;
 };
 
 struct GeometryAsset {
@@ -26,11 +29,15 @@ struct GeometryAsset {
 
 using GeometryAssetList = std::vector<GeometryAsset>;
 
-auto load_image(std::string_view path) -> ImageAsset;
+using ImageCache = std::unordered_map<std::string, ImageAsset>;
+
+auto load_image(std::string path) -> ImageAsset;
 
 auto unload_image(const ImageAsset& asset) -> void;
 
-auto get_loaded_images() -> std::vector<std::string>;
+auto unload_all_images() -> void;
+
+auto get_loaded_images() -> ImageCache*;
 
 auto load_vertex_buffer(std::string_view path, bool flipUVs = false, bool flipWindingOrder = false) -> GeometryAssetList;
 

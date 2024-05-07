@@ -50,8 +50,6 @@ auto update_physics(
 	for (auto i = 0; i < collidables.size(); ++i) {
 		physics_engine.get_model_matrix(collidables[i], transforms[i]);
 	}
-
-	camera.Position = glm::vec3(transforms[0][3]);
 }
 
 auto update_input(
@@ -148,7 +146,7 @@ auto create_game_object(
 
 		descriptors.push_back(descriptor_0);
 
-		gengine::unload_image(texture_0);
+		// gengine::unload_image(texture_0);
 
 		// Generate a physics model when makeMesh == true
 		if (makeMesh) {
@@ -168,6 +166,13 @@ auto main(int argc, char** argv) -> int
 	std::cout << "[info]\t " << argv[0]
 			  << "[info]\t (module:main) startup, initializing window manager" << std::endl;
 
+	bool editor_enabled = false;
+
+	if (argc >= 2 && strcmp(argv[1], "editor") == 0) {
+		editor_enabled = true;
+		std::cout << "[info]\t EDITOR ENABLED" << std::endl;
+	}
+
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -180,8 +185,11 @@ auto main(int argc, char** argv) -> int
 
 	auto window_data = WindowData{};
 
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetCursorPosCallback(window, mouse_callback);
+	if (!editor_enabled) {
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		glfwSetCursorPosCallback(window, mouse_callback);
+	}
+
 	glfwSetWindowUserPointer(window, &window_data);
 
 	auto camera = Camera(glm::vec3(0.0f, 5.0f, 90.0f));
@@ -276,6 +284,8 @@ auto main(int argc, char** argv) -> int
 
 	float ms_per_frame = 0.0f;
 
+	update_physics(camera, physics_engine, collidables, transforms, 0.16f);
+
 	while (!glfwWindowShouldClose(window)) {
 		++frame_count;
 
@@ -289,26 +299,56 @@ auto main(int argc, char** argv) -> int
 			last_displayed_fps = glfwGetTime();
 			frame_count = 0;
 		}
+		if (!editor_enabled) {
+			update_physics(camera, physics_engine, collidables, transforms, elapsed_time);
+		}
 
-		update_physics(camera, physics_engine, collidables, transforms, elapsed_time);
+		camera.Position = glm::vec3(transforms[0][3]);
 
 		glfwPollEvents();
 
-		update_input(window, camera, physics_engine, collidables[0], transforms, elapsed_time);
+		if (!editor_enabled) {
+			update_input(window, camera, physics_engine, collidables[0], transforms, elapsed_time);
+		}
 
 		renderer->render(
 			camera.get_view_matrix(), pipeline, transforms, render_components, descriptors, [&]() {
 				using namespace ImGui;
-				Begin("Debug Menu");
+				// Debug
+				SetNextWindowPos({20.0f, 20.0f});
+				SetNextWindowSize({0.0f, 0.0f});
+				Begin("Debug Menu", nullptr, ImGuiWindowFlags_NoCollapse);
 				Text("ms / frame: %.2f", ms_per_frame);
 				Text("Objects: %i", transforms.size());
+				Text("GPU Images: %i", images.size());
 				End();
-				Begin("Textures");
-				const auto images_loaded = gengine::get_loaded_images();
-				for (const auto& image : images_loaded) {
-					Text(image.data());
+				// Matrices
+				SetNextWindowSize({0.0f, 0.0f});
+				SetNextWindowPos({200.0f, 20.0f});
+				Begin("Matrices");
+				PushItemWidth(200.0f);
+				for (auto i = 0u; i < transforms.size(); i++) {
+					auto& transform = transforms[i];
+					const std::string label = "Pos " + i;
+					InputFloat3(std::to_string(i).c_str(), &transform[3][0]);
 				}
+				PopItemWidth();
 				End();
+				// Textures
+				const auto* images_loaded = gengine::get_loaded_images();
+				if (images_loaded->size() > 0) {
+					SetNextWindowSize({0.0f, 0.0f});
+					SetNextWindowPos({500.0f, 20.0f});
+					Begin("Textures", nullptr, ImGuiWindowFlags_NoCollapse);
+					for (const auto& [image_name, image_asset] : *images_loaded) {
+						Text(
+							"%s (%i x %i)",
+							image_name.c_str(),
+							image_asset.width,
+							image_asset.height);
+					}
+					End();
+				}
 			});
 
 		glfwSwapBuffers(window);
@@ -317,6 +357,8 @@ auto main(int argc, char** argv) -> int
 	}
 
 	// unload game data
+
+	gengine::unload_all_images();
 
 	for (const auto& collidable : collidables) {
 		physics_engine.destroy_collidable(collidable);

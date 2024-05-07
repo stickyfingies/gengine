@@ -12,22 +12,28 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <unordered_map>
 
-static std::vector<std::string> images_loaded{};
+/// State belongs to the compilation unit
+/// TODO make an AssetLoader class or something
+
+static std::unordered_map<std::string, gengine::ImageAsset> image_cache;
 
 namespace gengine {
 
-auto get_loaded_images() -> std::vector<std::string> {
-	return images_loaded;
-}
+auto get_loaded_images() -> ImageCache* { return &image_cache; }
 
-auto load_image(std::string_view path) -> ImageAsset
+auto load_image(std::string path) -> ImageAsset
 {
+	const std::string path_str{path.begin(), path.end()};
+
+	if (image_cache.find(path_str) != image_cache.end()) {
+		return image_cache.at(path_str);
+	}
+
 	auto width = 0;
 	auto height = 0;
 	auto channel_count = 0;
-
-	images_loaded.push_back({path.begin(), path.end()});
 
 	const auto data = stbi_load(path.data(), &width, &height, &channel_count, 4);
 
@@ -35,20 +41,28 @@ auto load_image(std::string_view path) -> ImageAsset
 	std::cout << "[info]\t\t size=" << width << "x" << height << std::endl;
 	std::cout << "[info]\t\t channels=" << channel_count << " (fixed to 4)" << std::endl;
 
-	return {
+	const auto image_asset = ImageAsset{
 		static_cast<uint32_t>(width),
 		static_cast<uint32_t>(height),
 		static_cast<uint32_t>(4),
-		data};
+		data,
+		path_str};
+
+	image_cache[path_str] = image_asset;
+
+	return image_asset;
 }
 
-auto load_image_from_memory(const unsigned char* buffer, uint32_t buffer_len) -> ImageAsset
+auto load_image_from_memory(std::string name, const unsigned char* buffer, uint32_t buffer_len)
+	-> ImageAsset
 {
+	if (image_cache.find(name) != image_cache.end()) {
+		return image_cache.at(name);
+	}
+
 	auto width = 0;
 	auto height = 0;
 	auto channel_count = 0;
-
-	images_loaded.push_back("Memory Texture");
 
 	const auto data = stbi_load_from_memory(buffer, buffer_len, &width, &height, &channel_count, 4);
 
@@ -56,14 +70,29 @@ auto load_image_from_memory(const unsigned char* buffer, uint32_t buffer_len) ->
 	std::cout << "[info]\t\t size=" << width << "x" << height << std::endl;
 	std::cout << "[info]\t\t channels=" << channel_count << " (fixed to 4)" << std::endl;
 
-	return {
+	const auto image_asset = ImageAsset{
 		static_cast<uint32_t>(width),
 		static_cast<uint32_t>(height),
 		static_cast<uint32_t>(4),
-		data};
+		data,
+		name};
+
+	image_cache[name] = image_asset;
+
+	return image_asset;
 }
 
-auto unload_image(const ImageAsset& asset) -> void { stbi_image_free(asset.data); }
+auto unload_image(const ImageAsset& asset) -> void {
+	image_cache.erase(asset.path);
+	stbi_image_free(asset.data);
+}
+
+auto unload_all_images() -> void {
+	for (auto it = image_cache.begin(); it != image_cache.end();) {
+		stbi_image_free(it->second.data);
+		image_cache.erase(it++);
+	}
+}
 
 auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode* node) -> void
 {
@@ -138,7 +167,9 @@ auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode*
 					std::cout << embed->mWidth << " x " << embed->mHeight << std::endl;
 
 					texturePaths.push_back(gengine::load_image_from_memory(
-						reinterpret_cast<const unsigned char*>(embed->pcData), embed->mWidth));
+						path_string,
+						reinterpret_cast<const unsigned char*>(embed->pcData),
+						embed->mWidth));
 				}
 				else {
 					// Regular texture

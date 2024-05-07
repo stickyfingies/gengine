@@ -1094,7 +1094,6 @@ private:
 	{
 		if (mipLevels == 0) {
 			mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
-			std::cout << "Assigning " << mipLevels << " mip levels." << std::endl;
 		}
 
 		const auto image_info = vk::ImageCreateInfo(
@@ -1109,6 +1108,8 @@ private:
 			usage);
 
 		image = device.createImage(image_info);
+
+		std::cout << "[info]\t GPU Image (" << width << " x " << height << ") mips:" << mipLevels << " " << to_string(format) << " " << to_string(usage) << std::endl;
 
 		const auto mem_reqs = device.getImageMemoryRequirements(image);
 
