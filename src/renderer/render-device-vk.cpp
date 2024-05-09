@@ -77,6 +77,7 @@ struct Buffer {
 };
 
 struct Image {
+	std::string name;
 	vk::Image image;
 	vk::ImageView view;
 	vk::DeviceMemory mem;
@@ -494,24 +495,30 @@ public:
 		delete buffer;
 	}
 
-	auto create_image(const ImageInfo& info, const void* image_data) -> Image* override
+	auto create_image(const ImageAsset& info) -> Image* override
 	{
+		if (image_cache.find(info.name) != image_cache.end()) {
+			return &image_cache.at(info.name);
+		}
+
+		// TODO - determine if we even need a staging buffer!
+
 		auto staging_buffer = vk::Buffer{};
 		auto staging_mem = vk::DeviceMemory{};
 
-		const auto image_size = info.width * info.height * info.channel_count;
+		const auto image_buffer_size = info.width * info.height * info.channel_count;
 
 		createBufferVk(
 			device,
 			physical_device,
-			image_size,
+			image_buffer_size,
 			vk::BufferUsageFlagBits::eTransferSrc,
 			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
 			staging_buffer,
 			staging_mem);
 
-		auto data = device.mapMemory(staging_mem, 0, image_size);
-		memcpy(data, image_data, image_size);
+		auto data = device.mapMemory(staging_mem, 0, image_buffer_size);
+		memcpy(data, info.data, image_buffer_size);
 		device.unmapMemory(staging_mem);
 
 		auto image = vk::Image{};
@@ -549,7 +556,11 @@ public:
 
 		const auto sampler = create_sampler(mipLevels);
 
-		return new Image{image, image_view, image_mem, sampler};
+		const auto gpu_image = Image{info.name, image, image_view, image_mem, sampler};
+
+		image_cache[info.name] = gpu_image;
+
+		return &image_cache[info.name];
 	}
 
 	auto generate_mipmaps(vk::Image image, uint32_t width, uint32_t height, uint32_t mipLevels)
@@ -655,12 +666,22 @@ public:
 
 	auto destroy_image(Image* image) -> void override
 	{
+		// The image may have already been destroyed
+		if (image_cache.find(image->name) == image_cache.end()) {
+			std::cout << "Attempting to destroy " << image->name << " which has already been destroyed." << std::endl;
+			return;
+		}
+
+		std::cout << "Destroying " << image->name << std::endl;
+
+		// TODO - existing references to this image will now be broken
+		// i.e. dangling pointer
+		image_cache.erase(image->name);
+
 		device.destroyImageView(image->view);
 		device.destroyImage(image->image);
 		device.freeMemory(image->mem);
 		device.destroySampler(image->sampler);
-
-		delete image;
 	}
 
 	auto create_renderable(
@@ -1109,7 +1130,8 @@ private:
 
 		image = device.createImage(image_info);
 
-		std::cout << "[info]\t GPU Image (" << width << " x " << height << ") mips:" << mipLevels << " " << to_string(format) << " " << to_string(usage) << std::endl;
+		std::cout << "[info]\t GPU Image (" << width << " x " << height << ") mips:" << mipLevels
+				  << " " << to_string(format) << " " << to_string(usage) << std::endl;
 
 		const auto mem_reqs = device.getImageMemoryRequirements(image);
 
@@ -1336,7 +1358,8 @@ private:
 
 		for (const auto& image : device.getSwapchainImagesKHR(swapchain)) {
 			swapchain_images.push_back(
-				{image,
+				{"Swapchain Image", // TODO - this may need to be unique per swapchain image
+				 image,
 				 create_image_view(image, surface_fmt, vk::ImageAspectFlagBits::eColor, 1),
 				 nullptr,
 				 nullptr});
@@ -1445,6 +1468,8 @@ private:
 	std::vector<Buffer> buffers;
 
 	std::vector<Image> swapchain_images;
+
+	std::unordered_map<std::string, Image> image_cache;
 
 	unsigned int current_frame = 0;
 	unsigned int image_idx = 0;

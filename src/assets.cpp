@@ -17,18 +17,28 @@
 /// State belongs to the compilation unit
 /// TODO make an AssetLoader class or something
 
-static std::unordered_map<std::string, gengine::ImageAsset> image_cache;
-
 namespace gengine {
 
-auto get_loaded_images() -> ImageCache* { return &image_cache; }
+/// An append-only log of all the images from this loader
+static ImageLog image_log;
 
-auto load_image(std::string path) -> ImageAsset
+/// A CRUD cache of images persisted in system memory
+static ImageCache image_cache;
+
+auto get_image_log() -> const ImageLog* { return &image_log; }
+
+auto get_image_cache() -> const ImageCache* { return &image_cache; }
+
+auto image_in_cache(const std::string& path) -> bool
 {
-	const std::string path_str{path.begin(), path.end()};
+	return image_cache.find(path) != image_cache.end();
+}
 
-	if (image_cache.find(path_str) != image_cache.end()) {
-		return image_cache.at(path_str);
+auto load_image_from_file(const std::string& path) -> std::expected<ImageAsset, std::string>
+{
+	// Return the cached asset
+	if (image_in_cache(path)) {
+		return image_cache.at(path);
 	}
 
 	auto width = 0;
@@ -37,24 +47,29 @@ auto load_image(std::string path) -> ImageAsset
 
 	const auto data = stbi_load(path.data(), &width, &height, &channel_count, 4);
 
+	if (data == nullptr) {
+		return std::unexpected("Cannot load " + path);
+	}
+
+	const auto image_asset = ImageAsset{
+		path,
+		static_cast<uint32_t>(width),
+		static_cast<uint32_t>(height),
+		static_cast<uint32_t>(4),
+		data};
+
+	image_log.push_back(image_asset);
 	std::cout << "[info]\t loading image " << path.data() << std::endl;
 	std::cout << "[info]\t\t size=" << width << "x" << height << std::endl;
 	std::cout << "[info]\t\t channels=" << channel_count << " (fixed to 4)" << std::endl;
 
-	const auto image_asset = ImageAsset{
-		static_cast<uint32_t>(width),
-		static_cast<uint32_t>(height),
-		static_cast<uint32_t>(4),
-		data,
-		path_str};
-
-	image_cache[path_str] = image_asset;
+	image_cache[path] = image_asset;
 
 	return image_asset;
 }
 
-auto load_image_from_memory(std::string name, const unsigned char* buffer, uint32_t buffer_len)
-	-> ImageAsset
+auto load_image_from_memory(
+	const std::string& name, const unsigned char* buffer, uint32_t buffer_len) -> ImageAsset
 {
 	if (image_cache.find(name) != image_cache.end()) {
 		return image_cache.at(name);
@@ -66,35 +81,38 @@ auto load_image_from_memory(std::string name, const unsigned char* buffer, uint3
 
 	const auto data = stbi_load_from_memory(buffer, buffer_len, &width, &height, &channel_count, 4);
 
-	std::cout << "[info]\t loading image from memory" << std::endl;
-	std::cout << "[info]\t\t size=" << width << "x" << height << std::endl;
-	std::cout << "[info]\t\t channels=" << channel_count << " (fixed to 4)" << std::endl;
-
 	const auto image_asset = ImageAsset{
+		name,
 		static_cast<uint32_t>(width),
 		static_cast<uint32_t>(height),
 		static_cast<uint32_t>(4),
-		data,
-		name};
+		data};
+
+	image_log.push_back(image_asset);
+	std::cout << "[info]\t loading image from memory" << std::endl;
+	std::cout << "[info]\t\t size=" << width << "x" << height << std::endl;
+	std::cout << "[info]\t\t channels=" << channel_count << " (fixed to 4)" << std::endl;
 
 	image_cache[name] = image_asset;
 
 	return image_asset;
 }
 
-auto unload_image(const ImageAsset& asset) -> void {
-	image_cache.erase(asset.path);
+auto unload_image(const ImageAsset& asset) -> void
+{
+	image_cache.erase(asset.name);
 	stbi_image_free(asset.data);
 }
 
-auto unload_all_images() -> void {
+auto unload_all_images() -> void
+{
 	for (auto it = image_cache.begin(); it != image_cache.end();) {
 		stbi_image_free(it->second.data);
 		image_cache.erase(it++);
 	}
 }
 
-auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode* node) -> void
+auto traverseNode(MeshAssetList& assets, const aiScene* scene, const aiNode* node) -> void
 {
 	std::vector<aiNode*> parents{};
 	aiNode* parent = node->mParent;
@@ -150,30 +168,34 @@ auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode*
 
 		// material stuff
 
-		const auto loadTextures = [scene](
+		const auto loadTextures = [&scene](
 									  std::vector<ImageAsset>& texturePaths,
 									  const aiMaterial* material,
 									  aiTextureType type) -> void {
 			for (uint32_t i = 0; i < material->GetTextureCount(type); i++) {
+				// Get the path of this texture
 				aiString path;
 				material->GetTexture(type, i, &path);
-				if (auto texture = scene->GetEmbeddedTexture(path.C_Str())) {
-					// Embedded texture
 
-					std::string path_string = path.C_Str();
+				// Embedded texture
+				if (auto texture = scene->GetEmbeddedTexture(path.C_Str())) {
+
+					// Grab the embedded texture instance
+					const std::string path_string = path.C_Str();
 					const auto index = std::atoi(path_string.substr(1).c_str());
 					const auto embed = scene->mTextures[index];
 
-					std::cout << embed->mWidth << " x " << embed->mHeight << std::endl;
-
-					texturePaths.push_back(gengine::load_image_from_memory(
+					// Load from memory
+					const auto imageAsset = load_image_from_memory(
 						path_string,
 						reinterpret_cast<const unsigned char*>(embed->pcData),
-						embed->mWidth));
+						embed->mWidth);
+
+					texturePaths.push_back(imageAsset);
 				}
-				else {
-					// Regular texture
-					texturePaths.push_back(gengine::load_image(path.C_Str()));
+				// Regular texture (load from file)
+				else if (const auto data = load_image_from_file(path.C_Str()); data.has_value()) {
+					texturePaths.push_back(*data);
 				}
 			}
 		};
@@ -202,30 +224,29 @@ auto traverseNode(GeometryAssetList& assets, const aiScene* scene, const aiNode*
 	}
 }
 
-auto load_vertex_buffer(std::string_view path, bool flipUVs, bool flipWindingOrder)
-	-> std::vector<GeometryAsset>
+/// TODO - make this return 'expected<MeshAsset, AssetError>'
+auto load_model(std::string_view path, bool flipUVs, bool flipWindingOrder)
+	-> std::vector<MeshAsset>
 {
-	// TODO - Fix ASSIMP flipping models upside down on import
 	static auto importer = Assimp::Importer{};
-
-	// load scene
 
 	std::cout << "[info]\t loading scene " << path.data() << std::endl;
 
 	uint32_t importFlags = aiProcess_Triangulate | aiProcess_GenNormals;
-	if (flipUVs)
+	if (flipUVs) {
 		importFlags |= aiProcess_FlipUVs;
-	if (flipWindingOrder)
+	}
+	if (flipWindingOrder) {
 		importFlags |= aiProcess_FlipWindingOrder;
+	}
+
 	const auto scene = importer.ReadFile(path.data(), importFlags);
 	if ((!scene) || (scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE) || (!scene->mRootNode)) {
 		std::cerr << "[!ERR]\t\t unable to load scene!" << std::endl;
 		return {};
 	}
 
-	// scene->mRootNode->mTransformation = aiMatrix4x4();
-
-	auto geometry_assets = std::vector<GeometryAsset>();
+	auto geometry_assets = std::vector<MeshAsset>();
 
 	traverseNode(geometry_assets, scene, scene->mRootNode);
 

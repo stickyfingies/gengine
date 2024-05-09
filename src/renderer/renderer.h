@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 
+#include "../assets.h"
+
 #include <string_view>
 #include <vector>
 #include <functional>
@@ -9,6 +11,7 @@
 struct GLFWwindow;
 
 namespace gengine {
+	
 struct ShaderPipeline;
 struct Descriptors;
 struct Buffer;
@@ -21,12 +24,6 @@ struct BufferInfo {
 	Usage usage;
 	size_t stride;
 	size_t element_count;
-};
-
-struct ImageInfo {
-	unsigned int width;
-	unsigned int height;
-	unsigned int channel_count;
 };
 
 struct Renderable {
@@ -49,7 +46,7 @@ public:
 
 	virtual auto destroy_buffer(Buffer* buffer) -> void = 0;
 
-	virtual auto create_image(const ImageInfo& info, const void* data) -> Image* = 0;
+	virtual auto create_image(const ImageAsset& image_asset) -> Image* = 0;
 
 	virtual auto destroy_image(Image* image) -> void = 0;
 

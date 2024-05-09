@@ -119,9 +119,9 @@ auto create_game_object(
 	bool flipUVs = false,
 	bool flipWindingOrder = false) -> void
 {
-	const auto geometries = gengine::load_vertex_buffer(path, flipUVs, flipWindingOrder);
-	for (const auto& geom : geometries) {
-		const auto& [t, vertices, vertices_aux, indices, textures, color] = geom;
+	const auto meshes = gengine::load_model(path, flipUVs, flipWindingOrder);
+	for (const auto& mesh : meshes) {
+		const auto& [t, vertices, vertices_aux, indices, textures, color] = mesh;
 
 		const auto renderable = renderer->create_renderable(vertices, vertices_aux, indices);
 
@@ -134,11 +134,10 @@ auto create_game_object(
 			texture_0 = textures[0];
 		}
 		if (texture_0.width == 0) {
-			texture_0 = gengine::load_image("./data/solid_white.png");
+			texture_0 = *gengine::load_image_from_file("./data/solid_white.png");
 		}
 
-		auto albedo = renderer->create_image(
-			{texture_0.width, texture_0.height, texture_0.channel_count}, texture_0.data);
+		auto albedo = renderer->create_image(texture_0);
 
 		images.push_back(albedo);
 
@@ -335,15 +334,15 @@ auto main(int argc, char** argv) -> int
 				PopItemWidth();
 				End();
 				// Textures
-				const auto* images_loaded = gengine::get_loaded_images();
+				const auto* images_loaded = gengine::get_image_log();
 				if (images_loaded->size() > 0) {
 					SetNextWindowSize({0.0f, 0.0f});
 					SetNextWindowPos({500.0f, 20.0f});
-					Begin("Textures", nullptr, ImGuiWindowFlags_NoCollapse);
-					for (const auto& [image_name, image_asset] : *images_loaded) {
+					Begin("Texture Loading Timeline", nullptr, ImGuiWindowFlags_NoCollapse);
+					for (const auto& image_asset : *images_loaded) {
 						Text(
 							"%s (%i x %i)",
-							image_name.c_str(),
+							image_asset.name.c_str(),
 							image_asset.width,
 							image_asset.height);
 					}
