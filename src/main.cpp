@@ -286,13 +286,13 @@ auto main(int argc, char** argv) -> int
 		const auto current_time = glfwGetTime();
 		const auto elapsed_time = current_time - last_time;
 
-		// log average fps to console
+		// ms/frame
 		if (glfwGetTime() - last_displayed_fps >= 1.0) {
 			ms_per_frame = 1000.0 / frame_count;
-			std::cout << "[dbg ]\t ms/frame: " << ms_per_frame << std::endl;
 			last_displayed_fps = glfwGetTime();
 			frame_count = 0;
 		}
+
 		if (!editor_enabled) {
 			update_physics(camera, physics_engine, collidables, transforms, elapsed_time);
 		}

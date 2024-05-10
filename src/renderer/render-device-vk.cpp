@@ -131,12 +131,10 @@ public:
 		cmdbuf.beginRenderPass(pass_begin_info, vk::SubpassContents::eInline);
 
 		const auto viewport = vk::Viewport(0.0f, 0.0f, extent.width, extent.height, 0.0f, 1.0f);
-		const auto viewports = std::array{viewport};
-		cmdbuf.setViewport(0, viewports);
+		cmdbuf.setViewport(0, {viewport});
 
 		const auto scissor = vk::Rect2D({0, 0}, extent);
-		const auto scissors = std::array{scissor};
-		cmdbuf.setScissor(0, scissors);
+		cmdbuf.setScissor(0, {scissor});
 	}
 
 	auto end() -> void
@@ -1129,8 +1127,9 @@ private:
 
 		image = device.createImage(image_info);
 
-		std::cout << "[info]\t GpuImage " << debugName << " (" << width << "x" << height << ") mips:" << mipLevels
-				  << " " << to_string(format) << " " << to_string(usage) << std::endl;
+		std::cout << "[info]\t GpuImage " << debugName << " (" << width << "x" << height
+				  << ") mips:" << mipLevels << " " << to_string(format) << " " << to_string(usage)
+				  << std::endl;
 
 		const auto mem_reqs = device.getImageMemoryRequirements(image);
 

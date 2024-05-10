@@ -9,6 +9,10 @@ A hobby real-time 3D simulation with physics, user input, and graphics.
 
 ![Screenshot](./screenshot.png "Screenshot")
 
+A minimal editor + debug menu is also included.
+
+![Screenshot](./screenshot_editor.png "Screenshot")
+
 Getting Started
 ---
 
