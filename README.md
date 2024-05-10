@@ -92,8 +92,10 @@ Roadmap
 - [x] Resizable windows
 - [x] Colors and Textures
 - [x] Texture mip-mapping
-- [ ] Integrate a GUI
-- [ ] Separate vertex positions from the other buffer data
+- [x] Integrate a GUI
+- [ ] Lighting
+- [ ] Edit, save, and load scenes
+- [ ] Benchmarks and performance stats
 
 License
 ---
