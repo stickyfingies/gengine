@@ -174,9 +174,9 @@ public:
 	{
 		static const auto debug = true;
 
-		std::cout << "[info]\t (module:renderer) initializing render backend" << std::endl;
+		std::cout << "[info]\t Vulkan renderer initializing >:)" << std::endl;
 
-		std::cout << "[info]\t\t debug: " << debug << std::endl;
+		std::cout << "[info]\t * Debug: " << debug << std::endl;
 
 		const auto app_info = vk::ApplicationInfo(
 			"App Name",
@@ -194,10 +194,8 @@ public:
 #endif
 			VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
 
-		std::cout << "[info]\t\t driver extensions:" << std::endl;
-
 		for (const auto& ext : extension_names) {
-			std::cout << "[info]\t\t\t " << ext << std::endl;
+			std::cout << "[info]\t * Extension: " << ext << std::endl;
 		}
 
 		const auto layer_names = std::array{"VK_LAYER_KHRONOS_validation"};
@@ -223,12 +221,10 @@ public:
 
 			const auto properties = physical_device.getProperties();
 
-			std::cout << "[info]\t selected physical device" << std::endl;
-			std::cout << "[info]\t\t name: " << properties.deviceName << std::endl;
-			std::cout << "[info]\t\t limits:" << std::endl;
-			std::cout << "[info]\t\t\t push constants: " << properties.limits.maxPushConstantsSize
-					  << " bytes" << std::endl;
-			std::cout << "[info]\t\t\t memory allocations: "
+			std::cout << "[info]\t * " << properties.deviceName << std::endl;
+			std::cout << "[info]\t\t * Max push constants: "
+					  << properties.limits.maxPushConstantsSize << " bytes" << std::endl;
+			std::cout << "[info]\t\t * Max memory allocations: "
 					  << properties.limits.maxMemoryAllocationCount << std::endl;
 		}
 
@@ -481,6 +477,7 @@ public:
 
 		copy_buffer(staging, buffer, info.element_count * info.stride);
 
+		std::cout << "[info]\t ~ GpuBuffer" << std::endl;
 		device.destroyBuffer(staging);
 		device.freeMemory(staging_mem);
 
@@ -527,6 +524,7 @@ public:
 		auto mipLevels = 0u;
 
 		create_image_vk(
+			info.name,
 			info.width,
 			info.height,
 			vk::Format::eR8G8B8A8Unorm,
@@ -548,6 +546,7 @@ public:
 		// This also handles the final image layout transition
 		generate_mipmaps(image, info.width, info.height, mipLevels);
 
+		std::cout << "[info]\t ~ GpuBuffer" << std::endl;
 		device.destroyBuffer(staging_buffer);
 		device.freeMemory(staging_mem);
 
@@ -563,8 +562,8 @@ public:
 		return &image_cache[info.name];
 	}
 
-	auto generate_mipmaps(vk::Image image, uint32_t width, uint32_t height, uint32_t mipLevels)
-		-> void
+	auto
+	generate_mipmaps(vk::Image image, uint32_t width, uint32_t height, uint32_t mipLevels) -> void
 	{
 		auto cmdbuf = begin_one_time_cmdbuf();
 
@@ -664,19 +663,17 @@ public:
 		end_one_time_cmdbuf(cmdbuf);
 	}
 
-	auto destroy_image(Image* image) -> void override
+	auto destroy_all_images() -> void override
 	{
-		// The image may have already been destroyed
-		if (image_cache.find(image->name) == image_cache.end()) {
-			std::cout << "Attempting to destroy " << image->name << " which has already been destroyed." << std::endl;
-			return;
+		for (auto it = image_cache.begin(); it != image_cache.end();) {
+			destroy_image(&(it->second));
+			image_cache.erase(it++);
 		}
+	}
 
-		std::cout << "Destroying " << image->name << std::endl;
-
-		// TODO - existing references to this image will now be broken
-		// i.e. dangling pointer
-		image_cache.erase(image->name);
+	auto destroy_image(Image* image) -> void
+	{
+		std::cout << "[info]\t ~ GpuImage " << image->name << std::endl;
 
 		device.destroyImageView(image->view);
 		device.destroyImage(image->image);
@@ -1084,6 +1081,7 @@ private:
 		return cmdbuf;
 	}
 
+	/// Blocks until commands finish
 	auto end_one_time_cmdbuf(vk::CommandBuffer cmdbuf) -> void
 	{
 		cmdbuf.end();
@@ -1103,6 +1101,7 @@ private:
 	}
 
 	auto create_image_vk(
+		const std::string& debugName,
 		unsigned int width,
 		unsigned int height,
 		vk::Format format,
@@ -1122,7 +1121,7 @@ private:
 			vk::ImageType::e2D,
 			format,
 			{width, height, 1},
-			mipLevels, // mip levels
+			mipLevels,
 			1,
 			vk::SampleCountFlagBits::e1,
 			tiling,
@@ -1130,7 +1129,7 @@ private:
 
 		image = device.createImage(image_info);
 
-		std::cout << "[info]\t GPU Image (" << width << " x " << height << ") mips:" << mipLevels
+		std::cout << "[info]\t GpuImage " << debugName << " (" << width << "x" << height << ") mips:" << mipLevels
 				  << " " << to_string(format) << " " << to_string(usage) << std::endl;
 
 		const auto mem_reqs = device.getImageMemoryRequirements(image);
@@ -1148,8 +1147,10 @@ private:
 	}
 
 	auto create_image_view(
-		vk::Image image, vk::Format format, vk::ImageAspectFlags aspect, uint32_t mipLevels)
-		-> vk::ImageView
+		vk::Image image,
+		vk::Format format,
+		vk::ImageAspectFlags aspect,
+		uint32_t mipLevels) -> vk::ImageView
 	{
 		const auto component_mapping = vk::ComponentMapping(
 			vk::ComponentSwizzle::eR,
@@ -1287,8 +1288,6 @@ private:
 			extent = surface_caps.currentExtent;
 		}
 
-		std::cout << extent.width << " x " << extent.height << std::endl;
-
 		const auto present_mode = [&] {
 			auto best_mode = vk::PresentModeKHR::eFifo;
 
@@ -1350,11 +1349,7 @@ private:
 			swapchain_info.pQueueFamilyIndices = queue_family_indices.data();
 		}
 
-		std::cout << "About to create swapchain" << std::endl;
-
 		swapchain = device.createSwapchainKHR(swapchain_info);
-
-		std::cout << "Created swapchain!" << std::endl;
 
 		for (const auto& image : device.getSwapchainImagesKHR(swapchain)) {
 			swapchain_images.push_back(
@@ -1364,10 +1359,15 @@ private:
 				 nullptr,
 				 nullptr});
 		}
+
+		std::cout << "[info]\t Swapchain (" << extent.width << "x" << extent.height << ") "
+				  << to_string(surface_fmt) << std::endl;
 	}
 
 	auto destroy_swapchain() -> void
 	{
+		// TODO - Not really a fan
+		std::cout << "[info]\t ~ GpuImage DepthBuffer" << std::endl;
 		device.destroyImageView(depth_view);
 		device.destroyImage(depth_buffer);
 		device.freeMemory(depth_mem);
@@ -1389,6 +1389,7 @@ private:
 	{
 		auto mipLevels = 1u;
 		create_image_vk(
+			"DepthBuffer",
 			extent.width,
 			extent.height,
 			vk::Format::eD24UnormS8Uint,

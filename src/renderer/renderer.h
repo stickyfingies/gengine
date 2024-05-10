@@ -48,7 +48,7 @@ public:
 
 	virtual auto create_image(const ImageAsset& image_asset) -> Image* = 0;
 
-	virtual auto destroy_image(Image* image) -> void = 0;
+	virtual auto destroy_all_images() -> void = 0;
 
 	virtual auto create_pipeline(const std::string_view vert_code, const std::string_view frag_code)
 		-> ShaderPipeline* = 0;

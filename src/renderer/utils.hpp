@@ -47,5 +47,5 @@ inline auto createBufferVk(
 
 	device.bindBufferMemory(buffer, mem, 0);
 
-	std::cout << "[info]\t GPU Buffer (" << size << " bytes) " << to_string(usage) << std::endl;
+	std::cout << "[info]\t GpuBuffer (" << size << " bytes) " << to_string(usage) << " " << to_string(properties) << std::endl;
 }

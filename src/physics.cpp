@@ -20,7 +20,7 @@ struct Collidable {
 
 PhysicsEngine::PhysicsEngine()
 {
-	std::cout << "[info]\t intitializing physics engine" << std::endl;
+	std::cout << "[info]\t Intitializing physics engine" << std::endl;
 
 	collision_cfg = new btDefaultCollisionConfiguration();
 
@@ -167,7 +167,7 @@ auto PhysicsEngine::create_mesh(
 	auto skew = glm::vec3{};
 	auto perspective = glm::vec4{};
 	glm::decompose(model_matrix, scale, rotation, translation, skew, perspective);
-	
+
 	// Convert our optimized (vertex, index) buffer into non-optimized (vertex) buffer
 
 	auto nonIndexedVertices = std::vector<float>();
@@ -176,11 +176,10 @@ auto PhysicsEngine::create_mesh(
 		nonIndexedVertices.push_back(-vertices[idx * 3 + 0]);
 		nonIndexedVertices.push_back(vertices[idx * 3 + 1]);
 		nonIndexedVertices.push_back(vertices[idx * 3 + 2]);
-	} 
+	}
 
-	std::cout << vertices.size() << " vertices" << std::endl;
-	std::cout << indices.size() << " indices" << std::endl;
-	std::cout << nonIndexedVertices.size() << " non-indexed vertices " << std::endl;
+	std::cout << "[info]\t Collidable (" << vertices.size() << " vertices, "
+			  << nonIndexedVertices.size() << " non-indexed)" << std::endl;
 
 	// Populate a triangle mesh using our non-optimized vertex buffer
 
@@ -207,7 +206,6 @@ auto PhysicsEngine::create_mesh(
 	// collidable->mesh = new btTriangleIndexVertexArray();
 	// collidable->mesh->addIndexedMesh(indexed_mesh, PHY_INTEGER);
 
-	std::cout << scale.x << ", " << scale.y << ", " << scale.z << std::endl;
 	collidable->scale = scale;
 	collidable->shape = new btBvhTriangleMeshShape(collidable->mesh, true);
 	collidable->shape->setLocalScaling(btVector3(scale.x, scale.y, scale.z));
@@ -229,11 +227,7 @@ auto PhysicsEngine::create_mesh(
 	collidable->body->setFriction(0.3);
 	collidable->body->setAngularFactor(0.0);
 
-	std::cout << "[info]\t Creating physics mesh" << std::endl;
-
 	dynamics_world->addRigidBody(collidable->body);
-
-	std::cout << "[info]\t Created physics mesh" << std::endl;
 
 	return collidable;
 }
@@ -260,7 +254,7 @@ auto PhysicsEngine::get_model_matrix(Collidable* collidable, glm::mat4& model_ma
 
 	model_matrix = glm::translate(glm::mat4(1.0f), glm::vec3(pos[0], pos[1], pos[2])) *
 				   glm::mat4_cast(glm::quat(rot[0], rot[1], rot[2], rot[3])) *
-				   glm::scale(glm::mat4(1.0 ), scale);
+				   glm::scale(glm::mat4(1.0), scale);
 }
 
 auto PhysicsEngine::apply_force(Collidable* collidable, glm::vec3 force) -> void

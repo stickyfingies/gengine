@@ -110,7 +110,6 @@ auto create_game_object(
 	gengine::RenderDevice* renderer,
 	gengine::PhysicsEngine& physics_engine,
 	std::vector<Renderable>& render_components,
-	std::vector<gengine::Image*>& images,
 	std::vector<gengine::Descriptors*>& descriptors,
 	gengine::ShaderPipeline* pipeline,
 	std::vector<gengine::Collidable*>& collidables,
@@ -139,8 +138,6 @@ auto create_game_object(
 
 		auto albedo = renderer->create_image(texture_0);
 
-		images.push_back(albedo);
-
 		const auto descriptor_0 = renderer->create_descriptors(pipeline, albedo, color);
 
 		descriptors.push_back(descriptor_0);
@@ -162,8 +159,7 @@ auto create_game_object(
 
 auto main(int argc, char** argv) -> int
 {
-	std::cout << "[info]\t " << argv[0]
-			  << "[info]\t (module:main) startup, initializing window manager" << std::endl;
+	std::cout << "[info]\t Launching " << argv[0] << std::endl;
 
 	bool editor_enabled = false;
 
@@ -180,7 +176,7 @@ auto main(int argc, char** argv) -> int
 
 	auto physics_engine = gengine::PhysicsEngine();
 
-	const auto window = glfwCreateWindow(1280, 720, "Hello World", nullptr, nullptr);
+	const auto window = glfwCreateWindow(1280, 720, argv[0], nullptr, nullptr);
 
 	auto window_data = WindowData{};
 
@@ -200,7 +196,6 @@ auto main(int argc, char** argv) -> int
 	auto transforms = std::vector<glm::mat4>{};
 	auto collidables = std::vector<gengine::Collidable*>{};
 	auto render_components = std::vector<Renderable>{};
-	auto images = std::vector<gengine::Image*>();
 	auto descriptors = std::vector<gengine::Descriptors*>{};
 
 	// create game resources
@@ -236,7 +231,6 @@ auto main(int argc, char** argv) -> int
 		renderer,
 		physics_engine,
 		render_components,
-		images,
 		descriptors,
 		pipeline,
 		collidables,
@@ -249,7 +243,6 @@ auto main(int argc, char** argv) -> int
 		renderer,
 		physics_engine,
 		render_components,
-		images,
 		descriptors,
 		pipeline,
 		collidables,
@@ -262,7 +255,6 @@ auto main(int argc, char** argv) -> int
 		renderer,
 		physics_engine,
 		render_components,
-		images,
 		descriptors,
 		pipeline,
 		collidables,
@@ -270,6 +262,9 @@ auto main(int argc, char** argv) -> int
 		true,
 		true,
 		false);
+
+	// Assumes all images are uploaded to the GPU and are useless in system memory.
+	gengine::unload_all_images();
 
 	// core game loop
 
@@ -319,7 +314,7 @@ auto main(int argc, char** argv) -> int
 				Begin("Debug Menu", nullptr, ImGuiWindowFlags_NoCollapse);
 				Text("ms / frame: %.2f", ms_per_frame);
 				Text("Objects: %i", transforms.size());
-				Text("GPU Images: %i", images.size());
+				// Text("GPU Images: %i", images.size());
 				End();
 				// Matrices
 				SetNextWindowSize({0.0f, 0.0f});
@@ -357,8 +352,6 @@ auto main(int argc, char** argv) -> int
 
 	// unload game data
 
-	gengine::unload_all_images();
-
 	for (const auto& collidable : collidables) {
 		physics_engine.destroy_collidable(collidable);
 	}
@@ -374,9 +367,7 @@ auto main(int argc, char** argv) -> int
 		renderer->destroy_buffer(renderComponent.ebo);
 	}
 
-	for (auto& image : images) {
-		renderer->destroy_image(image);
-	}
+	renderer->destroy_all_images();
 
 	// system shutdown
 

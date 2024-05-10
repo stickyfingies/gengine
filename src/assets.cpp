@@ -59,9 +59,8 @@ auto load_image_from_file(const std::string& path) -> std::expected<ImageAsset, 
 		data};
 
 	image_log.push_back(image_asset);
-	std::cout << "[info]\t loading image " << path.data() << std::endl;
-	std::cout << "[info]\t\t size=" << width << "x" << height << std::endl;
-	std::cout << "[info]\t\t channels=" << channel_count << " (fixed to 4)" << std::endl;
+	std::cout << "[info]\t ImageAsset " << path.data() << " (" << width << "x" << height
+			  << ") channels=" << channel_count << " (fixed to 4)" << std::endl;
 
 	image_cache[path] = image_asset;
 
@@ -89,9 +88,8 @@ auto load_image_from_memory(
 		data};
 
 	image_log.push_back(image_asset);
-	std::cout << "[info]\t loading image from memory" << std::endl;
-	std::cout << "[info]\t\t size=" << width << "x" << height << std::endl;
-	std::cout << "[info]\t\t channels=" << channel_count << " (fixed to 4)" << std::endl;
+	std::cout << "[info]\t ImageAsset " << name << " (" << width << "x" << height
+			  << ") channels=" << channel_count << " (fixed to 4)" << std::endl;
 
 	image_cache[name] = image_asset;
 
@@ -107,6 +105,7 @@ auto unload_image(const ImageAsset& asset) -> void
 auto unload_all_images() -> void
 {
 	for (auto it = image_cache.begin(); it != image_cache.end();) {
+		std::cout << "[info]\t ~ ImageAsset " << it->first << std::endl;
 		stbi_image_free(it->second.data);
 		image_cache.erase(it++);
 	}
@@ -133,7 +132,7 @@ auto traverseNode(MeshAssetList& assets, const aiScene* scene, const aiNode* nod
 		const auto mesh_idx = node->mMeshes[i];
 		const auto mesh = scene->mMeshes[mesh_idx];
 
-		std::cout << "[info]\t\t mesh " << i << ": { vertices: " << mesh->mNumVertices
+		std::cout << "[info]\t Mesh " << i << " { vertices: " << mesh->mNumVertices
 				  << ", faces: " << mesh->mNumFaces << " }" << std::endl;
 
 		auto vertices = std::vector<float>{};
@@ -154,8 +153,6 @@ auto traverseNode(MeshAssetList& assets, const aiScene* scene, const aiNode* nod
 			vertices_aux.push_back(mesh->mTextureCoords[0][j].x);
 			vertices_aux.push_back(mesh->mTextureCoords[0][j].y);
 		}
-
-		std::cout << "Vertices count: " << vertices.size() << std::endl;
 
 		// extract indices from faces
 
@@ -230,7 +227,7 @@ auto load_model(std::string_view path, bool flipUVs, bool flipWindingOrder)
 {
 	static auto importer = Assimp::Importer{};
 
-	std::cout << "[info]\t loading scene " << path.data() << std::endl;
+	std::cout << "[info]\t Scene " << path.data() << std::endl;
 
 	uint32_t importFlags = aiProcess_Triangulate | aiProcess_GenNormals;
 	if (flipUVs) {
