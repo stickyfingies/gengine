@@ -85,6 +85,7 @@ All software dependencies are installed and managed by [vcpkg](https://vcpkg.io/
 - [assimp](http://assimp.org/): load and parse various 3d file formats
 - [glm](https://github.com/g-truc/glm): mathematics library for graphics software
 - [stb](https://github.com/nothings/stb): image loading & decoding from files and memory
+- [imgui](https://github.com/ocornut/imgui): bloat-free graphical user interface for C++
 
 Roadmap
 ---
