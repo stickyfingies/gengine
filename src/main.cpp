@@ -120,17 +120,17 @@ auto create_game_object(
 {
 	const auto meshes = gengine::load_model(path, flipUVs, flipWindingOrder);
 	for (const auto& mesh : meshes) {
-		const auto& [t, vertices, vertices_aux, indices, textures, color] = mesh;
+		const auto& [t, geometry, material] = mesh;
 
-		const auto renderable = renderer->create_renderable(vertices, vertices_aux, indices);
+		const auto renderable = renderer->create_renderable(geometry);
 
 		render_components.push_back(renderable);
 
 		// Materials
 
 		gengine::ImageAsset texture_0{};
-		if (textures.size() > 0) {
-			texture_0 = textures[0];
+		if (material.textures.size() > 0) {
+			texture_0 = material.textures[0];
 		}
 		if (texture_0.width == 0) {
 			texture_0 = *gengine::load_image_from_file("./data/solid_white.png");
@@ -138,7 +138,7 @@ auto create_game_object(
 
 		auto albedo = renderer->create_image(texture_0);
 
-		const auto descriptor_0 = renderer->create_descriptors(pipeline, albedo, color);
+		const auto descriptor_0 = renderer->create_descriptors(pipeline, albedo, material.color);
 
 		descriptors.push_back(descriptor_0);
 
@@ -150,7 +150,7 @@ auto create_game_object(
 			auto tr = t;
 			// tr = glm::rotate(tr, 3.14f, glm::vec3(0, 1, 0));
 			transforms.push_back(tr);
-			collidables.push_back(physics_engine.create_mesh(0.0f, vertices, indices, tr));
+			collidables.push_back(physics_engine.create_mesh(0.0f, geometry.vertices, geometry.indices, tr));
 		}
 	}
 }

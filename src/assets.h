@@ -2,17 +2,16 @@
 
 #include <glm/glm.hpp>
 
-#include <string_view>
 #include <expected>
-#include <tuple>
-#include <vector>
 #include <string>
+#include <string_view>
+#include <tuple>
 #include <unordered_map>
+#include <vector>
 
 namespace gengine {
 
-template <typename D>
-struct GenericImageAsset {
+template <typename D> struct GenericImageAsset {
 	std::string name;
 	unsigned int width;
 	unsigned int height;
@@ -23,13 +22,35 @@ struct GenericImageAsset {
 /// Lives in RAM.
 using ImageAsset = GenericImageAsset<unsigned char>;
 
-struct MeshAsset {
-	glm::mat4 transform;
-	std::vector<float> vertices; // raw positions
+struct GeometryAsset {
+	std::vector<float> vertices;	 // raw positions
 	std::vector<float> vertices_aux; // normals, uvs
 	std::vector<unsigned int> indices;
+};
+
+struct MaterialAsset {
 	std::vector<ImageAsset> textures;
-	glm::vec3 material_color;
+	glm::vec3 color;
+};
+
+struct SceneAsset {
+
+	using ObjectIdx = size_t;
+	using GeometryIdx = size_t;
+	using MaterialIdx = size_t;
+
+	std::vector<glm::mat4> object_transforms;
+	std::vector<GeometryAsset> geometries;
+	std::vector<MaterialAsset> materials;
+
+	std::unordered_map<ObjectIdx, GeometryIdx> object_to_geometry;
+	std::unordered_map<ObjectIdx, MaterialIdx> object_to_material;
+};
+
+struct MeshAsset {
+	glm::mat4 transform;
+	GeometryAsset geometry;
+	MaterialAsset material;
 };
 
 using MeshAssetList = std::vector<MeshAsset>;
@@ -48,7 +69,8 @@ auto get_image_log() -> const ImageLog*;
 
 auto get_image_cache() -> const ImageCache*;
 
-auto load_model(std::string_view path, bool flipUVs = false, bool flipWindingOrder = false) -> MeshAssetList;
+auto load_model(std::string_view path, bool flipUVs = false, bool flipWindingOrder = false)
+	-> MeshAssetList;
 
 auto load_file(std::string_view path) -> std::string;
 } // namespace gengine

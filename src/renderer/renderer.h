@@ -57,10 +57,7 @@ public:
 
 	virtual auto destroy_pipeline(ShaderPipeline* pso) -> void = 0;
 
-	virtual auto create_renderable(
-		const std::vector<float>& vertices,
-		const std::vector<float>& vertices_aux,
-		const std::vector<uint32_t> indices) -> Renderable = 0;
+	virtual auto create_renderable(const GeometryAsset& geometry) -> Renderable = 0;
 
 	virtual auto render(
 		const glm::mat4& view,

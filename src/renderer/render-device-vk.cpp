@@ -679,11 +679,12 @@ public:
 		device.destroySampler(image->sampler);
 	}
 
-	auto create_renderable(
-		const std::vector<float>& vertices,
-		const std::vector<float>& vertices_aux,
-		const std::vector<uint32_t> indices) -> Renderable
+	auto create_renderable(const GeometryAsset& geometry) -> Renderable override
 	{
+		const auto& vertices = geometry.vertices;
+		const auto& vertices_aux = geometry.vertices_aux;
+		const auto& indices = geometry.indices;
+		
 		auto gpu_data = std::vector<float>{};
 		for (int i = 0; i < vertices.size() / 3; i++) {
 			const auto v = (i * 3);

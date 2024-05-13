@@ -185,9 +185,9 @@ auto traverseNode(
 		// material stuff
 
 		const auto extractTextures = [](const aiScene* scene,
-									 AssetDecoding& decoding,
-									 const aiMaterial* material,
-									 aiTextureType type) -> void {
+										AssetDecoding& decoding,
+										const aiMaterial* material,
+										aiTextureType type) -> void {
 			for (uint32_t i = 0; i < material->GetTextureCount(type); i++) {
 				// Get the path of this texture
 				aiString path;
@@ -221,11 +221,8 @@ auto traverseNode(
 		decoding.meshCount += 1;
 		assets.push_back(
 			{transform,
-			 vertices,
-			 vertices_aux,
-			 indices,
-			 textures,
-			 glm::vec3{material_color.r, material_color.g, material_color.b}});
+			 {vertices, vertices_aux, indices},
+			 {textures, glm::vec3{material_color.r, material_color.g, material_color.b}}});
 	}
 
 	for (auto i = 0; i < node->mNumChildren; ++i) {
@@ -257,9 +254,9 @@ auto load_model(std::string_view path, bool flipUVs, bool flipWindingOrder)
 	}
 
 	auto decoding = AssetDecoding{};
-	auto geometry_assets = std::vector<MeshAsset>();
+	auto assets = std::vector<MeshAsset>();
 
-	traverseNode(decoding, geometry_assets, scene, scene->mRootNode);
+	traverseNode(decoding, assets, scene, scene->mRootNode);
 
 	// Load textures from disk
 	for (const auto& [texture_path, mesh_indices] : decoding.texpaths_to_meshes) {
@@ -267,7 +264,7 @@ auto load_model(std::string_view path, bool flipUVs, bool flipWindingOrder)
 		if (imageAsset.has_value()) {
 			// Assign texture to all meshes which use it
 			for (const auto mesh_idx : mesh_indices) {
-				geometry_assets[mesh_idx].textures.push_back(*imageAsset);
+				assets[mesh_idx].material.textures.push_back(*imageAsset);
 			}
 		}
 	}
@@ -283,11 +280,11 @@ auto load_model(std::string_view path, bool flipUVs, bool flipWindingOrder)
 
 		// Assign texture to all meshes which use it
 		for (const auto mesh_idx : mesh_indices) {
-			geometry_assets[mesh_idx].textures.push_back(imageAsset);
+			assets[mesh_idx].material.textures.push_back(imageAsset);
 		}
 	}
 
-	return geometry_assets;
+	return assets;
 }
 
 auto load_file(std::string_view path) -> std::string
