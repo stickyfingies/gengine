@@ -111,8 +111,27 @@ auto unload_all_images() -> void
 	}
 }
 
-auto traverseNode(MeshAssetList& assets, const aiScene* scene, const aiNode* node) -> void
+struct AssetDecoding {
+
+	using EmbedIdx = size_t;
+	using MeshIdx = size_t;
+
+	size_t meshCount = 0;
+
+	/// one-to many
+	std::unordered_map<EmbedIdx, std::vector<MeshIdx>> embeds_to_meshes;
+
+	/// one-to-many
+	std::unordered_map<std::string, std::vector<MeshIdx>> texpaths_to_meshes;
+};
+
+auto traverseNode(
+	AssetDecoding& decoding,
+	MeshAssetList& assets,
+	const aiScene* scene,
+	const aiNode* node) -> void
 {
+
 	std::vector<aiNode*> parents{};
 	aiNode* parent = node->mParent;
 	while (parent != nullptr) {
@@ -165,34 +184,27 @@ auto traverseNode(MeshAssetList& assets, const aiScene* scene, const aiNode* nod
 
 		// material stuff
 
-		const auto loadTextures = [&scene](
-									  std::vector<ImageAsset>& texturePaths,
-									  const aiMaterial* material,
-									  aiTextureType type) -> void {
+		const auto extractTextures = [](const aiScene* scene,
+									 AssetDecoding& decoding,
+									 const aiMaterial* material,
+									 aiTextureType type) -> void {
 			for (uint32_t i = 0; i < material->GetTextureCount(type); i++) {
 				// Get the path of this texture
 				aiString path;
 				material->GetTexture(type, i, &path);
+				const std::string path_string = path.C_Str();
 
 				// Embedded texture
 				if (auto texture = scene->GetEmbeddedTexture(path.C_Str())) {
 
 					// Grab the embedded texture instance
-					const std::string path_string = path.C_Str();
 					const auto index = std::atoi(path_string.substr(1).c_str());
-					const auto embed = scene->mTextures[index];
 
-					// Load from memory
-					const auto imageAsset = load_image_from_memory(
-						path_string,
-						reinterpret_cast<const unsigned char*>(embed->pcData),
-						embed->mWidth);
-
-					texturePaths.push_back(imageAsset);
+					decoding.embeds_to_meshes[index].push_back(decoding.meshCount);
 				}
 				// Regular texture (load from file)
-				else if (const auto data = load_image_from_file(path.C_Str()); data.has_value()) {
-					texturePaths.push_back(*data);
+				else {
+					decoding.texpaths_to_meshes[path_string].push_back(decoding.meshCount);
 				}
 			}
 		};
@@ -203,9 +215,10 @@ auto traverseNode(MeshAssetList& assets, const aiScene* scene, const aiNode* nod
 		if (mesh->mMaterialIndex >= 0) {
 			const auto* material = scene->mMaterials[mesh->mMaterialIndex];
 			material->Get(AI_MATKEY_COLOR_DIFFUSE, material_color);
-			loadTextures(textures, material, aiTextureType_DIFFUSE);
+			extractTextures(scene, decoding, material, aiTextureType_DIFFUSE);
 		}
 
+		decoding.meshCount += 1;
 		assets.push_back(
 			{transform,
 			 vertices,
@@ -217,7 +230,7 @@ auto traverseNode(MeshAssetList& assets, const aiScene* scene, const aiNode* nod
 
 	for (auto i = 0; i < node->mNumChildren; ++i) {
 		const auto child = node->mChildren[i];
-		traverseNode(assets, scene, child);
+		traverseNode(decoding, assets, scene, child);
 	}
 }
 
@@ -243,9 +256,36 @@ auto load_model(std::string_view path, bool flipUVs, bool flipWindingOrder)
 		return {};
 	}
 
+	auto decoding = AssetDecoding{};
 	auto geometry_assets = std::vector<MeshAsset>();
 
-	traverseNode(geometry_assets, scene, scene->mRootNode);
+	traverseNode(decoding, geometry_assets, scene, scene->mRootNode);
+
+	// Load textures from disk
+	for (const auto& [texture_path, mesh_indices] : decoding.texpaths_to_meshes) {
+		const auto imageAsset = load_image_from_file(texture_path);
+		if (imageAsset.has_value()) {
+			// Assign texture to all meshes which use it
+			for (const auto mesh_idx : mesh_indices) {
+				geometry_assets[mesh_idx].textures.push_back(*imageAsset);
+			}
+		}
+	}
+
+	// Load textures from memory
+	for (const auto& [embed_idx, mesh_indices] : decoding.embeds_to_meshes) {
+		const auto embed = scene->mTextures[embed_idx];
+		const auto texture_name = std::to_string(embed_idx);
+
+		// Load from memory
+		const auto imageAsset = load_image_from_memory(
+			texture_name, reinterpret_cast<const unsigned char*>(embed->pcData), embed->mWidth);
+
+		// Assign texture to all meshes which use it
+		for (const auto mesh_idx : mesh_indices) {
+			geometry_assets[mesh_idx].textures.push_back(imageAsset);
+		}
+	}
 
 	return geometry_assets;
 }

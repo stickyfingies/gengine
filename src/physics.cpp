@@ -235,6 +235,9 @@ auto PhysicsEngine::create_mesh(
 auto PhysicsEngine::destroy_collidable(Collidable* collidable) -> void
 {
 	dynamics_world->removeRigidBody(collidable->body);
+	// collidable->shape.d
+
+	// dynamics_world.rem
 
 	delete collidable->body;
 	delete collidable->shape;

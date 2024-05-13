@@ -170,7 +170,7 @@ class RenderDeviceVk final : public RenderDevice {
 public:
 	RenderDeviceVk(GLFWwindow* window) : window{window}
 	{
-		static const auto debug = true;
+		static const auto debug = false;
 
 		std::cout << "[info]\t Vulkan renderer initializing >:)" << std::endl;
 
@@ -742,6 +742,9 @@ public:
 	auto create_descriptors(ShaderPipeline* pipeline, Image* albedo, const glm::vec3& color)
 		-> Descriptors* override
 	{
+		std::cout << "[info]\t Descriptor " << albedo->name << " rgb(" << color.r << ", " << color.g
+				  << ", " << color.b << ")" << std::endl;
+
 		// Allocate sets
 
 		const auto descset_info = vk::DescriptorSetAllocateInfo(descpool, 1, &descset_layout);
