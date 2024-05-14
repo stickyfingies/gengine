@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 
 #include <vector>
+#include <memory>
 
 #include "assets.h"
 
@@ -37,8 +38,8 @@ public:
 	auto step(float dt, int max_steps) -> void;
 
 private:
-	btDefaultCollisionConfiguration *collision_cfg;
-	btBroadphaseInterface *broadphase;
-	btDiscreteDynamicsWorld *dynamics_world;
+	std::unique_ptr<btDefaultCollisionConfiguration> collision_cfg;
+	std::unique_ptr<btBroadphaseInterface> broadphase;
+	std::unique_ptr<btDiscreteDynamicsWorld> dynamics_world;
 };
 } // namespace gengine

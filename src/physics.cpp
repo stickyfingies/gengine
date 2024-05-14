@@ -11,10 +11,10 @@
 
 namespace gengine {
 struct Collidable {
-	btTriangleMesh* mesh;
-	btMotionState* motion_state;
-	btCollisionShape* shape;
-	btRigidBody* body;
+	std::unique_ptr<btTriangleMesh> mesh;
+	std::unique_ptr<btMotionState> motion_state;
+	std::unique_ptr<btCollisionShape> shape;
+	std::unique_ptr<btRigidBody> body;
 	glm::vec3 scale;
 };
 
@@ -22,25 +22,21 @@ PhysicsEngine::PhysicsEngine()
 {
 	std::cout << "[info]\t Intitializing physics engine" << std::endl;
 
-	collision_cfg = new btDefaultCollisionConfiguration();
+	collision_cfg = std::make_unique<btDefaultCollisionConfiguration>();
 
-	broadphase = new btDbvtBroadphase();
+	broadphase = std::make_unique<btDbvtBroadphase>();
 
-	dynamics_world = new btDiscreteDynamicsWorld(
-		new btCollisionDispatcher(collision_cfg),
-		broadphase,
+	dynamics_world = std::make_unique<btDiscreteDynamicsWorld>(
+		new btCollisionDispatcher(collision_cfg.get()),
+		broadphase.get(),
 		new btSequentialImpulseConstraintSolver(),
-		collision_cfg);
+		collision_cfg.get());
 
 	dynamics_world->setGravity(btVector3(0, -9.8, 0));
 }
 
 PhysicsEngine::~PhysicsEngine()
-{
-	delete dynamics_world;
-	delete broadphase;
-	delete collision_cfg;
-}
+{}
 
 auto PhysicsEngine::create_box(float mass, const glm::mat4& model_matrix) -> Collidable*
 {
@@ -54,7 +50,7 @@ auto PhysicsEngine::create_box(float mass, const glm::mat4& model_matrix) -> Col
 	glm::decompose(model_matrix, scale, rotation, translation, skew, perspective);
 
 	collidable->scale = scale;
-	collidable->shape = new btBoxShape(btVector3(scale.x, scale.y, scale.z));
+	collidable->shape = std::make_unique<btBoxShape>(btVector3(scale.x, scale.y, scale.z));
 
 	const auto new_transform =
 		glm::translate(glm::mat4(1.0f), translation) * glm::mat4_cast(glm::conjugate(rotation));
@@ -62,7 +58,7 @@ auto PhysicsEngine::create_box(float mass, const glm::mat4& model_matrix) -> Col
 	auto trans = btTransform{};
 	trans.setFromOpenGLMatrix(glm::value_ptr(new_transform));
 
-	collidable->motion_state = new btDefaultMotionState(trans);
+	collidable->motion_state = std::make_unique<btDefaultMotionState>(trans);
 
 	auto inertia = btVector3(1, 1, 1);
 
@@ -70,13 +66,12 @@ auto PhysicsEngine::create_box(float mass, const glm::mat4& model_matrix) -> Col
 		collidable->shape->calculateLocalInertia(mass, inertia);
 	}
 
-	collidable->body =
-		new btRigidBody(btScalar(mass), collidable->motion_state, collidable->shape, inertia);
+	collidable->body = std::make_unique<btRigidBody>(btScalar(mass), collidable->motion_state.get(), collidable->shape.get(), inertia);
 	collidable->body->setFriction(0.4);
 	collidable->body->setRollingFriction(0.3);
 	collidable->body->setSpinningFriction(0.3);
 
-	dynamics_world->addRigidBody(collidable->body);
+	dynamics_world->addRigidBody(collidable->body.get());
 
 	return collidable;
 }
@@ -94,12 +89,12 @@ auto PhysicsEngine::create_sphere(float const size, float mass, const glm::mat4&
 	glm::decompose(model_matrix, scale, rotation, translation, skew, perspective);
 
 	collidable->scale = scale;
-	collidable->shape = new btSphereShape((scale.x + scale.y + scale.z) / 3.0f);
+	collidable->shape = std::make_unique<btSphereShape>((scale.x + scale.y + scale.z) / 3.0f);
 
 	auto trans = btTransform{};
 	trans.setFromOpenGLMatrix(glm::value_ptr(model_matrix));
 
-	collidable->motion_state = new btDefaultMotionState(trans);
+	collidable->motion_state = std::make_unique<btDefaultMotionState>(trans);
 
 	auto inertia = btVector3(1, 1, 1);
 
@@ -107,13 +102,12 @@ auto PhysicsEngine::create_sphere(float const size, float mass, const glm::mat4&
 		collidable->shape->calculateLocalInertia(mass, inertia);
 	}
 
-	collidable->body =
-		new btRigidBody(btScalar(mass), collidable->motion_state, collidable->shape, inertia);
+	collidable->body = std::make_unique<btRigidBody>(btScalar(mass), collidable->motion_state.get(), collidable->shape.get(), inertia);
 	collidable->body->setFriction(0.3);
 	collidable->body->setRollingFriction(0.3);
 	collidable->body->setSpinningFriction(0.3);
 
-	dynamics_world->addRigidBody(collidable->body);
+	dynamics_world->addRigidBody(collidable->body.get());
 
 	return collidable;
 }
@@ -130,12 +124,12 @@ auto PhysicsEngine::create_capsule(float mass, const glm::mat4& model_matrix) ->
 	glm::decompose(model_matrix, scale, rotation, translation, skew, perspective);
 
 	collidable->scale = scale;
-	collidable->shape = new btCapsuleShape(4.0, 1.7);
+	collidable->shape = std::make_unique<btCapsuleShape>(4.0, 1.7);
 
 	auto trans = btTransform{};
 	trans.setFromOpenGLMatrix(glm::value_ptr(model_matrix));
 
-	collidable->motion_state = new btDefaultMotionState(trans);
+	collidable->motion_state = std::make_unique<btDefaultMotionState>(trans);
 
 	auto inertia = btVector3(1, 1, 1);
 
@@ -144,11 +138,11 @@ auto PhysicsEngine::create_capsule(float mass, const glm::mat4& model_matrix) ->
 	}
 
 	collidable->body =
-		new btRigidBody(btScalar(mass), collidable->motion_state, collidable->shape, inertia);
+		std::make_unique<btRigidBody>(btScalar(mass), collidable->motion_state.get(), collidable->shape.get(), inertia);
 	collidable->body->setFriction(0.3);
 	collidable->body->setAngularFactor(0.0);
 
-	dynamics_world->addRigidBody(collidable->body);
+	dynamics_world->addRigidBody(collidable->body.get());
 
 	return collidable;
 }
@@ -185,7 +179,7 @@ auto PhysicsEngine::create_mesh(
 
 	// Populate a triangle mesh using our non-optimized vertex buffer
 
-	collidable->mesh = new btTriangleMesh();
+	collidable->mesh = std::make_unique<btTriangleMesh>();
 	for (int i = 0; i < nonIndexedVertices.size(); i += 9) {
 		const auto v0 = btVector3(
 			nonIndexedVertices[i + 0], nonIndexedVertices[i + 1], nonIndexedVertices[i + 2]);
@@ -209,7 +203,7 @@ auto PhysicsEngine::create_mesh(
 	// collidable->mesh->addIndexedMesh(indexed_mesh, PHY_INTEGER);
 
 	collidable->scale = scale;
-	collidable->shape = new btBvhTriangleMeshShape(collidable->mesh, true);
+	collidable->shape = std::make_unique<btBvhTriangleMeshShape>(collidable->mesh.get(), true);
 	collidable->shape->setLocalScaling(btVector3(scale.x, scale.y, scale.z));
 
 	auto trans = btTransform{};
@@ -218,32 +212,25 @@ auto PhysicsEngine::create_mesh(
 	trans.setRotation(btQuaternion{rotation.x, rotation.y, rotation.z, rotation.w});
 	trans.setFromOpenGLMatrix(glm::value_ptr(model_matrix));
 
-	collidable->motion_state = new btDefaultMotionState(trans);
+	collidable->motion_state = std::make_unique<btDefaultMotionState>(trans);
 
 	auto inertia = btVector3(1, 1, 1);
 	if (mass != 0) {
 		collidable->shape->calculateLocalInertia(mass, inertia);
 	}
 
-	collidable->body = new btRigidBody(mass, collidable->motion_state, collidable->shape, inertia);
+	collidable->body = std::make_unique<btRigidBody>(mass, collidable->motion_state.get(), collidable->shape.get(), inertia);
 	collidable->body->setFriction(0.3);
 	collidable->body->setAngularFactor(0.0);
 
-	dynamics_world->addRigidBody(collidable->body);
+	dynamics_world->addRigidBody(collidable->body.get());
 
 	return collidable;
 }
 
 auto PhysicsEngine::destroy_collidable(Collidable* collidable) -> void
 {
-	dynamics_world->removeRigidBody(collidable->body);
-	// collidable->shape.d
-
-	// dynamics_world.rem
-
-	delete collidable->body;
-	delete collidable->shape;
-	delete collidable->motion_state;
+	dynamics_world->removeRigidBody(collidable->body.get());
 
 	delete collidable;
 }

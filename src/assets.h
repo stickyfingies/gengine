@@ -8,10 +8,14 @@
 #include <tuple>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 namespace gengine {
 
 template <typename D> struct GenericImageAsset {
+
+	
+
 	std::string name;
 	unsigned int width;
 	unsigned int height;
