@@ -4,6 +4,8 @@
 
 #include <vector>
 
+#include "assets.h"
+
 struct btDefaultCollisionConfiguration;
 struct btBroadphaseInterface;
 struct btDiscreteDynamicsWorld;
@@ -22,8 +24,7 @@ public:
 	auto create_capsule(float mass, const glm::mat4 &model_matrix) -> Collidable *;
 	auto create_mesh(
 		float mass,
-		const std::vector<float> &vertices,
-		const std::vector<unsigned int> &indices,
+		const GeometryAsset& geometry,
 		const glm::mat4 &model_matrix) -> Collidable *;
 
 	auto destroy_collidable(Collidable *collidable) -> void;

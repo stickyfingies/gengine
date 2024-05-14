@@ -19,22 +19,17 @@
 
 namespace gengine {
 
-/// An append-only log of all the images from this loader
-static ImageLog image_log;
+auto TextureFactory::get_image_log() -> const ImageLog* { return &image_log; }
 
-/// A CRUD cache of images persisted in system memory
-static ImageCache image_cache;
+auto TextureFactory::get_image_cache() -> const ImageCache* { return &image_cache; }
 
-auto get_image_log() -> const ImageLog* { return &image_log; }
-
-auto get_image_cache() -> const ImageCache* { return &image_cache; }
-
-auto image_in_cache(const std::string& path) -> bool
+auto TextureFactory::image_in_cache(const std::string& path) -> bool
 {
 	return image_cache.find(path) != image_cache.end();
 }
 
-auto load_image_from_file(const std::string& path) -> std::expected<ImageAsset, std::string>
+auto TextureFactory::load_image_from_file(const std::string& path)
+	-> std::expected<ImageAsset, std::string>
 {
 	// Return the cached asset
 	if (image_in_cache(path)) {
@@ -67,7 +62,7 @@ auto load_image_from_file(const std::string& path) -> std::expected<ImageAsset, 
 	return image_asset;
 }
 
-auto load_image_from_memory(
+auto TextureFactory::load_image_from_memory(
 	const std::string& name, const unsigned char* buffer, uint32_t buffer_len) -> ImageAsset
 {
 	if (image_cache.find(name) != image_cache.end()) {
@@ -96,13 +91,13 @@ auto load_image_from_memory(
 	return image_asset;
 }
 
-auto unload_image(const ImageAsset& asset) -> void
+auto TextureFactory::unload_image(const ImageAsset& asset) -> void
 {
 	image_cache.erase(asset.name);
 	stbi_image_free(asset.data);
 }
 
-auto unload_all_images() -> void
+auto TextureFactory::unload_all_images() -> void
 {
 	for (auto it = image_cache.begin(); it != image_cache.end();) {
 		std::cout << "[info]\t ~ ImageAsset " << it->first << std::endl;
@@ -111,27 +106,32 @@ auto unload_all_images() -> void
 	}
 }
 
+/// @brief Temporary structure used to track entity relationships
+///        while decoding an Assimp scene.
 struct AssetDecoding {
 
 	using EmbedIdx = size_t;
+	using ObjectIdx = size_t;
 	using MeshIdx = size_t;
+	using MaterialIdx = size_t;
 
-	size_t meshCount = 0;
+	size_t objectCount = 0;
 
-	/// one-to many
-	std::unordered_map<EmbedIdx, std::vector<MeshIdx>> embeds_to_meshes;
+	/// Assimp texture --> Objects
+	std::unordered_map<EmbedIdx, std::vector<MaterialIdx>> embeds_to_materials;
 
-	/// one-to-many
-	std::unordered_map<std::string, std::vector<MeshIdx>> texpaths_to_meshes;
+	/// Assimp texture --> Objects
+	std::unordered_map<std::string, std::vector<MaterialIdx>> texpaths_to_materials;
+
+	/// Assimp mesh --> Objects
+	std::unordered_map<MeshIdx, std::vector<ObjectIdx>> mesh_to_objects;
+
+	/// Assimp material --> Objects
+	std::unordered_map<MaterialIdx, std::vector<ObjectIdx>> material_to_objects;
 };
 
-auto traverseNode(
-	AssetDecoding& decoding,
-	MeshAssetList& assets,
-	const aiScene* scene,
-	const aiNode* node) -> void
+auto calculateWorldTransform(const aiNode* node) -> glm::mat4
 {
-
 	std::vector<aiNode*> parents{};
 	aiNode* parent = node->mParent;
 	while (parent != nullptr) {
@@ -143,86 +143,22 @@ auto traverseNode(
 		const auto tr = glm::transpose(glm::make_mat4(&parents[i]->mTransformation.a1));
 		worldTransform *= tr;
 	}
+	return worldTransform;
+};
+
+auto traverseNode(
+	AssetDecoding& decoding, SceneAsset& assets, const aiScene* scene, const aiNode* node) -> void
+{
 
 	const auto transform =
-		worldTransform; // glm::transpose(glm::make_mat4(&node->mTransformation.a1));
+		calculateWorldTransform(node); // glm::transpose(glm::make_mat4(&node->mTransformation.a1));
 
 	for (auto i = 0; i < node->mNumMeshes; ++i) {
 		const auto mesh_idx = node->mMeshes[i];
 		const auto mesh = scene->mMeshes[mesh_idx];
-
-		std::cout << "[info]\t Mesh " << i << " { vertices: " << mesh->mNumVertices
-				  << ", faces: " << mesh->mNumFaces << " }" << std::endl;
-
-		auto vertices = std::vector<float>{};
-		auto vertices_aux = std::vector<float>{};
-		auto indices = std::vector<unsigned int>{};
-
-		// accumulate vertices
-
-		for (auto j = 0; j < mesh->mNumVertices; ++j) {
-			vertices.push_back(mesh->mVertices[j].x);
-			vertices.push_back(mesh->mVertices[j].y);
-			vertices.push_back(mesh->mVertices[j].z);
-
-			vertices_aux.push_back(mesh->mNormals[j].x);
-			vertices_aux.push_back(mesh->mNormals[j].y);
-			vertices_aux.push_back(mesh->mNormals[j].z);
-
-			vertices_aux.push_back(mesh->mTextureCoords[0][j].x);
-			vertices_aux.push_back(mesh->mTextureCoords[0][j].y);
-		}
-
-		// extract indices from faces
-
-		for (auto j = 0; j < mesh->mNumFaces; ++j) {
-			const auto face = mesh->mFaces[j];
-			for (auto k = 0; k < face.mNumIndices; ++k) {
-				indices.push_back(face.mIndices[k]);
-			}
-		}
-
-		// material stuff
-
-		const auto extractTextures = [](const aiScene* scene,
-										AssetDecoding& decoding,
-										const aiMaterial* material,
-										aiTextureType type) -> void {
-			for (uint32_t i = 0; i < material->GetTextureCount(type); i++) {
-				// Get the path of this texture
-				aiString path;
-				material->GetTexture(type, i, &path);
-				const std::string path_string = path.C_Str();
-
-				// Embedded texture
-				if (auto texture = scene->GetEmbeddedTexture(path.C_Str())) {
-
-					// Grab the embedded texture instance
-					const auto index = std::atoi(path_string.substr(1).c_str());
-
-					decoding.embeds_to_meshes[index].push_back(decoding.meshCount);
-				}
-				// Regular texture (load from file)
-				else {
-					decoding.texpaths_to_meshes[path_string].push_back(decoding.meshCount);
-				}
-			}
-		};
-
-		auto textures = std::vector<ImageAsset>{};
-		aiColor3D material_color(1.f, 1.f, 1.f);
-
-		if (mesh->mMaterialIndex >= 0) {
-			const auto* material = scene->mMaterials[mesh->mMaterialIndex];
-			material->Get(AI_MATKEY_COLOR_DIFFUSE, material_color);
-			extractTextures(scene, decoding, material, aiTextureType_DIFFUSE);
-		}
-
-		decoding.meshCount += 1;
-		assets.push_back(
-			{transform,
-			 {vertices, vertices_aux, indices},
-			 {textures, glm::vec3{material_color.r, material_color.g, material_color.b}}});
+		decoding.mesh_to_objects[mesh_idx].push_back(decoding.objectCount);
+		decoding.objectCount += 1;
+		assets.objects.push_back({transform, 0, 0});
 	}
 
 	for (auto i = 0; i < node->mNumChildren; ++i) {
@@ -231,9 +167,80 @@ auto traverseNode(
 	}
 }
 
+auto processGeometry(const aiScene* scene, size_t mesh_idx, size_t& material_idx) -> GeometryAsset
+{
+	const auto mesh = scene->mMeshes[mesh_idx];
+
+	std::cout << "[info]\t Mesh " << mesh_idx << " { vertices: " << mesh->mNumVertices
+			  << ", faces: " << mesh->mNumFaces << " }" << std::endl;
+
+	auto vertices = std::vector<float>{};
+	auto vertices_aux = std::vector<float>{};
+	auto indices = std::vector<unsigned int>{};
+
+	// accumulate vertices
+
+	for (auto j = 0; j < mesh->mNumVertices; ++j) {
+		vertices.push_back(mesh->mVertices[j].x);
+		vertices.push_back(mesh->mVertices[j].y);
+		vertices.push_back(mesh->mVertices[j].z);
+
+		vertices_aux.push_back(mesh->mNormals[j].x);
+		vertices_aux.push_back(mesh->mNormals[j].y);
+		vertices_aux.push_back(mesh->mNormals[j].z);
+
+		vertices_aux.push_back(mesh->mTextureCoords[0][j].x);
+		vertices_aux.push_back(mesh->mTextureCoords[0][j].y);
+	}
+
+	// extract indices from faces
+
+	for (auto j = 0; j < mesh->mNumFaces; ++j) {
+		const auto face = mesh->mFaces[j];
+		for (auto k = 0; k < face.mNumIndices; ++k) {
+			indices.push_back(face.mIndices[k]);
+		}
+	}
+
+	material_idx = mesh->mMaterialIndex;
+
+	return {vertices, vertices_aux, indices};
+}
+
+auto extractTextures(
+	const aiScene* scene,
+	AssetDecoding& decoding,
+	const aiMaterial* material,
+	uint32_t material_idx,
+	aiTextureType type) -> void
+{
+	for (uint32_t i = 0; i < material->GetTextureCount(type); i++) {
+		// Get the path of this texture
+		aiString path;
+		material->GetTexture(type, i, &path);
+		const std::string path_string = path.C_Str();
+
+		// Embedded texture
+		if (auto texture = scene->GetEmbeddedTexture(path.C_Str())) {
+
+			// Grab the embedded texture instance
+			const auto index = std::atoi(path_string.substr(1).c_str());
+
+			decoding.embeds_to_materials[index].push_back(material_idx);
+		}
+		// Regular texture (load from file)
+		else {
+			decoding.texpaths_to_materials[path_string].push_back(material_idx);
+		}
+	}
+};
+
 /// TODO - make this return 'expected<MeshAsset, AssetError>'
-auto load_model(std::string_view path, bool flipUVs, bool flipWindingOrder)
-	-> std::vector<MeshAsset>
+auto load_model(
+	TextureFactory& texture_factory,
+	std::string_view path,
+	bool flipUVs,
+	bool flipWindingOrder) -> SceneAsset
 {
 	static auto importer = Assimp::Importer{};
 
@@ -254,33 +261,67 @@ auto load_model(std::string_view path, bool flipUVs, bool flipWindingOrder)
 	}
 
 	auto decoding = AssetDecoding{};
-	auto assets = std::vector<MeshAsset>();
+	auto assets = SceneAsset{};
 
 	traverseNode(decoding, assets, scene, scene->mRootNode);
 
+	// Load meshes
+	for (const auto& [mesh_idx, object_indices] : decoding.mesh_to_objects) {
+
+		size_t material_idx;
+		const auto geometry = processGeometry(scene, mesh_idx, material_idx);
+
+		for (const auto object_idx : object_indices) {
+			assets.objects[object_idx].geometry = assets.geometries.size();
+
+			if (material_idx >= 0) {
+				decoding.material_to_objects[material_idx].push_back(object_idx);
+			}
+		}
+
+		assets.geometries.push_back(geometry);
+	}
+
+	// Load materials
+	for (const auto& [material_idx, object_indices] : decoding.material_to_objects) {
+		const auto* material = scene->mMaterials[material_idx];
+
+		aiColor3D material_color(1.f, 1.f, 1.f);
+		material->Get(AI_MATKEY_COLOR_DIFFUSE, material_color);
+		const auto color = glm::vec3{material_color.r, material_color.g, material_color.b};
+
+		extractTextures(scene, decoding, material, material_idx, aiTextureType_DIFFUSE);
+
+		for (const auto object_idx : object_indices) {
+			assets.objects[object_idx].material = assets.materials.size();
+		}
+
+		assets.materials.push_back({{}, color});
+	}
+
 	// Load textures from disk
-	for (const auto& [texture_path, mesh_indices] : decoding.texpaths_to_meshes) {
-		const auto imageAsset = load_image_from_file(texture_path);
+	for (const auto& [texture_path, material_indices] : decoding.texpaths_to_materials) {
+		const auto imageAsset = texture_factory.load_image_from_file(texture_path);
 		if (imageAsset.has_value()) {
 			// Assign texture to all meshes which use it
-			for (const auto mesh_idx : mesh_indices) {
-				assets[mesh_idx].material.textures.push_back(*imageAsset);
+			for (const auto material_idx : material_indices) {
+				assets.materials[material_idx].textures.push_back(*imageAsset);
 			}
 		}
 	}
 
 	// Load textures from memory
-	for (const auto& [embed_idx, mesh_indices] : decoding.embeds_to_meshes) {
+	for (const auto& [embed_idx, material_indices] : decoding.embeds_to_materials) {
 		const auto embed = scene->mTextures[embed_idx];
 		const auto texture_name = std::to_string(embed_idx);
 
 		// Load from memory
-		const auto imageAsset = load_image_from_memory(
+		const auto imageAsset = texture_factory.load_image_from_memory(
 			texture_name, reinterpret_cast<const unsigned char*>(embed->pcData), embed->mWidth);
 
 		// Assign texture to all meshes which use it
-		for (const auto mesh_idx : mesh_indices) {
-			assets[mesh_idx].material.textures.push_back(imageAsset);
+		for (const auto material_idx : material_indices) {
+			assets.materials[material_idx].textures.push_back(imageAsset);
 		}
 	}
 

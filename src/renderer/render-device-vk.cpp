@@ -15,6 +15,7 @@
 #include <functional>
 #include <iostream>
 #include <vector>
+#include <memory>
 #include <vulkan/vulkan_core.h>
 
 #include <imgui.h>
@@ -440,7 +441,7 @@ public:
 		ImGui_ImplVulkan_Init(&init_info, backbuffer_pass);
 	}
 
-	auto create_buffer(const BufferInfo& info, const void* data) -> Buffer* override
+	auto create_buffer(const BufferInfo& info, const void* data) -> std::unique_ptr<Buffer> override
 	{
 		// this assumes the user wants a device local buffer
 
@@ -479,15 +480,13 @@ public:
 		device.destroyBuffer(staging);
 		device.freeMemory(staging_mem);
 
-		return new Buffer{buffer, buffer_mem};
+		return std::make_unique<Buffer>(buffer, buffer_mem);
 	}
 
-	auto destroy_buffer(Buffer* buffer) -> void override
+	auto destroy_buffer(std::shared_ptr<Buffer> buffer) -> void override
 	{
 		device.destroyBuffer(buffer->buffer);
 		device.freeMemory(buffer->mem);
-
-		delete buffer;
 	}
 
 	auto create_image(const ImageAsset& info) -> Image* override
@@ -699,13 +698,13 @@ public:
 			gpu_data.push_back(vertices_aux[a + 4]);
 		}
 
-		const auto vbo = create_buffer(
+		auto vbo = create_buffer(
 			{gengine::BufferInfo::Usage::VERTEX, sizeof(float), gpu_data.size()}, gpu_data.data());
-		const auto ebo = create_buffer(
+		auto ebo = create_buffer(
 			{gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()},
 			indices.data());
 
-		return Renderable{vbo, ebo, indices.size()};
+		return Renderable{std::move(vbo), std::move(ebo), indices.size()};
 	}
 
 	auto create_descriptor_set_layout() -> vk::DescriptorSetLayout
@@ -987,7 +986,7 @@ public:
 				sizeof(PushConstantData),
 				&push_constant_data);
 
-			ctx->bind_geometry_buffers(renderables[i].vbo, renderables[i].ebo);
+			ctx->bind_geometry_buffers(renderables[i].vbo.get(), renderables[i].ebo.get());
 			ctx->draw(renderables[i].index_count, 1);
 		}
 
@@ -997,11 +996,10 @@ public:
 
 		ctx->end();
 
-		execute_context(ctx);
-		free_context(ctx);
+		execute_context(ctx.get());
 	}
 
-	auto alloc_context() -> RenderContextVk*
+	auto alloc_context() -> std::unique_ptr<RenderContextVk>
 	{
 		const auto ok = device.waitForFences(
 			swapchain_fences[current_frame], true, std::numeric_limits<uint64_t>::max());
@@ -1025,7 +1023,7 @@ public:
 			const auto& cmdbuf = cmd_buffers[current_frame];
 			cmdbuf.reset({});
 
-			return new RenderContextVk(cmdbuf, backbuffer_pass, backbuffers[image_idx], extent);
+			return std::make_unique<RenderContextVk>(cmdbuf, backbuffer_pass, backbuffers[image_idx], extent);
 		}
 		catch (vk::OutOfDateKHRError) {
 			re_create_swapchain();
@@ -1067,8 +1065,6 @@ public:
 
 		current_frame = (current_frame + 1) % FRAMES_IN_FLIGHT;
 	}
-
-	auto free_context(RenderContextVk* ctx) -> void { delete ctx; }
 
 private:
 	auto begin_one_time_cmdbuf() -> vk::CommandBuffer
@@ -1482,14 +1478,9 @@ private:
 	uint32_t present_queue_idx = 0u;
 };
 
-auto RenderDevice::create(GLFWwindow* window) -> RenderDevice*
+auto RenderDevice::create(GLFWwindow* window) -> std::unique_ptr<RenderDevice>
 {
-	return new RenderDeviceVk(window);
-}
-
-auto RenderDevice::destroy(RenderDevice* device) -> void
-{
-	delete static_cast<RenderDeviceVk*>(device);
+	return std::make_unique<RenderDeviceVk>(window);
 }
 
 } // namespace gengine

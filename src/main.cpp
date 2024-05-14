@@ -27,6 +27,8 @@ using gengine::Renderable;
 
 namespace {
 
+gengine::TextureFactory texture_factory{};
+
 auto mouse_callback(GLFWwindow* window, double pos_x, double pos_y) -> void
 {
 	auto window_data = static_cast<WindowData*>(glfwGetWindowUserPointer(window));
@@ -118,29 +120,48 @@ auto create_game_object(
 	bool flipUVs = false,
 	bool flipWindingOrder = false) -> void
 {
-	const auto meshes = gengine::load_model(path, flipUVs, flipWindingOrder);
-	for (const auto& mesh : meshes) {
-		const auto& [t, geometry, material] = mesh;
+	std::vector<gengine::Descriptors*> descriptor_cache;
+	std::vector<gengine::Renderable> renderable_cache;
 
-		const auto renderable = renderer->create_renderable(geometry);
+	const auto scene = gengine::load_model(texture_factory, path, flipUVs, flipWindingOrder);
 
-		render_components.push_back(renderable);
+	/// Material --> Descriptors
+	for (const auto& material : scene.materials) {
 
-		// Materials
-
+		// TODO - move this inside assets.cpp
 		gengine::ImageAsset texture_0{};
 		if (material.textures.size() > 0) {
 			texture_0 = material.textures[0];
 		}
 		if (texture_0.width == 0) {
-			texture_0 = *gengine::load_image_from_file("./data/solid_white.png");
+			texture_0 = *texture_factory.load_image_from_file("./data/solid_white.png");
 		}
 
 		auto albedo = renderer->create_image(texture_0);
 
 		const auto descriptor_0 = renderer->create_descriptors(pipeline, albedo, material.color);
 
-		descriptors.push_back(descriptor_0);
+		descriptor_cache.push_back(descriptor_0);
+	}
+
+	/// Geometry --> Renderable
+	for (const auto& geometry : scene.geometries) {
+		const auto renderable = renderer->create_renderable(geometry);
+		renderable_cache.push_back(renderable);
+	}
+
+	// Game objects
+	for (const auto& object : scene.objects) {
+		const auto& [t, geometry_idx, material_idx] = object;
+
+		std::cout << "Creating object: " << geometry_idx << ", " << material_idx << " | "
+				  << renderable_cache.size() << ", " << descriptor_cache.size() << std::endl;
+
+		render_components.push_back(renderable_cache[geometry_idx]);
+
+		// Materials
+
+		descriptors.push_back(descriptor_cache[material_idx]);
 
 		// gengine::unload_image(texture_0);
 
@@ -150,7 +171,8 @@ auto create_game_object(
 			auto tr = t;
 			// tr = glm::rotate(tr, 3.14f, glm::vec3(0, 1, 0));
 			transforms.push_back(tr);
-			collidables.push_back(physics_engine.create_mesh(0.0f, geometry.vertices, geometry.indices, tr));
+			collidables.push_back(
+				physics_engine.create_mesh(0.0f, scene.geometries[geometry_idx], tr));
 		}
 	}
 }
@@ -189,7 +211,7 @@ auto main(int argc, char** argv) -> int
 
 	auto camera = Camera(glm::vec3(0.0f, 5.0f, 90.0f));
 
-	const auto renderer = gengine::RenderDevice::create(window);
+	auto renderer = gengine::RenderDevice::create(window);
 
 	// load game data
 
@@ -228,7 +250,7 @@ auto main(int argc, char** argv) -> int
 
 	create_game_object(
 		"./data/spinny.obj",
-		renderer,
+		renderer.get(),
 		physics_engine,
 		render_components,
 		descriptors,
@@ -240,7 +262,7 @@ auto main(int argc, char** argv) -> int
 		false);
 	create_game_object(
 		"./data/spinny.obj",
-		renderer,
+		renderer.get(),
 		physics_engine,
 		render_components,
 		descriptors,
@@ -252,7 +274,7 @@ auto main(int argc, char** argv) -> int
 		false);
 	create_game_object(
 		"./data/skjar-isles/skjarisles.glb",
-		renderer,
+		renderer.get(),
 		physics_engine,
 		render_components,
 		descriptors,
@@ -264,7 +286,7 @@ auto main(int argc, char** argv) -> int
 		false);
 
 	// Assumes all images are uploaded to the GPU and are useless in system memory.
-	gengine::unload_all_images();
+	texture_factory.unload_all_images();
 
 	// core game loop
 
@@ -329,7 +351,7 @@ auto main(int argc, char** argv) -> int
 				PopItemWidth();
 				End();
 				// Textures
-				const auto* images_loaded = gengine::get_image_log();
+				const auto* images_loaded = texture_factory.get_image_log();
 				if (images_loaded->size() > 0) {
 					SetNextWindowSize({0.0f, 0.0f});
 					SetNextWindowPos({500.0f, 20.0f});
@@ -371,11 +393,11 @@ auto main(int argc, char** argv) -> int
 
 	// system shutdown
 
-	gengine::RenderDevice::destroy(renderer);
-
 	glfwDestroyWindow(window);
 
 	std::cout << "[info]\t (module:main) shutdown, terminating window manager" << std::endl;
 
 	glfwTerminate();
+
+	std::cout << "Cya" << std::endl;
 }

@@ -155,8 +155,7 @@ auto PhysicsEngine::create_capsule(float mass, const glm::mat4& model_matrix) ->
 
 auto PhysicsEngine::create_mesh(
 	float mass,
-	const std::vector<float>& vertices,
-	const std::vector<unsigned int>& indices,
+	const GeometryAsset& geometry,
 	const glm::mat4& model_matrix) -> Collidable*
 {
 	auto collidable = new Collidable{};
@@ -169,6 +168,9 @@ auto PhysicsEngine::create_mesh(
 	glm::decompose(model_matrix, scale, rotation, translation, skew, perspective);
 
 	// Convert our optimized (vertex, index) buffer into non-optimized (vertex) buffer
+
+	const auto& vertices = geometry.vertices;
+	const auto& indices = geometry.indices;
 
 	auto nonIndexedVertices = std::vector<float>();
 	for (int i = 0; i < indices.size(); i++) {
