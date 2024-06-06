@@ -12,19 +12,13 @@
 
 namespace gengine {
 
-template <typename D> struct GenericImageAsset {
-
-	
-
+struct ImageAsset {
 	std::string name;
 	unsigned int width;
 	unsigned int height;
 	unsigned int channel_count;
-	D* data;
+	unsigned char* data;
 };
-
-/// Lives in RAM.
-using ImageAsset = GenericImageAsset<unsigned char>;
 
 class TextureFactory {
 public:
