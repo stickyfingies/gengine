@@ -13,28 +13,28 @@ do
 done
 
 # install package manager
-if [ ! -d "vcpkg" ] || [ ! -z "${ARG_INSTALL_DEPENDENCIES}" ]; then
+if [ ! -d ".vcpkg" ] || [ ! -z "${ARG_INSTALL_DEPENDENCIES}" ]; then
     echo "==Installing vcpkg=="
-    git clone https://github.com/Microsoft/vcpkg.git
-    chmod +x ./vcpkg/bootstrap-vcpkg.sh
-    ./vcpkg/bootstrap-vcpkg.sh
-    ./vcpkg/vcpkg install glfw3
-    ./vcpkg/vcpkg install bullet3
-    ./vcpkg/vcpkg install assimp
-    ./vcpkg/vcpkg install glm
-    ./vcpkg/vcpkg install imgui[core,glfw-binding,vulkan-binding]
-    ./vcpkg/vcpkg install vulkan
+    git clone https://github.com/Microsoft/vcpkg.git ./.vcpkg
+    chmod +x ./.vcpkg/bootstrap-vcpkg.sh
+    ./.vcpkg/bootstrap-vcpkg.sh
+    ./.vcpkg/vcpkg install glfw3
+    ./.vcpkg/vcpkg install bullet3
+    ./.vcpkg/vcpkg install assimp
+    ./.vcpkg/vcpkg install glm
+    ./.vcpkg/vcpkg install imgui[core,glfw-binding,vulkan-binding]
+    ./.vcpkg/vcpkg install vulkan
 fi
 
 function configure() {
     echo "==Configuring project=="
-    cmake -B build -S .
+    cmake -B .build -S .
 }
 
 # build project
 function build() {
     echo "==Building project=="
-    cmake --build build
+    cmake --build .build
 }
 
 # perform the build

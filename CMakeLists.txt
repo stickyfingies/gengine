@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.29)
 project(gengine LANGUAGES CXX)
 
 include(GNUInstallDirs)
-include(./vcpkg/scripts/buildsystems/vcpkg.cmake)
+include(./.vcpkg/scripts/buildsystems/vcpkg.cmake)
 
 add_executable(${PROJECT_NAME})
 

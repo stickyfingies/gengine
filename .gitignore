@@ -31,13 +31,13 @@
 *.app
 
 # Temporaries
-build/
+.build/
 dist/
 out/
 external/
 
 # Dependencies
-vcpkg/
+.vcpkg/
 
 # IDE
 .vs/

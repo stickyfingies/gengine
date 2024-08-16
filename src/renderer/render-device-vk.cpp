@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -438,7 +439,8 @@ public:
 		init_info.MinImageCount = 2;
 		init_info.ImageCount = FRAMES_IN_FLIGHT;
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-		ImGui_ImplVulkan_Init(&init_info, backbuffer_pass);
+		init_info.RenderPass = backbuffer_pass;
+		ImGui_ImplVulkan_Init(&init_info);
 	}
 
 	auto create_buffer(const BufferInfo& info, const void* data) -> std::unique_ptr<Buffer> override
@@ -894,7 +896,7 @@ public:
 		const auto dynamic_states =
 			std::array{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
 
-		vk::PipelineDynamicStateCreateInfo dynamic_state(
+		const auto dynamic_state = vk::PipelineDynamicStateCreateInfo(
 			{}, dynamic_states.size(), dynamic_states.data());
 
 		const auto pipeline_info = vk::GraphicsPipelineCreateInfo(
