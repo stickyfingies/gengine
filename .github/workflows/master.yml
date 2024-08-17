@@ -19,13 +19,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    
-    - name: Clone vcpkg
-      uses: GuillaumeFalourd/clone-github-repo-action@v2.3
-      with:
-        owner: 'microsoft'
-        repository: 'vcpkg'
-        branch: 'master'
 
     - run: chmod +x ./build.sh
       
