@@ -7,6 +7,8 @@ include(./.vcpkg/scripts/buildsystems/vcpkg.cmake)
 
 add_executable(${PROJECT_NAME})
 
+# Dependencies
+
 # Libraries
 
 if (UNIX)
@@ -51,9 +53,10 @@ PRIVATE
 # Metadata
 
 set_target_properties(${PROJECT_NAME}
-	PROPERTIES
-	CXX_STANDARD 23
+PROPERTIES
 	CXX_EXTENSIONS OFF
+	CXX_STANDARD 23
+	CMAKE_CXX_STANDARD_REQUIRED ON
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/bin"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/bin"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/bin"
