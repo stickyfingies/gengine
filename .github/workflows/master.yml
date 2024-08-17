@@ -33,5 +33,6 @@ jobs:
     - name: Create release
       uses: softprops/action-gh-release@v2
       with:
+        tag_name: master
         files: dist/bin/gengine
 
