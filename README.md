@@ -40,6 +40,9 @@ Finally, launch the app!
 - `-i` or `--install` will forcefully re-install dependencies.
 - `-w` or `--watch` automatigally compiles C++ files when they change.
 
+> [!NOTE]  
+> The [github repo](https://github.com/stickyfingies/gengine) is equipped with Github Actions CI that automatically builds the project when you push to `master`.
+
 Architecture
 ---
 
