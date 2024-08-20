@@ -816,10 +816,14 @@ public:
 		const auto vert_module_info = vk::ShaderModuleCreateInfo(
 			{}, vert_code.size(), reinterpret_cast<const uint32_t*>(vert_code.data()));
 
+		std::cout << "[info] vertex shader: " << vert_code.size() << " bytes" << std::endl;
+
 		const auto vert_module = device.createShaderModule(vert_module_info);
 
 		const auto frag_module_info = vk::ShaderModuleCreateInfo(
 			{}, frag_code.size(), reinterpret_cast<const uint32_t*>(frag_code.data()));
+
+		std::cout << "[info] fragment shader: " << frag_code.size() << " bytes" << std::endl;
 
 		const auto frag_module = device.createShaderModule(frag_module_info);
 
