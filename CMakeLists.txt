@@ -10,7 +10,7 @@ include(./.vcpkg/scripts/buildsystems/vcpkg.cmake)
 # Binaries
 
 add_executable(${PROJECT_NAME})
-add_library(vk_gpu SHARED)
+add_library(vk_gpu STATIC)
 
 # Dependencies
 
