@@ -37,5 +37,5 @@ jobs:
           Download `gengine` to run the game engine.
           Github Actions re-builds the binary when `master` changes.  
         tag_name: "${{ github.head_ref || github.ref_name }}"
-        files: dist/bin/
+        files: dist/bin/gengine
 
