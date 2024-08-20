@@ -1,3 +1,5 @@
+# Metadata
+
 cmake_minimum_required(VERSION 3.29)
 
 project(gengine LANGUAGES CXX)
@@ -5,11 +7,12 @@ project(gengine LANGUAGES CXX)
 include(GNUInstallDirs)
 include(./.vcpkg/scripts/buildsystems/vcpkg.cmake)
 
+# Binaries
+
 add_executable(${PROJECT_NAME})
+add_library(vk_gpu SHARED)
 
 # Dependencies
-
-# Libraries
 
 if (UNIX)
     target_link_libraries(${PROJECT_NAME} PRIVATE dl)
@@ -26,19 +29,27 @@ target_link_libraries(${PROJECT_NAME} PRIVATE BulletDynamics BulletCollision Bul
 target_link_directories(${PROJECT_NAME} PRIVATE ${BULLET_LIBRARY_DIRS})
 
 find_package(Vulkan REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES})
+target_link_libraries(vk_gpu PRIVATE ${Vulkan_LIBRARIES})
 
 find_package(assimp CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 
 find_package(imgui CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE imgui::imgui)
+target_link_libraries(vk_gpu PUBLIC imgui::imgui)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE vk_gpu)
 
 # Source files
 
-target_include_directories(${PROJECT_NAME}
+target_include_directories(vk_gpu
 PUBLIC
 	${Vulkan_INCLUDE_DIRS}
+)
+
+target_sources(vk_gpu
+PRIVATE
+	src/renderer/render-device-vk.cpp
 )
 
 target_sources(${PROJECT_NAME}
@@ -46,15 +57,14 @@ PRIVATE
 	src/main.cpp
 	src/assets.cpp
 	src/physics.cpp
-	src/renderer/render-device-vk.cpp
 	src/stb/stb_image.cpp
 )
 
-# Metadata
+# Compiler stuff
 
 set(CXX_STANDARD_REQUIRED ON)
 
-set_target_properties(${PROJECT_NAME}
+set_target_properties(${PROJECT_NAME} vk_gpu
 PROPERTIES
 	CXX_EXTENSIONS OFF
 	CXX_STANDARD 23
