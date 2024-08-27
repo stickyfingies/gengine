@@ -26,7 +26,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE BulletDynamics BulletCollision Bul
 target_link_directories(${PROJECT_NAME} PRIVATE ${BULLET_LIBRARY_DIRS})
 
 find_package(Vulkan REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES})
+# target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS})
 
 find_package(assimp CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
@@ -59,7 +59,7 @@ PROPERTIES
 	CXX_EXTENSIONS OFF
 	CXX_STANDARD 23
 	CMAKE_CXX_STANDARD_REQUIRED ON
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/bin"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/bin"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/bin"
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/"
 )

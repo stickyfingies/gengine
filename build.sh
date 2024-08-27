@@ -1,8 +1,14 @@
 #!/usr/bin/bash
 
+############################
+# GENGINE BUILD AUTOMATION #
+############################
+
 trap exit SIGQUIT SIGINT
 
-# arguments
+###############
+#  CLI Config  #
+#  @ARG_DOCS  #
 while test $# != 0
 do
     case "$1" in
@@ -12,7 +18,7 @@ do
     shift
 done
 
-# install package manager
+# [Ctrl F] for @ARG_DOCS.
 if [ ! -d ".vcpkg" ] || [ ! -z "${ARG_INSTALL_DEPENDENCIES}" ]; then
     echo "==Installing vcpkg=="
     git clone https://github.com/Microsoft/vcpkg.git ./.vcpkg
@@ -26,25 +32,32 @@ if [ ! -d ".vcpkg" ] || [ ! -z "${ARG_INSTALL_DEPENDENCIES}" ]; then
     ./.vcpkg/vcpkg install vulkan
 fi
 
-function configure() {
+function sdk_configure() {
     echo "==Configuring project=="
     cmake -B .build -S .
 }
 
 # build project
-function build() {
+function sdk_build() {
     echo "==Building project=="
     cmake --build .build
 }
 
-# perform the build
+# package project
+function sdk_package() {
+    chrpath -r dist dist/gengine
+    zip -r dist/gengine.zip dist data
+}
+
+# [Ctrl F] for @ARG_DOCS.
 if [ -z "${ARG_WATCH}" ]
-then
-    configure
-    build
-else
-    configure
+then # source watching is [ENABLED]
+    sdk_configure
+    sdk_build
+    sdk_package
+else # source watching is [DISABLED]
+    sdk_configure
     while :; do
-        (watch -n1 -t -g ls -l ./src/*) > /dev/null && build
+        (watch -n1 -t -g ls -l ./src/*) > /dev/null && sdk_build
     done
 fi
