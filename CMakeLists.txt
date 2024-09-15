@@ -7,6 +7,8 @@ include(./.vcpkg/scripts/buildsystems/vcpkg.cmake)
 
 add_executable(${PROJECT_NAME})
 
+add_library(gpu STATIC)
+
 # Dependencies
 
 # Libraries
@@ -17,6 +19,7 @@ endif (UNIX)
 
 find_package(glm CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
+target_link_libraries(gpu PRIVATE glm::glm)
 
 find_package(glfw3 CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
@@ -32,7 +35,9 @@ find_package(assimp CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 
 find_package(imgui CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE imgui::imgui)
+target_link_libraries(gpu PUBLIC imgui::imgui)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE gpu)
 
 # Source files
 
@@ -46,15 +51,19 @@ PRIVATE
 	src/main.cpp
 	src/assets.cpp
 	src/physics.cpp
-	src/renderer/render-device-vk.cpp
 	src/stb/stb_image.cpp
+)
+
+target_sources(gpu
+PRIVATE
+	src/renderer/render-device-vk.cpp
 )
 
 # Metadata
 
 set(CXX_STANDARD_REQUIRED ON)
 
-set_target_properties(${PROJECT_NAME}
+set_target_properties(${PROJECT_NAME} gpu
 PROPERTIES
 	CXX_EXTENSIONS OFF
 	CXX_STANDARD 23
