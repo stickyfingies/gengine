@@ -56,7 +56,8 @@ PRIVATE
 
 target_sources(gpu
 PRIVATE
-	src/renderer/render-device-vk.cpp
+	# src/renderer/render-device-vk.cpp
+	src/renderer/renderer-opengl.cpp
 )
 
 # Metadata
