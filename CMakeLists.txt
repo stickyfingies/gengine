@@ -39,9 +39,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 find_package(imgui CONFIG REQUIRED)
 target_link_libraries(gpu PUBLIC imgui::imgui)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE gpu)
-
 endif (NOT EMSCRIPTEN)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE gpu)
 
 # Source files
 
@@ -53,20 +53,22 @@ PUBLIC
 target_sources(${PROJECT_NAME}
 PRIVATE
 	src/main.cpp
-	src/assets.cpp
-	src/physics.cpp
-	src/world.cpp
-	src/stb/stb_image.cpp
+	# src/assets.cpp
+	# src/physics.cpp
+	# src/stb/stb_image.cpp
+	# src/world.native.cpp
+	src/world.wasm.cpp
 )
 
 if (EMSCRIPTEN)
     target_link_options(${PROJECT_NAME} PRIVATE -sUSE_GLFW=3)
+	set(CMAKE_EXECUTABLE_SUFFIX ".html")
 endif (EMSCRIPTEN)
 
 target_sources(gpu
 PRIVATE
-	src/renderer/render-device-vk.cpp
-	# src/renderer/renderer-opengl.cpp
+	# src/renderer/render-device-vk.cpp
+	src/renderer/renderer-opengl.cpp
 )
 
 # Metadata

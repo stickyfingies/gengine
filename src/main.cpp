@@ -40,6 +40,9 @@ auto mouse_callback(GLFWwindow* window, double pos_x, double pos_y) -> void
 	window_data->mouse_y = pos_y;
 }
 
+function<void()> loop;
+void main_loop() { loop(); }
+
 } // namespace
 
 auto main(int argc, char** argv) -> int
@@ -87,7 +90,7 @@ auto main(int argc, char** argv) -> int
 
 	float ms_per_frame = 0.0f;
 
-	const auto main_loop = [&] {
+	loop = [&]() {
 		++frame_count;
 
 		const auto current_time = glfwGetTime();
