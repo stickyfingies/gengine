@@ -43,6 +43,10 @@ Finally, launch the app!
 > [!NOTE]  
 > The [github repo](https://github.com/stickyfingies/gengine) is equipped with Github Actions CI that automatically builds the project when you push to `master`.
 
+#### WebAssembly support
+
+Install `emscripten` and export the variable `$EMSCRIPTEN_ROOT` as the Emscripten SDK path.
+
 Architecture
 ---
 
