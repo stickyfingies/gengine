@@ -1,17 +1,58 @@
 cmake_minimum_required(VERSION 3.29)
-
 project(gengine LANGUAGES CXX)
 
-include(GNUInstallDirs)
-include(./.vcpkg/scripts/buildsystems/vcpkg.cmake)
+# >> CLI
+
+message(STATUS "Cmake: System name = ${CMAKE_SYSTEM_NAME}")
+message(STATUS "Cmake: Toolchain file = ${CMAKE_TOOLCHAIN_FILE}")
+
+# << CLI
+
+# >> Binaries
 
 add_executable(${PROJECT_NAME})
-
 add_library(gpu STATIC)
 
-message("${CMAKE_SYSTEM_NAME}")
+target_include_directories(${PROJECT_NAME}
+    PUBLIC
+    ${Vulkan_INCLUDE_DIRS}
+)
 
-# Libraries
+target_sources(${PROJECT_NAME}
+    PRIVATE
+    cpp/main.cpp
+)
+
+if(CMAKE_SYSTEM_NAME MATCHES Linux)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+        cpp/assets.cpp
+        cpp/physics.cpp
+        cpp/stb/stb_image.cpp
+        cpp/world.native.cpp
+    )
+
+    target_sources(gpu
+        PRIVATE
+        cpp/renderer/render-device-vk.cpp
+    )
+elseif(EMSCRIPTEN)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+        cpp/world.wasm.cpp
+    )
+
+    target_sources(gpu
+        PRIVATE
+        cpp/renderer/renderer-opengl.cpp
+    )
+
+    target_link_options(${PROJECT_NAME} PRIVATE -sUSE_GLFW=3)
+endif()
+
+# << Binaries
+
+# >> Dependencies
 
 find_package(glm CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
@@ -39,46 +80,9 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE gpu)
 
-# Source files
+# << Dependencies
 
-target_include_directories(${PROJECT_NAME}
-    PUBLIC
-    ${Vulkan_INCLUDE_DIRS}
-)
-
-target_sources(${PROJECT_NAME}
-    PRIVATE
-    src/main.cpp
-)
-
-if(CMAKE_SYSTEM_NAME MATCHES Linux)
-    target_sources(${PROJECT_NAME}
-        PRIVATE
-        src/assets.cpp
-        src/physics.cpp
-        src/stb/stb_image.cpp
-        src/world.native.cpp
-    )
-
-    target_sources(gpu
-        PRIVATE
-        src/renderer/render-device-vk.cpp
-    )
-elseif(EMSCRIPTEN)
-    target_sources(${PROJECT_NAME}
-        PRIVATE
-        src/world.wasm.cpp
-    )
-
-    target_sources(gpu
-        PRIVATE
-        src/renderer/renderer-opengl.cpp
-    )
-
-    target_link_options(${PROJECT_NAME} PRIVATE -sUSE_GLFW=3)
-endif()
-
-# Metadata
+# >> Build system
 
 set(CXX_STANDARD_REQUIRED ON)
 
@@ -95,3 +99,5 @@ set_target_properties(${PROJECT_NAME} gpu
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/bin"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/bin"
 )
+
+# << Build system

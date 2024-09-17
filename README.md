@@ -37,8 +37,10 @@ Finally, launch the app!
 
 #### Build Script Options
 
-- `-i` or `--install` will forcefully re-install dependencies.
-- `-w` or `--watch` automatigally compiles C++ files when they change.
+- `./build.sh linux` will build the project for Linux.
+- `./build.sh web` will biuld the project for Web.
+- `./build.sh vcpkg` will fetch dependencies and compile them.
+- `./build.sh dev` automatigally compiles C++ files for Linux when they change.
 
 > [!NOTE]  
 > The [github repo](https://github.com/stickyfingies/gengine) is equipped with Github Actions CI that automatically builds the project when you push to `master`.
