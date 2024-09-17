@@ -1,5 +1,7 @@
 #include "world.h"
-
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 #include <GLFW/glfw3.h>
 #include <iostream>
 
@@ -12,22 +14,21 @@ class WasmWorld : public World {
 	GLFWwindow* window;
 
 public:
-	WasmWorld(GLFWwindow* window) : window{window} {
-        cout << "Hello, World!" << endl;
-    }
+	WasmWorld(GLFWwindow* window) : window{window} { cout << "Hello, World!" << endl; }
 
-	~WasmWorld() {
-        cout << "Goodbye, World!" << endl;
-    }
+	~WasmWorld() { cout << "Goodbye, World!" << endl; }
 
 	void update(double elapsed_time) override
 	{
-        if (glfwGetKey(window, GLFW_KEY_SPACE)) {
-            cout << "Space" << endl;
-        }
+		if (glfwGetKey(window, GLFW_KEY_SPACE)) {
+			cout << "Space" << endl;
+		}
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
-            cout << "Esc" << endl;
+			cout << "Esc" << endl;
 			glfwSetWindowShouldClose(window, true);
+#ifdef __EMSCRIPTEN__
+			emscripten_cancel_main_loop();
+#endif
 		}
 	}
 };
