@@ -47,7 +47,8 @@ elseif(EMSCRIPTEN)
         cpp/renderer/renderer-opengl.cpp
     )
 
-    target_link_options(${PROJECT_NAME} PRIVATE -sUSE_GLFW=3)
+    target_link_options(${PROJECT_NAME} PRIVATE -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2)
+    target_link_options(gpu PRIVATE -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2)
 endif()
 
 # << Binaries
@@ -62,6 +63,9 @@ if(CMAKE_SYSTEM_NAME MATCHES Linux)
 
     find_package(glfw3 CONFIG REQUIRED)
     target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
+
+    find_package(glad CONFIG REQUIRED)
+    target_link_libraries(gpu PRIVATE glad)
 
     find_package(Bullet CONFIG REQUIRED)
     target_link_libraries(${PROJECT_NAME} PRIVATE BulletDynamics BulletCollision Bullet3Common LinearMath)

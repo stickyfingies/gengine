@@ -1485,4 +1485,8 @@ auto RenderDevice::create(GLFWwindow* window) -> std::unique_ptr<RenderDevice>
 	return std::make_unique<RenderDeviceVk>(window);
 }
 
+auto RenderDevice::configure_glfw() -> void {
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+}
+
 } // namespace gengine

@@ -39,6 +39,10 @@ public:
 
 	static auto create(GLFWwindow* window) -> std::unique_ptr<RenderDevice>;
 
+	static auto configure_glfw() -> void;
+
+	virtual ~RenderDevice() = default;
+
 	// resource managemnet
 
 	virtual auto create_buffer(const BufferInfo& info, const void* data) -> std::unique_ptr<Buffer> = 0;

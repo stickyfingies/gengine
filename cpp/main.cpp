@@ -62,7 +62,7 @@ auto main(int argc, char** argv) -> int
 
 	glfwInit();
 
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	RenderDevice::configure_glfw();
 
 	const auto window = glfwCreateWindow(1280, 720, argv[0], nullptr, nullptr);
 

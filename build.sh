@@ -14,6 +14,7 @@ fetch_dependencies() {
     ./.vcpkg/vcpkg install glfw3
     ./.vcpkg/vcpkg install bullet3
     ./.vcpkg/vcpkg install assimp
+    ./.vcpkg/vcpkg install glad
     ./.vcpkg/vcpkg install glm:x64-linux
     ./.vcpkg/vcpkg install glm:wasm32-emscripten
     ./.vcpkg/vcpkg install imgui[core,glfw-binding,vulkan-binding]
