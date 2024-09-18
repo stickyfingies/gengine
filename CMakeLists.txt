@@ -21,12 +21,12 @@ target_include_directories(${PROJECT_NAME}
 target_sources(${PROJECT_NAME}
     PRIVATE
     cpp/main.cpp
+    cpp/assets.cpp
 )
 
 if(CMAKE_SYSTEM_NAME MATCHES Linux)
     target_sources(${PROJECT_NAME}
         PRIVATE
-        cpp/assets.cpp
         cpp/physics.cpp
         cpp/stb/stb_image.cpp
         cpp/world.native.cpp
@@ -47,7 +47,7 @@ elseif(EMSCRIPTEN)
         cpp/renderer/renderer-opengl.cpp
     )
 
-    target_link_options(${PROJECT_NAME} PRIVATE -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2)
+    target_link_options(${PROJECT_NAME} PRIVATE -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/data@data)
     target_link_options(gpu PRIVATE -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2)
 endif()
 
@@ -58,6 +58,9 @@ endif()
 find_package(glm CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
 target_link_libraries(gpu PRIVATE glm::glm)
+
+find_package(assimp CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 
 if(CMAKE_SYSTEM_NAME MATCHES Linux)
 
@@ -73,9 +76,6 @@ if(CMAKE_SYSTEM_NAME MATCHES Linux)
 
     find_package(Vulkan REQUIRED)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES})
-
-    find_package(assimp CONFIG REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 
     find_package(imgui CONFIG REQUIRED)
     target_link_libraries(gpu PUBLIC imgui::imgui)

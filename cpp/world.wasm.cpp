@@ -1,4 +1,6 @@
 #include "world.h"
+#include "assets.h"
+#include "camera.hpp"
 #include "renderer/renderer.h"
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -22,6 +24,14 @@ public:
 		: window{window}, renderer{renderer}
 	{
 		cout << "Hello, Web!" << endl;
+
+		const auto camera = Camera(glm::vec3(0.0f, 5.0f, 90.0f));
+
+		// create game resources
+
+		const auto vert = gengine::load_file("./data/cube.vert.glsl");
+		const auto frag = gengine::load_file("./data/cube.frag.glsl");
+		const auto pipeline = renderer->create_pipeline(vert, frag);
 	}
 
 	~WasmWorld() { cout << "Goodbye, World!" << endl; }
