@@ -1,4 +1,4 @@
-#include "renderer.h"
+#include "gpu.h"
 
 #include "vulkan-headers.hpp"
 
@@ -71,7 +71,7 @@ const auto BUFFER_USAGE_TABLE =
 
 } // namespace
 
-namespace gengine {
+namespace gpu {
 
 struct Buffer {
 	vk::Buffer buffer;
@@ -96,6 +96,12 @@ struct ShaderPipeline {
 struct Descriptors {
 	vk::DescriptorSet descset;
 	glm::vec3 color;
+};
+
+struct Geometry {
+	std::shared_ptr<Buffer> vbo;
+	std::shared_ptr<Buffer> ebo;
+	unsigned long index_count;
 };
 
 class RenderContextVk final {
@@ -374,6 +380,8 @@ public:
 
 	~RenderDeviceVk()
 	{
+		std::cout << "~ RenderDeviceVk" << std::endl;
+
 		device.waitIdle();
 
 		ImGui_ImplVulkan_Shutdown();
@@ -397,8 +405,6 @@ public:
 		device.destroy();
 
 		instance.destroySurfaceKHR(surface);
-
-		std::cout << "[info]\t (module:renderer) shutting down render backend" << std::endl;
 
 		instance.destroy();
 	}
@@ -491,7 +497,7 @@ public:
 		device.freeMemory(buffer->mem);
 	}
 
-	auto create_image(const ImageAsset& info) -> Image* override
+	auto create_image(const gengine::ImageAsset& info) -> Image* override
 	{
 		if (image_cache.find(info.name) != image_cache.end()) {
 			return &image_cache.at(info.name);
@@ -680,7 +686,7 @@ public:
 		device.destroySampler(image->sampler);
 	}
 
-	auto create_renderable(const GeometryAsset& geometry) -> Renderable override
+	auto create_geometry(const gengine::GeometryAsset& geometry) -> Geometry* override
 	{
 		const auto& vertices = geometry.vertices;
 		const auto& vertices_aux = geometry.vertices_aux;
@@ -701,12 +707,18 @@ public:
 		}
 
 		auto vbo = create_buffer(
-			{gengine::BufferInfo::Usage::VERTEX, sizeof(float), gpu_data.size()}, gpu_data.data());
+			{BufferInfo::Usage::VERTEX, sizeof(float), gpu_data.size()}, gpu_data.data());
 		auto ebo = create_buffer(
-			{gengine::BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()},
+			{BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()},
 			indices.data());
 
-		return Renderable{std::move(vbo), std::move(ebo), indices.size()};
+		return new Geometry{std::move(vbo), std::move(ebo), indices.size()};
+	}
+
+	auto destroy_geometry(const Geometry* geometry) -> void override {
+		destroy_buffer(geometry->vbo);
+		destroy_buffer(geometry->ebo);
+		delete geometry;
 	}
 
 	auto create_descriptor_set_layout() -> vk::DescriptorSetLayout
@@ -951,7 +963,7 @@ public:
 		const glm::mat4& view,
 		ShaderPipeline* pso,
 		const std::vector<glm::mat4>& transforms,
-		const std::vector<Renderable>& renderables,
+		const std::vector<Geometry*>& renderables,
 		const std::vector<Descriptors*>& descriptors,
 		std::function<void()> gui_code) -> void override
 	{
@@ -988,8 +1000,8 @@ public:
 				sizeof(PushConstantData),
 				&push_constant_data);
 
-			ctx->bind_geometry_buffers(renderables[i].vbo.get(), renderables[i].ebo.get());
-			ctx->draw(renderables[i].index_count, 1);
+			ctx->bind_geometry_buffers(renderables[i]->vbo.get(), renderables[i]->ebo.get());
+			ctx->draw(renderables[i]->index_count, 1);
 		}
 
 		ImGui::Render();

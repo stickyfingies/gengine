@@ -1,7 +1,7 @@
 #include "world.h"
 #include "camera.hpp"
+#include "gpu.h"
 #include "physics.h"
-#include "renderer/renderer.h"
 #include "window.h"
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -15,19 +15,19 @@ class NativeWorld : public World {
 	// Engine services
 	GLFWwindow* window;
 	unique_ptr<PhysicsEngine> physics_engine;
-	shared_ptr<RenderDevice> renderer;
+	shared_ptr<gpu::RenderDevice> renderer;
 	TextureFactory texture_factory{};
 
 	// Game data
 	Camera camera;
 	vector<glm::mat4> transforms{};
 	vector<Collidable*> collidables{};
-	vector<Renderable> render_components{};
-	vector<Descriptors*> descriptors{};
-	ShaderPipeline* pipeline;
+	vector<gpu::Geometry*> render_components{};
+	vector<gpu::Descriptors*> descriptors{};
+	gpu::ShaderPipeline* pipeline;
 
 public:
-	NativeWorld(GLFWwindow* window, shared_ptr<RenderDevice> renderer)
+	NativeWorld(GLFWwindow* window, shared_ptr<gpu::RenderDevice> renderer)
 		: window{window}, renderer{renderer}
 	{
 		physics_engine = make_unique<PhysicsEngine>();
@@ -104,6 +104,8 @@ public:
 
 	~NativeWorld()
 	{
+		cout << "~ NativeWorld" << endl;
+
 		for (const auto& collidable : collidables) {
 			physics_engine->destroy_collidable(collidable);
 		}
@@ -114,9 +116,8 @@ public:
 
 		// renderer->destroy_image(albedo);
 
-		for (auto& renderComponent : render_components) {
-			renderer->destroy_buffer(renderComponent.vbo);
-			renderer->destroy_buffer(renderComponent.ebo);
+		for (auto renderComponent : render_components) {
+			renderer->destroy_geometry(renderComponent);
 		}
 	}
 
@@ -231,17 +232,17 @@ public:
 
 	auto create_game_object(
 		std::string_view path,
-		std::vector<Renderable>& render_components,
-		std::vector<gengine::Descriptors*>& descriptors,
-		gengine::ShaderPipeline* pipeline,
+		std::vector<gpu::Geometry*>& render_components,
+		std::vector<gpu::Descriptors*>& descriptors,
+		gpu::ShaderPipeline* pipeline,
 		std::vector<gengine::Collidable*>& collidables,
 		std::vector<glm::mat4>& transforms,
 		bool makeMesh = false,
 		bool flipUVs = false,
 		bool flipWindingOrder = false) -> void
 	{
-		std::vector<gengine::Descriptors*> descriptor_cache;
-		std::vector<gengine::Renderable> renderable_cache;
+		std::vector<gpu::Descriptors*> descriptor_cache;
+		std::vector<gpu::Geometry*> renderable_cache;
 
 		const auto scene = gengine::load_model(texture_factory, path, flipUVs, flipWindingOrder);
 
@@ -267,7 +268,7 @@ public:
 
 		/// Geometry --> Renderable
 		for (const auto& geometry : scene.geometries) {
-			const auto renderable = renderer->create_renderable(geometry);
+			const auto renderable = renderer->create_geometry(geometry);
 			renderable_cache.push_back(renderable);
 		}
 
@@ -299,7 +300,7 @@ public:
 	}
 };
 
-unique_ptr<World> World::create(GLFWwindow* window, shared_ptr<RenderDevice> renderer)
+unique_ptr<World> World::create(GLFWwindow* window, shared_ptr<gpu::RenderDevice> renderer)
 {
 	return make_unique<NativeWorld>(window, renderer);
 }

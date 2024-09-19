@@ -54,7 +54,7 @@ auto TextureFactory::load_image_from_file(const std::string& path)
 		data};
 
 	image_log.push_back(image_asset);
-	std::cout << "[info]\t ImageAsset " << path.data() << " (" << width << "x" << height
+	std::cout << "ImageAsset " << path.data() << " (" << width << "x" << height
 			  << ") channels=" << channel_count << " (fixed to 4)" << std::endl;
 
 	image_cache[path] = image_asset;
@@ -83,7 +83,7 @@ auto TextureFactory::load_image_from_memory(
 		data};
 
 	image_log.push_back(image_asset);
-	std::cout << "[info]\t ImageAsset " << name << " (" << width << "x" << height
+	std::cout << "ImageAsset " << name << " (" << width << "x" << height
 			  << ") channels=" << channel_count << " (fixed to 4)" << std::endl;
 
 	image_cache[name] = image_asset;
@@ -100,7 +100,7 @@ auto TextureFactory::unload_image(const ImageAsset& asset) -> void
 auto TextureFactory::unload_all_images() -> void
 {
 	for (auto it = image_cache.begin(); it != image_cache.end();) {
-		std::cout << "[info]\t ~ ImageAsset " << it->first << std::endl;
+		std::cout << "~ ImageAsset " << it->first << std::endl;
 		stbi_image_free(it->second.data);
 		image_cache.erase(it++);
 	}
@@ -171,7 +171,7 @@ auto processGeometry(const aiScene* scene, size_t mesh_idx, size_t& material_idx
 {
 	const auto mesh = scene->mMeshes[mesh_idx];
 
-	std::cout << "[info]\t Mesh " << mesh_idx << " { vertices: " << mesh->mNumVertices
+	std::cout << "Mesh " << mesh_idx << ": { vertices: " << mesh->mNumVertices
 			  << ", faces: " << mesh->mNumFaces << " }" << std::endl;
 
 	auto vertices = std::vector<float>{};
@@ -244,7 +244,7 @@ auto load_model(
 {
 	static auto importer = Assimp::Importer{};
 
-	std::cout << "[info]\t Scene " << path.data() << std::endl;
+	std::cout << "Scene path: " << path.data() << std::endl;
 
 	uint32_t importFlags = aiProcess_Triangulate | aiProcess_GenNormals;
 	if (flipUVs) {
@@ -328,14 +328,19 @@ auto load_model(
 	return assets;
 }
 
-auto load_file(std::string_view path) -> std::string
+auto load_file(std::string_view path) -> std::string // TODO? return std::optional<std::string>
 {
 	const auto stream = std::ifstream(path.data(), std::ifstream::binary);
 
-	auto buffer = std::stringstream{};
+	if (!stream) {
+		std::cout << "Error: failed to open file " << path << std::endl;
+		return ""; // TODO: see function signature
+	}
 
+	std::cout << "File path: " << path << std::endl;
+
+	std::stringstream buffer{};
 	buffer << stream.rdbuf();
-
 	return buffer.str();
 }
 

@@ -4,13 +4,13 @@
 
 struct GLFWwindow;
 
-namespace gengine {
+namespace gpu { struct RenderDevice; }
 
-struct RenderDevice;
+namespace gengine {
 
 class World {
 public:
-	static std::unique_ptr<World> create(GLFWwindow* window, std::shared_ptr<RenderDevice> renderer);
+	static std::unique_ptr<World> create(GLFWwindow* window, std::shared_ptr<gpu::RenderDevice> renderer);
 
 	virtual ~World() = default;
 

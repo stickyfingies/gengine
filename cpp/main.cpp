@@ -11,15 +11,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-
 #include "assets.h"
 #include "camera.hpp"
 #include "physics.h"
 
 #endif
+#include "gpu.h"
 #include "window.h"
 #include "world.h"
-#include "renderer/renderer.h"
 
 #include <iostream>
 #include <vector>
@@ -47,9 +46,13 @@ void main_loop() { loop(); }
 
 auto main(int argc, char** argv) -> int
 {
-	// Argument processing
+	// >> Argument processing
 
-	std::cout << "[info]\t Launching " << argv[0] << std::endl;
+	cout << "Arguments:";
+	for (char* arg = *argv; arg < (*argv + argc); arg++) {
+		cout << " " << arg;
+	}
+	cout << endl;
 
 	bool editor_enabled = false;
 
@@ -58,30 +61,35 @@ auto main(int argc, char** argv) -> int
 		std::cout << "[info]\t EDITOR ENABLED" << std::endl;
 	}
 
-	// Engine startup 
+	// << Argument processing
+
+	// >> Window startup
 
 	glfwInit();
 
-	RenderDevice::configure_glfw();
+	gpu::RenderDevice::configure_glfw();
 
-	const auto window = glfwCreateWindow(1280, 720, argv[0], nullptr, nullptr);
+	const auto window = glfwCreateWindow(1280, 720, "Gengine", nullptr, nullptr);
 
-	auto window_data = WindowData{};
+	WindowData window_data{};
+	glfwSetWindowUserPointer(window, &window_data);
 
 	if (!editor_enabled) {
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		glfwSetCursorPosCallback(window, mouse_callback);
 	}
 
-	glfwSetWindowUserPointer(window, &window_data);
-	
-	// System startup
+	// << Window startup
 
-	shared_ptr<RenderDevice> renderer = RenderDevice::create(window);
+	// >> System startup
+
+	shared_ptr<gpu::RenderDevice> renderer = gpu::RenderDevice::create(window);
 
 	const auto world = World::create(window, renderer);
 
-	// core game loop
+	// << System startup
+
+	// >> Main loop
 
 	auto last_displayed_fps = glfwGetTime();
 	auto frame_count = 0u;
@@ -119,17 +127,17 @@ auto main(int argc, char** argv) -> int
 		main_loop();
 #endif
 
-	// unload game data
+	// << Main loop
+
+	// >> Shutdown and cleanup
+
+	cout << "System shutting down..." << endl;
 
 	renderer->destroy_all_images();
 
-	// system shutdown
-
 	glfwDestroyWindow(window);
-
-	std::cout << "[info]\t (module:main) shutdown, terminating window manager" << std::endl;
 
 	glfwTerminate();
 
-	std::cout << "Cya" << std::endl;
+	// << Shutdown and cleanup
 }

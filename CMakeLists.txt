@@ -34,7 +34,7 @@ if(CMAKE_SYSTEM_NAME MATCHES Linux)
 
     target_sources(gpu
         PRIVATE
-        cpp/renderer/render-device-vk.cpp
+        cpp/gpu.vulkan.cpp
     )
 elseif(EMSCRIPTEN)
     target_sources(${PROJECT_NAME}
@@ -44,11 +44,11 @@ elseif(EMSCRIPTEN)
 
     target_sources(gpu
         PRIVATE
-        cpp/renderer/renderer-opengl.cpp
+        cpp/gpu.opengl.cpp
     )
 
-    target_link_options(${PROJECT_NAME} PRIVATE -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/data@data)
-    target_link_options(gpu PRIVATE -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2)
+    target_link_options(${PROJECT_NAME} PRIVATE -sALLOW_MEMORY_GROWTH -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sFULL_ES3 --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/data@data)
+    target_link_options(gpu PRIVATE -sALLOW_MEMORY_GROWTH -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sFULL_ES3)
 endif()
 
 # << Binaries
