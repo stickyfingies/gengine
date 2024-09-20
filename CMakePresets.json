@@ -1,0 +1,157 @@
+{
+    "version": 8,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 30,
+        "patch": 1
+    },
+    "include": [],
+    "configurePresets": [
+        {
+            "name": "debug",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/.cmake/${presetName}",
+            "installDir": "${sourceDir}/dist/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "release",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/.cmake/${presetName}",
+            "installDir": "${sourceDir}/dist/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "vcpkg",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/.cmake/${presetName}",
+            "installDir": "${sourceDir}/dist/${presetName}",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/.vcpkg/scripts/buildsystems/vcpkg.cmake"
+            }
+        },
+        {
+            "name": "emscripten",
+            "hidden": true,
+            "inherits": [
+                "vcpkg"
+            ],
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
+                "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "/usr/lib/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+                "CMAKE_CROSSCOMPILING_EMULATOR": "/usr/bin/node",
+                "CMAKE_EXECUTABLE_SUFFIX": ".html"
+            }
+        },
+        {
+            "name": "vulkan",
+            "hidden": true,
+            "cacheVariables": {
+                "GPU_BACKEND": "Vulkan"
+            }
+        },
+        {
+            "name": "gl",
+            "hidden": true,
+            "cacheVariables": {
+                "GPU_BACKEND": "GL"
+            }
+        },
+        {
+            "name": "linux-vk-dev",
+            "inherits": [
+                "debug",
+                "vcpkg",
+                "vulkan"
+            ]
+        },
+        {
+            "name": "linux-vk-app",
+            "inherits": [
+                "release",
+                "vcpkg",
+                "vulkan"
+            ]
+        },
+        {
+            "name": "linux-gl-dev",
+            "inherits": [
+                "debug",
+                "vcpkg",
+                "gl"
+            ]
+        },
+        {
+            "name": "linux-gl-app",
+            "inherits": [
+                "release",
+                "vcpkg",
+                "gl"
+            ]
+        },
+        {
+            "name": "web-gl-dev",
+            "inherits": [
+                "debug",
+                "emscripten",
+                "gl"
+            ]
+        },
+        {
+            "name": "web-gl-app",
+            "inherits": [
+                "release",
+                "emscripten",
+                "gl"
+            ]
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "linux-vk-dev",
+            "configurePreset": "linux-vk-dev"
+        },
+        {
+            "name": "linux-vk-app",
+            "configurePreset": "linux-vk-app"
+        },
+        {
+            "name": "linux-gl-dev",
+            "configurePreset": "linux-gl-dev"
+        },
+        {
+            "name": "linux-gl-app",
+            "configurePreset": "linux-gl-app"
+        },
+        {
+            "name": "web-gl-dev",
+            "configurePreset": "web-gl-dev"
+        },
+        {
+            "name": "web-gl-app",
+            "configurePreset": "web-gl-app"
+        }
+    ],
+    "testPresets": [],
+    "packagePresets": [
+        {
+            "name": "linux-vk-app",
+            "configurePreset": "linux-vk-app",
+            "generators": [
+                "ZIP"
+            ]
+        },
+        {
+            "name": "web-gl-app",
+            "configurePreset": "web-gl-app",
+            "generators": [
+                "ZIP"
+            ]
+        }
+    ],
+    "workflowPresets": []
+}

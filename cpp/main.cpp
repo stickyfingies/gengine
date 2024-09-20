@@ -20,6 +20,7 @@
 #include "window.h"
 #include "world.h"
 
+#include <filesystem>
 #include <iostream>
 #include <vector>
 

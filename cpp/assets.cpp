@@ -9,6 +9,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -16,6 +17,8 @@
 
 /// State belongs to the compilation unit
 /// TODO make an AssetLoader class or something
+
+using namespace std;
 
 namespace gengine {
 
@@ -40,10 +43,12 @@ auto TextureFactory::load_image_from_file(const std::string& path)
 	auto height = 0;
 	auto channel_count = 0;
 
-	const auto data = stbi_load(path.data(), &width, &height, &channel_count, 4);
+	filesystem::path normalized_path = filesystem::current_path() / path;
+
+	const auto data = stbi_load(normalized_path.c_str(), &width, &height, &channel_count, 4);
 
 	if (data == nullptr) {
-		return std::unexpected("Cannot load " + path);
+		return std::unexpected("Cannot load " + normalized_path.string());
 	}
 
 	const auto image_asset = ImageAsset{
@@ -244,7 +249,9 @@ auto load_model(
 {
 	static auto importer = Assimp::Importer{};
 
-	std::cout << "Scene path: " << path.data() << std::endl;
+	filesystem::path normalized_path = filesystem::current_path() / path;
+
+	std::cout << "Scene path: " << normalized_path << std::endl;
 
 	uint32_t importFlags = aiProcess_Triangulate | aiProcess_GenNormals;
 	if (flipUVs) {
@@ -254,9 +261,9 @@ auto load_model(
 		importFlags |= aiProcess_FlipWindingOrder;
 	}
 
-	const auto scene = importer.ReadFile(path.data(), importFlags);
+	const auto scene = importer.ReadFile(normalized_path.c_str(), importFlags);
 	if ((!scene) || (scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE) || (!scene->mRootNode)) {
-		std::cerr << "[!ERR]\t\t unable to load scene!" << std::endl;
+		std::cerr << "Error: Scene cannot be located: " << normalized_path << std::endl;
 		return {};
 	}
 
@@ -330,14 +337,15 @@ auto load_model(
 
 auto load_file(std::string_view path) -> std::string // TODO? return std::optional<std::string>
 {
-	const auto stream = std::ifstream(path.data(), std::ifstream::binary);
+	filesystem::path normalized_path = filesystem::current_path() / path;
+	const auto stream = std::ifstream(normalized_path.c_str(), std::ifstream::binary);
 
 	if (!stream) {
-		std::cout << "Error: failed to open file " << path << std::endl;
+		std::cout << "Error: failed to open file " << normalized_path << std::endl;
 		return ""; // TODO: see function signature
 	}
 
-	std::cout << "File path: " << path << std::endl;
+	std::cout << "File path: " << normalized_path << std::endl;
 
 	std::stringstream buffer{};
 	buffer << stream.rdbuf();

@@ -22,18 +22,6 @@ fetch_dependencies() {
     ./.vcpkg/vcpkg install vulkan
 }
 
-cmake_configure_linux() {
-    cmake -B .cmake -S . -DCMAKE_TOOLCHAIN_FILE=./.vcpkg/scripts/buildsystems/vcpkg.cmake
-}
-
-cmake_configure_web() {
-    cmake -B .cmake -S . -DCMAKE_TOOLCHAIN_FILE=./.vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=wasm32-emscripten -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=/usr/lib/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_CROSSCOMPILING_EMULATOR=/usr/bin/node
-}
-
-build() {
-    cmake --build .cmake
-}
-
 package() {
     zip -r ./dist/pkg/gengine ./dist/bin/ ./data/
 }
@@ -42,43 +30,34 @@ package() {
 
 # >> Build script
 
-if [ $# -eq 0 ]; then
+if [ -z "$1" ]; then
     # ./build.sh
     fetch_dependencies
-    rm -rf .cmake
-    cmake_configure_linux
-    build
-    rm -rf .cmake
-    cmake_configure_web
-    build
+    cmake --preset linux-vk-app
+    cmake --build --preset linux-vk-app
+    cmake --preset linux-gl-app
+    cmake --build --preset linux-gl-app
+    cmake --preset web-gl-app
+    cmake --build --preset web-gl-app
     package
-fi
-
-while test $# != 0; do
+else
     case "$1" in
-    linux)
-        # ./build.sh linux
-        cmake_configure_linux
-        build
-        ;;
-    web)
-        # ./build.sh web
-        cmake_configure_web
-        build
-        ;;
     vcpkg)
         # ./build.sh fetch_dependencies
         fetch_dependencies
         ;;
     dev)
         # ./build.sh dev
-        cmake_configure_linux
+        cmake --preset linux
         while :; do
-            (watch -n1 -t -g ls -l ./cpp/*) >/dev/null && build
+            (watch -n1 -t -g ls -l ./cpp/*) >/dev/null && cmake --build --preset linux
         done
         ;;
+    *)
+        cmake --preset "$1"
+        cmake --build --preset "$1"
+        ;;
     esac
-    shift
-done
+fi
 
 # << Build script

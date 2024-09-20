@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.29)
+cmake_minimum_required(VERSION 3.30)
 project(gengine LANGUAGES CXX)
 
 # >> CLI
@@ -9,6 +9,10 @@ message(STATUS "Cmake: Toolchain file = ${CMAKE_TOOLCHAIN_FILE}")
 # << CLI
 
 # >> Binaries
+
+if(EMSCRIPTEN)
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+endif()
 
 add_executable(${PROJECT_NAME})
 add_library(gpu STATIC)
@@ -31,24 +35,26 @@ if(CMAKE_SYSTEM_NAME MATCHES Linux)
         cpp/stb/stb_image.cpp
         cpp/world.native.cpp
     )
-
-    target_sources(gpu
-        PRIVATE
-        cpp/gpu.vulkan.cpp
-    )
 elseif(EMSCRIPTEN)
     target_sources(${PROJECT_NAME}
         PRIVATE
         cpp/world.wasm.cpp
     )
 
+    target_link_options(${PROJECT_NAME} PRIVATE -sALLOW_MEMORY_GROWTH -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sFULL_ES3 --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/data@data)
+    target_link_options(gpu PRIVATE -sALLOW_MEMORY_GROWTH -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sFULL_ES3)
+endif()
+
+if(GPU_BACKEND MATCHES Vulkan)
+    target_sources(gpu
+        PRIVATE
+        cpp/gpu.vulkan.cpp
+    )
+elseif(GPU_BACKEND MATCHES GL)
     target_sources(gpu
         PRIVATE
         cpp/gpu.opengl.cpp
     )
-
-    target_link_options(${PROJECT_NAME} PRIVATE -sALLOW_MEMORY_GROWTH -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sFULL_ES3 --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/data@data)
-    target_link_options(gpu PRIVATE -sALLOW_MEMORY_GROWTH -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sFULL_ES3)
 endif()
 
 # << Binaries
@@ -90,18 +96,37 @@ target_link_libraries(${PROJECT_NAME} PRIVATE gpu)
 
 set(CXX_STANDARD_REQUIRED ON)
 
-if(EMSCRIPTEN)
-    set(CMAKE_EXECUTABLE_SUFFIX ".html")
-endif()
+include(GNUInstallDirs)
 
 set_target_properties(${PROJECT_NAME} gpu
     PROPERTIES
     CXX_EXTENSIONS OFF
     CXX_STANDARD 23
     CMAKE_CXX_STANDARD_REQUIRED ON
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/bin"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/bin"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/bin"
 )
+
+if(NOT EMSCRIPTEN)
+    install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_BINDIR}")
+    install(DIRECTORY
+        "${CMAKE_SOURCE_DIR}/data/"
+        DESTINATION "data/")
+else()
+    install(FILES
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.js"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.wasm"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.data"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.html"
+        DESTINATION "${CMAKE_INSTALL_BINDIR}")
+endif()
+
+# Set Package Name
+set(CPACK_PACKAGE_NAME "gengine")
+# Set The Version Information of The Installation Package
+set(CPACK_PACKAGE_VERSION "1.0.0")
+# Set The Group Name
+set(CPACK_RPM_PACKAGE_GROUP "gengine")
+# Set The Vendor Name
+set(CPACK_PACKAGE_VENDOR "gengine")
+include(CPack)
 
 # << Build system
