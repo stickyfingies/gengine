@@ -7,7 +7,7 @@ on:
     branches: [ "master" ]
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }} 
   BUILD_TYPE: Release
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
   CMAKE_C_COMPILER: "/usr/bin/gcc13"
@@ -37,8 +37,8 @@ jobs:
       with:
         body: |
           Download a zip below and run the game engine.
-          Github Actions re-builds the zip when `master` changes. 
-        tag_name: master
+          Github Actions re-builds the zip when `$BRANCH_NAME` changes. 
+        tag_name: $BRANCH_NAME
         files: |
           dist/linux-vk-app.zip
           dist/web-gl-app.zip
