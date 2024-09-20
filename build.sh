@@ -1,5 +1,9 @@
 #!/usr/bin/bash
 
+############################
+# GENGINE BUILD AUTOMATION #
+############################
+
 trap exit SIGQUIT SIGINT
 
 ## Subroutines >>
