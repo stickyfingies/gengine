@@ -27,15 +27,19 @@ jobs:
           sudo apt update
           sudo apt install gcc-13 g++-13 libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev libwayland-dev libxkbcommon-dev libgl1-mesa-dev libglu1-mesa-dev
 
-    - run: chmod +x ./build.sh
-    - run: ./build.sh
+    - run: chmod +x ./install_vcpkg.sh
+    - run: ./install_vcpkg.sh
+    - run: cmake --workflow --preset linux-vk-app
+    - run: cmake --workflow --preset web-gl-app
 
     - name: Create release
       uses: softprops/action-gh-release@v2
       with:
         body: |
-          Download `gengine` to run the game engine.
-          Github Actions re-builds the binary when `master` changes.  
+          Download a zip below and run the game engine.
+          Github Actions re-builds the zip when `master` changes. 
         tag_name: master
-        files: dist/bin/gengine
+        files: |
+          dist/linux-vk-app.zip
+          dist/web-gl-app.zip
 

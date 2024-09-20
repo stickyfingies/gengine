@@ -139,19 +139,65 @@
     "testPresets": [],
     "packagePresets": [
         {
-            "name": "linux-vk-app",
-            "configurePreset": "linux-vk-app",
+            "name": "base",
+            "hidden": true,
+            "variables": {
+                "CPACK_PACKAGE_FILE_NAME": "${presetName}",
+                "CPACK_PACKAGE_DIRECTORY": "${sourceDir}/dist"
+            },
             "generators": [
                 "ZIP"
             ]
         },
         {
+            "name": "linux-vk-app",
+            "configurePreset": "linux-vk-app",
+            "inherits": [
+                "base"
+            ]
+        },
+        {
             "name": "web-gl-app",
             "configurePreset": "web-gl-app",
-            "generators": [
-                "ZIP"
+            "inherits": [
+                "base"
             ]
         }
     ],
-    "workflowPresets": []
+    "workflowPresets": [
+        {
+            "name": "linux-vk-app",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux-vk-app"
+                },
+                {
+                    "type": "build",
+                    "name": "linux-vk-app"
+                },
+                {
+                    "type": "package",
+                    "name": "linux-vk-app"
+                }
+            ]
+        },
+        {
+            "name": "web-gl-app",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "web-gl-app"
+                },
+                {
+                    "type": "build",
+                    "name": "web-gl-app"
+                },
+                {
+                    "type": "package",
+                    "name": "web-gl-app"
+                }
+            ]
+        }
+    ]
 }
