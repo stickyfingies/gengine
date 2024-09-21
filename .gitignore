@@ -35,6 +35,8 @@
 dist/
 out/
 external/
+artifacts/*
+!artifacts/.gitkeep
 
 # Dependencies
 .vcpkg/

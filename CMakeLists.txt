@@ -24,21 +24,21 @@ target_include_directories(${PROJECT_NAME}
 
 target_sources(${PROJECT_NAME}
     PRIVATE
-    cpp/main.cpp
-    cpp/assets.cpp
+    code/main.cpp
+    code/assets.cpp
 )
 
 if(CMAKE_SYSTEM_NAME MATCHES Linux)
     target_sources(${PROJECT_NAME}
         PRIVATE
-        cpp/physics.cpp
-        cpp/stb/stb_image.cpp
-        cpp/world.native.cpp
+        code/physics.cpp
+        code/stb/stb_image.cpp
+        code/world.native.cpp
     )
 elseif(EMSCRIPTEN)
     target_sources(${PROJECT_NAME}
         PRIVATE
-        cpp/world.wasm.cpp
+        code/world.wasm.cpp
     )
 
     target_link_options(${PROJECT_NAME} PRIVATE -sALLOW_MEMORY_GROWTH -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sFULL_ES3 --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/data@data)
@@ -48,12 +48,12 @@ endif()
 if(GPU_BACKEND MATCHES Vulkan)
     target_sources(gpu
         PRIVATE
-        cpp/gpu.vulkan.cpp
+        code/gpu.vulkan.cpp
     )
 elseif(GPU_BACKEND MATCHES GL)
     target_sources(gpu
         PRIVATE
-        cpp/gpu.opengl.cpp
+        code/gpu.opengl.cpp
     )
 endif()
 
