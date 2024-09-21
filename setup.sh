@@ -14,11 +14,16 @@ chmod +x ./dependencies/vcpkg/bootstrap-vcpkg.sh
 
 alias vcpkg=./dependencies/vcpkg/vcpkg
 
+echo $(whereis emcc)
 vcpkg install glm:wasm32-emscripten
+
+echo $(whereis emcc)
 vcpkg install glm:wasm32-emscripten
+
+echo $(whereis emcc)
 vcpkg install glm:wasm32-emscripten
-vcpkg install glm:wasm32-emscripten
-vcpkg install glm:wasm32-emscripten
+
+echo $(whereis emcc)
 vcpkg install glm:wasm32-emscripten
 
 vcpkg install glfw3
