@@ -51,6 +51,7 @@ jobs:
         
     - run: chmod +x setup.sh
     - run: sh setup.sh
+      shell: bash
     - run: cmake --workflow --preset linux-vk-app
     - run: cmake --workflow --preset web-gl-app
 
