@@ -31,10 +31,12 @@
 *.app
 
 # Temporaries
-.build/
+.cmake/
 dist/
 out/
 external/
+artifacts/*
+!artifacts/.gitkeep
 
 # Dependencies
 .vcpkg/

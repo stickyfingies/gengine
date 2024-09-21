@@ -1,50 +1,66 @@
 # GameEngine
 
-![Bullet](https://a11ybadges.com/badge?text=Bullet&badgeColor=goldenrod&logo=crosshair)
-![Vulkan](https://a11ybadges.com/badge?logo=vulkan)
-![C++](https://a11ybadges.com/badge?logo=cplusplus)
-![CMake](https://a11ybadges.com/badge?logo=cmake)
+![Screenshot](./data/screenshot_editor.png "Screenshot")
 
-A hobby real-time 3D simulation with physics, user input, and graphics.
+Gengine is an interactive 3D physical simulation engine with a small editor interface.
 
-![Screenshot](./screenshot.png "Screenshot")
+GPLv3. See [COPYING](./COPYING). Copyright (c) 2019 Seth Traman.
 
-A minimal editor + debug menu is also included.
+Players - _Download and Play_
+---
 
-![Screenshot](./screenshot_editor.png "Screenshot")
+Download for [x64 Linux](https://github.com/stickyfingies/gengine/releases/download/master/linux-vk-app.zip) and extract, then run `./bin/gengine` to play.
 
-Getting Started
+Download for [Web](https://github.com/stickyfingies/gengine/releases/download/master/web-gl-app.zip) and extract then run `python3 http.server` and open the URL.
+
+| Web | Linux | Mac | Windows |
+| --- | ----- | --- | ------- |
+| ✅   | ✅    | ❓   | ❌       |
+
+Developers - _Getting Started_
 ---
 
 Download the project using git.
 
 ```sh
 git clone https://github.com/stickyfingies/gengine.git
-chmod +x ./build.sh
+git submodule init
+git submodule update
 ```
 
-Build the project to create an executable.
+This step may take a couple of minutes, but `setup.sh` automatically configures your developer environment and fetches the dependencies that we use.
 
 ```sh
-./build.sh
+chmod +x setup.sh
+./setup.sh
 ```
 
-Finally, launch the app!
+Now, we can use [CMake](https://cmake.org/download/) to build the application for your desired platform.
 
 ```sh
-./dist/bin/gengine
+cmake --workflow --preset linux-vk-app # for linux
+cmake --workflow --preset web-gl-app   # for web
 ```
 
-#### Build Script Options
-
-- `-i` or `--install` will forcefully re-install dependencies.
-- `-w` or `--watch` automatigally compiles C++ files when they change.
-
-> [!NOTE]  
-> The [github repo](https://github.com/stickyfingies/gengine) is equipped with Github Actions CI that automatically builds the project when you push to `master`.
-
-Architecture
+Software Overview
 ---
+
+| Technology | Description |
+| ---------- | ----------- |
+| ![C++](https://a11ybadges.com/badge?logo=cplusplus) | A general-purpose programming language that can be expressive and performant or demonic and crude. |
+| ![WebAssembly](https://a11ybadges.com/badge?logo=webassembly) | A compilation target that enables native applications to run inside the web browser. Emscripten is the tool this project uses for compiling C++ into WebAssembly. |
+| ![CMake](https://a11ybadges.com/badge?logo=cmake) | A meta build system that consumes high-level descriptions of your C++ project and produces scripts that compile, link, and package the app.|
+| ![VcPkg](https://a11ybadges.com/badge?text=vcpkg&badgeColor=gold&logo=package) | A Microsoft product that integrates with CMake to download and build C++ dependencies. |
+| ![GitHub Actions](https://a11ybadges.com/badge?logo=githubactions) | A cloud automation utility that reactively compiles, packages, and releases your code after pushing changes to git. |
+| ![Vulkan](https://a11ybadges.com/badge?logo=vulkan) | An extremely low-level GPU interface designed by Khronos Group, this powers the Linux release of Game Engine.|
+| ![OpenGL](https://a11ybadges.com/badge?logo=opengl) | An older and simpler GPU interface from before graphics cards were even programmable, runs on Linux and Web. |
+| ![WebGL](https://a11ybadges.com/badge?logo=webgl) | A GPU interface for web browsers, similar to OpenGL.  Emscripten will automatically convert OpenGL code into WebGL, which is pretty freaking awesome. |
+| ![Bullet](https://a11ybadges.com/badge?text=Bullet&badgeColor=goldenrod&logo=crosshair) | A customizable physics engine that supports complex 3D shapes and provides the base for complex spatial logic. |
+
+Game Data Pipeline
+---
+
+> Note: the figure below may be outdated.
 
 ```mermaid
 ---
@@ -72,6 +88,14 @@ The geometry and the texture are passed into the rendering engine to create a st
 Finally, the culmination of these are used to create a cohesive "game object" that is both visible and tangible.
 
 ## Resources
+
+C++
+- [Modern C++ DevOps](https://moderncppdevops.com/)
+- [DevLog - Molecule Game Engine](https://blog.molecular-matters.com/)
+- [DevLog - Autodesk Stingray / BitSquid Engine](http://bitsquid.blogspot.com/)
+- [DevLog - Our Machinery Engine](https://ruby0x1.github.io/machinery_blog_archive/)
+
+Rendering
 - [Learn OpenGL](https://learnopengl.com/) <small>**Start here** — this tutorial taught me C++. It's that good.</small>
 - [Vulkan Tutorial](https://vulkan-tutorial.com/)
 - [Vulkan Guide - Resources](https://vkguide.dev/docs/great_resources)
