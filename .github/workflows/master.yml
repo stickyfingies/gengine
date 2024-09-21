@@ -60,9 +60,9 @@ jobs:
       with:
         body: |
           Download a zip below and run the game engine.
-          Github Actions re-builds the zip when `$BRANCH_NAME` changes. 
-        tag_name: $BRANCH_NAME
+          Github Actions re-builds the zip when `${{ env.BRANCH_NAME }}` changes. 
+        tag_name: ${{ env.BRANCH_NAME }}
         files: |
-          dist/linux-vk-app.zip
-          dist/web-gl-app.zip
+          artifacts/linux-vk-app.zip
+          artifacts/web-gl-app.zip
 
