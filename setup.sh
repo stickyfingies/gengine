@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/usr/bin/bash
 
 echo "==Setup Emscripten=="
 
@@ -6,6 +6,7 @@ alias emsdk=./dependencies/emsdk/emsdk
 emsdk install latest
 emsdk activate latest
 source ./dependencies/emsdk/emsdk_env.sh
+echo $(whereis emcc)
 
 echo "==Setup vcpkg=="
 
@@ -13,18 +14,6 @@ chmod +x ./dependencies/vcpkg/bootstrap-vcpkg.sh
 ./dependencies/vcpkg/bootstrap-vcpkg.sh
 
 alias vcpkg=./dependencies/vcpkg/vcpkg
-
-echo $(whereis emcc)
-vcpkg install glm:wasm32-emscripten
-
-echo $(whereis emcc)
-vcpkg install glm:wasm32-emscripten
-
-echo $(whereis emcc)
-vcpkg install glm:wasm32-emscripten
-
-echo $(whereis emcc)
-vcpkg install glm:wasm32-emscripten
 
 vcpkg install glfw3
 vcpkg install bullet3
