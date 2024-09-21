@@ -196,6 +196,19 @@
           "name": "web-gl-app"
         }
       ]
+    },
+    {
+      "name": "web-gl-dev",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "web-gl-dev"
+        },
+        {
+          "type": "build",
+          "name": "web-gl-dev"
+        }
+      ]
     }
   ]
 }
