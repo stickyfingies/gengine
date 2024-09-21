@@ -33,7 +33,7 @@ if(CMAKE_SYSTEM_NAME MATCHES Linux)
         PRIVATE
         code/physics.cpp
         code/stb/stb_image.cpp
-        code/world.native.cpp
+        code/world.wasm.cpp # TODO code/world.native.cpp
     )
 elseif(EMSCRIPTEN)
     target_sources(${PROJECT_NAME}
@@ -75,6 +75,7 @@ if(CMAKE_SYSTEM_NAME MATCHES Linux)
 
     find_package(glad CONFIG REQUIRED)
     target_link_libraries(gpu PRIVATE glad)
+    target_link_libraries(${PROJECT_NAME} PRIVATE glad)
 
     find_package(Bullet CONFIG REQUIRED)
     target_link_libraries(${PROJECT_NAME} PRIVATE BulletDynamics BulletCollision Bullet3Common LinearMath)

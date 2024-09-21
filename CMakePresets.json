@@ -209,6 +209,19 @@
           "name": "web-gl-dev"
         }
       ]
+    },
+    {
+      "name": "linux-gl-dev",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "linux-gl-dev"
+        },
+        {
+          "type": "build",
+          "name": "linux-gl-dev"
+        }
+      ]
     }
   ]
 }

@@ -1,7 +1,5 @@
 #include "gpu.h"
 
-#include <GLFW/glfw3.h>
-
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #define GL_GLEXT_PROTOTYPES
@@ -9,8 +7,10 @@
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
 #else
-#include <glad/gl.h>
+#include <glad/glad.h>
 #endif
+
+#include <GLFW/glfw3.h>
 
 #include <iostream>
 
@@ -52,7 +52,37 @@ void bindVertexArray(GLuint vao)
 #endif
 }
 
+void GLAPIENTRY messageCallback(
+	GLenum source,
+	GLenum type,
+	GLuint id,
+	GLenum severity,
+	GLsizei length,
+	const GLchar* message,
+	const void* userParam)
+{
+	cout << "GL: (" << type << ") " << message << endl;
+}
+
+bool init_gl()
+{
+#ifndef __EMSCRIPTEN__
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+		cout << "Error: Failed to initialize GLAD" << endl;
+		return false;
+	}
+	// glEnable(GL_DEBUG_OUTPUT);
+	// glDebugMessageCallback(webgl::messageCallback, 0);
+#endif
+	cout << "Started GL" << endl;
+	return true;
+}
+
 } // namespace webgl
+
+void glfw_framebuffer_size_cb(GLFWwindow* window, int width, int height) {
+	glViewport(0, 0, width, height);
+}
 
 namespace gpu {
 
@@ -67,6 +97,13 @@ public:
 	{
 		glfwMakeContextCurrent(window);
 		glfwSwapInterval(1);
+		glfwSetFramebufferSizeCallback(window, glfw_framebuffer_size_cb);
+
+		cout << "RenderDeviceGL" << endl;
+
+		const auto gl_success = webgl::init_gl();
+		if (!gl_success)
+			return;
 
 		const GLubyte* vendor = glGetString(GL_VENDOR);
 		const GLubyte* hardware = glGetString(GL_RENDERER);
@@ -76,13 +113,16 @@ public:
 		cout << "Render platform: " << vendor << " on " << hardware << endl;
 	}
 
+	~RenderDeviceGL() { cout << "Destroying RenderDeviceGL" << endl; }
+
 	auto create_buffer(const BufferInfo& info, const void* data) -> std::unique_ptr<Buffer> override
 	{
 		const auto size = info.element_count * info.stride;
 
 		const auto buffer_type = BUFFER_USAGE_TABLE[static_cast<unsigned int>(info.usage)];
 
-		std::cout << "Buffer size: " << size << std::endl;
+		cout << "Buffer size: " << size << " stride: " << info.stride << " type: 0x" << hex
+			 << buffer_type << endl;
 		GLuint VBO;
 		glGenBuffers(1, &VBO);
 		glBindBuffer(buffer_type, VBO);
@@ -92,13 +132,13 @@ public:
 
 	auto destroy_buffer(shared_ptr<Buffer> buffer) -> void override
 	{
-		//
-		std::cout << "Destroying buffer" << std::endl;
+		cout << "Destroying buffer " << buffer << endl;
+		glDeleteBuffers(1, &buffer->gl_buffer);
 	}
 
 	auto create_image(const gengine::ImageAsset& image_asset) -> Image* override
 	{
-		std::cout << "Creating image" << std::endl;
+		std::cout << "GPU Image " << image_asset.name << std::endl;
 		return nullptr;
 	}
 
@@ -162,9 +202,9 @@ public:
 
 	auto destroy_pipeline(ShaderPipeline* pso) -> void override
 	{
+		cout << "Destroying pipeline " << pso << endl;
 		glDeleteProgram(pso->gl_program);
 		delete pso;
-		std::cout << "Destroyed pipeline" << std::endl;
 	}
 
 	auto create_geometry(const gengine::GeometryAsset& geometry) -> Geometry* override
@@ -186,11 +226,13 @@ public:
 			gpu_data.push_back(-vertices[v + 1]);
 			gpu_data.push_back(vertices[v + 2]);
 			const auto a = (i * 5);
-			gpu_data.push_back(vertices_aux[a + 0]);
-			gpu_data.push_back(vertices_aux[a + 1]);
-			gpu_data.push_back(vertices_aux[a + 2]);
-			gpu_data.push_back(vertices_aux[a + 3]);
-			gpu_data.push_back(vertices_aux[a + 4]);
+			if (vertices_aux.size() > 0) {
+				gpu_data.push_back(vertices_aux[a + 0]);
+				gpu_data.push_back(vertices_aux[a + 1]);
+				gpu_data.push_back(vertices_aux[a + 2]);
+				gpu_data.push_back(vertices_aux[a + 3]);
+				gpu_data.push_back(vertices_aux[a + 4]);
+			}
 		}
 
 		auto vbo = create_buffer(
@@ -202,7 +244,11 @@ public:
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 
-		return new Geometry{vao, std::move(vbo), std::move(ebo), indices.size()};
+		const auto gpu_geometry = new Geometry{vao, std::move(vbo), std::move(ebo), indices.size()};
+
+		cout << "GPU Geometry indices: " << indices.size() << " " << gpu_geometry << endl;
+
+		return gpu_geometry;
 	}
 
 	auto destroy_geometry(const Geometry* geometry) -> void override
@@ -221,7 +267,7 @@ public:
 		function<void()> gui_code) -> void override
 	{
 		glClearColor(0.4, 0.3, 0.8, 1.0);
-		glViewport(0, 0, 1, 1);
+		// glViewport(0, 0, 100, 100);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		glUseProgram(pipeline->gl_program);
@@ -244,7 +290,9 @@ auto RenderDevice::create(GLFWwindow* window) -> std::unique_ptr<RenderDevice>
 auto RenderDevice::configure_glfw() -> void
 {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+	cout << "Configured GLFW" << endl;
 }
 
 } // namespace gpu

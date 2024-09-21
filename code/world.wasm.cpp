@@ -2,14 +2,14 @@
 #include <emscripten.h>
 #endif
 
-#include "world.h"
 #include "assets.h"
 #include "camera.hpp"
 #include "gpu.h"
+#include "world.h"
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <vector>
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
@@ -40,18 +40,23 @@ public:
 		const auto frag = gengine::load_file("./data/opengl/basic.frag.glsl");
 		pipeline = renderer->create_pipeline(vert, frag);
 
-		scene = gengine::load_model(texture_factory, "./data/spinny.obj", false, false);
-		for (const auto& geometry : scene.geometries) {
-			const auto renderable = renderer->create_geometry(geometry);
-			meshes.push_back(renderable);
-		}
+		const float vertices[] = {
+			0.5f, 0.5f, 0.0f, 0.5f, -0.5f, 0.0f, -0.5f, -0.5f, 0.0f, -0.5f, 0.5f, 0.0f};
+		const unsigned int indices[] = {0, 1, 3, 1, 2, 3};
+
+		gengine::GeometryAsset geometry;
+		geometry.vertices.assign(vertices, vertices + sizeof(vertices) / sizeof(*vertices));
+		geometry.indices.assign(indices, indices + sizeof(indices) / sizeof(*indices));
+		const auto triangle = renderer->create_geometry(geometry);
+		meshes.push_back(triangle);
 	}
 
-	~WasmWorld() { 
+	~WasmWorld()
+	{
 		// This will never actually happen, because EmScripten doesn't
 		// have a "cleanup" phase the way native C++ programs do.
 		renderer->destroy_pipeline(pipeline);
-	 }
+	}
 
 	void update(double elapsed_time) override
 	{
@@ -62,6 +67,8 @@ public:
 		}
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
 			cout << "Esc" << endl;
+
+			// TODO: abstract this elsewhere
 			glfwSetWindowShouldClose(window, true);
 #ifdef __EMSCRIPTEN__
 			emscripten_cancel_main_loop();
