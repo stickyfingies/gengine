@@ -14,6 +14,13 @@ chmod +x ./dependencies/vcpkg/bootstrap-vcpkg.sh
 
 alias vcpkg=./dependencies/vcpkg/vcpkg
 
+vcpkg install glm:wasm32-emscripten
+vcpkg install glm:wasm32-emscripten
+vcpkg install glm:wasm32-emscripten
+vcpkg install glm:wasm32-emscripten
+vcpkg install glm:wasm32-emscripten
+vcpkg install glm:wasm32-emscripten
+
 vcpkg install glfw3
 vcpkg install bullet3
 vcpkg install assimp:x64-linux
