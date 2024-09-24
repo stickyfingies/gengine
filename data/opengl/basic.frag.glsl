@@ -1,10 +1,14 @@
 #version 300 es
-
 precision highp float;
 
-out vec4 FragColor;
+in vec2 fTexCoord;
+
+out vec4 fFragColor;
+
+uniform sampler2D tDiffuse;
 
 void main()
 {
-    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+    fFragColor = texture(tDiffuse, fTexCoord);
+    // oFragColor = vec4(1.0f, 1.0f, 0.0f, 1.0f);
 } 

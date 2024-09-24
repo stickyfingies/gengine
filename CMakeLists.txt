@@ -26,14 +26,15 @@ target_sources(${PROJECT_NAME}
     PRIVATE
     code/main.cpp
     code/assets.cpp
+    code/physics.cpp
+    code/stb/stb_image.cpp
 )
 
 if(CMAKE_SYSTEM_NAME MATCHES Linux)
     target_sources(${PROJECT_NAME}
         PRIVATE
-        code/physics.cpp
-        code/stb/stb_image.cpp
-        code/world.wasm.cpp # TODO code/world.native.cpp
+        # code/world.wasm.cpp
+        code/world.native.cpp
     )
 elseif(EMSCRIPTEN)
     target_sources(${PROJECT_NAME}
@@ -68,6 +69,10 @@ target_link_libraries(gpu PRIVATE glm::glm)
 find_package(assimp CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 
+find_package(Bullet CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE BulletDynamics BulletCollision Bullet3Common LinearMath)
+target_link_directories(${PROJECT_NAME} PRIVATE ${BULLET_LIBRARY_DIRS})
+
 if(CMAKE_SYSTEM_NAME MATCHES Linux)
 
     find_package(glfw3 CONFIG REQUIRED)
@@ -76,10 +81,6 @@ if(CMAKE_SYSTEM_NAME MATCHES Linux)
     find_package(glad CONFIG REQUIRED)
     target_link_libraries(gpu PRIVATE glad)
     target_link_libraries(${PROJECT_NAME} PRIVATE glad)
-
-    find_package(Bullet CONFIG REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PRIVATE BulletDynamics BulletCollision Bullet3Common LinearMath)
-    target_link_directories(${PROJECT_NAME} PRIVATE ${BULLET_LIBRARY_DIRS})
 
     find_package(Vulkan REQUIRED)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES})

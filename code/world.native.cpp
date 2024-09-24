@@ -36,6 +36,10 @@ public:
 
 		// create game resources
 
+		// const auto vert = gengine::load_file("./data/opengl/basic.vert.glsl");
+		// const auto frag = gengine::load_file("./data/opengl/basic.frag.glsl");
+		// pipeline = renderer->create_pipeline(vert, frag);
+
 		pipeline = renderer->create_pipeline(
 			gengine::load_file("./data/cube.vert.spv"), gengine::load_file("./data/cube.frag.spv"));
 

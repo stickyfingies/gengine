@@ -14,7 +14,8 @@ echo "==Setup vcpkg=="
 chmod +x ./vcpkg/bootstrap-vcpkg.sh
 ./vcpkg/bootstrap-vcpkg.sh
 ./vcpkg/vcpkg install glfw3
-./vcpkg/vcpkg install bullet3
+./vcpkg/vcpkg install bullet3:x64-linux
+./vcpkg/vcpkg install bullet3:wasm32-emscripten
 ./vcpkg/vcpkg install assimp:x64-linux
 ./vcpkg/vcpkg install assimp:wasm32-emscripten
 ./vcpkg/vcpkg install glad

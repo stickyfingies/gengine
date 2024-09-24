@@ -42,6 +42,20 @@ cmake --workflow --preset linux-vk-app # for linux
 cmake --workflow --preset web-gl-app   # for web
 ```
 
+And you're done!  Run it on Linux like this:
+
+```sh
+./artifacts/linux-vk-app/gengine
+```
+
+And you're done!  Run it on Web like this:
+
+```sh
+cd ./artifacts/web-gl-app
+python3 -m http.server
+# Game running: '0.0.0.0:8000/gengine.html'
+```
+
 Software Overview
 ---
 

@@ -11,6 +11,9 @@
 #endif
 
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
 
@@ -22,6 +25,14 @@ struct gpu::Buffer {
 
 struct gpu::ShaderPipeline {
 	GLuint gl_program;
+};
+
+struct gpu::Image {
+	GLuint gl_texture;
+};
+
+struct gpu::Descriptors {
+	gpu::Image* albedo;
 };
 
 struct gpu::Geometry {
@@ -74,13 +85,13 @@ bool init_gl()
 	// glEnable(GL_DEBUG_OUTPUT);
 	// glDebugMessageCallback(webgl::messageCallback, 0);
 #endif
-	cout << "Started GL" << endl;
 	return true;
 }
 
 } // namespace webgl
 
-void glfw_framebuffer_size_cb(GLFWwindow* window, int width, int height) {
+void glfw_framebuffer_size_cb(GLFWwindow* window, int width, int height)
+{
 	glViewport(0, 0, width, height);
 }
 
@@ -111,9 +122,11 @@ public:
 
 		cout << "Render driver: " << version << endl;
 		cout << "Render platform: " << vendor << " on " << hardware << endl;
+
+		glEnable(GL_DEPTH_TEST);
 	}
 
-	~RenderDeviceGL() { cout << "Destroying RenderDeviceGL" << endl; }
+	~RenderDeviceGL() { cout << "~ RenderDeviceGL" << endl; }
 
 	auto create_buffer(const BufferInfo& info, const void* data) -> std::unique_ptr<Buffer> override
 	{
@@ -121,8 +134,8 @@ public:
 
 		const auto buffer_type = BUFFER_USAGE_TABLE[static_cast<unsigned int>(info.usage)];
 
-		cout << "Buffer size: " << size << " stride: " << info.stride << " type: 0x" << hex
-			 << buffer_type << endl;
+		cout << "GPU Buffer size: " << size << " stride: " << info.stride << " type: 0x" << hex
+			 << buffer_type << dec << endl;
 		GLuint VBO;
 		glGenBuffers(1, &VBO);
 		glBindBuffer(buffer_type, VBO);
@@ -132,14 +145,38 @@ public:
 
 	auto destroy_buffer(shared_ptr<Buffer> buffer) -> void override
 	{
-		cout << "Destroying buffer " << buffer << endl;
+		cout << "~ GPU Buffer " << buffer << endl;
 		glDeleteBuffers(1, &buffer->gl_buffer);
 	}
 
 	auto create_image(const gengine::ImageAsset& image_asset) -> Image* override
 	{
-		std::cout << "GPU Image " << image_asset.name << std::endl;
-		return nullptr;
+		GLuint texture;
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+		// const float tex_border_color[] = {1.0f, 1.0f, 0.0f, 1.0f};
+		// glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
+		glTexImage2D(
+			GL_TEXTURE_2D,
+			0,
+			GL_RGBA,
+			image_asset.width,
+			image_asset.height,
+			0,
+			GL_RGBA,
+			GL_UNSIGNED_BYTE,
+			image_asset.data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		const auto image = new Image{texture};
+
+		cout << "GPU Image " << image_asset.name << " " << image << endl;
+
+		return image;
 	}
 
 	auto destroy_all_images() -> void override { cout << "Destroying all images" << endl; }
@@ -188,16 +225,21 @@ public:
 		glDeleteShader(vertex_shader);
 		glDeleteShader(fragment_shader);
 
-		cout << "Pipeline" << endl;
 		const auto pipeline = new ShaderPipeline{shader_program};
+
+		cout << "Pipeline " << pipeline << endl;
+
 		return pipeline;
 	}
 
 	auto create_descriptors(ShaderPipeline* pipeline, Image* albedo, const glm::vec3& color)
 		-> Descriptors* override
 	{
-		std::cout << "Creating descriptors" << std::endl;
-		return nullptr;
+		const auto descriptor = new Descriptors{albedo};
+
+		cout << "GPU Descriptor " << descriptor << endl;
+
+		return descriptor;
 	}
 
 	auto destroy_pipeline(ShaderPipeline* pso) -> void override
@@ -226,23 +268,28 @@ public:
 			gpu_data.push_back(-vertices[v + 1]);
 			gpu_data.push_back(vertices[v + 2]);
 			const auto a = (i * 5);
-			if (vertices_aux.size() > 0) {
-				gpu_data.push_back(vertices_aux[a + 0]);
-				gpu_data.push_back(vertices_aux[a + 1]);
-				gpu_data.push_back(vertices_aux[a + 2]);
-				gpu_data.push_back(vertices_aux[a + 3]);
-				gpu_data.push_back(vertices_aux[a + 4]);
-			}
+			gpu_data.push_back(vertices_aux[a + 0]);
+			gpu_data.push_back(vertices_aux[a + 1]);
+			gpu_data.push_back(vertices_aux[a + 2]);
+			gpu_data.push_back(vertices_aux[a + 3]);
+			gpu_data.push_back(vertices_aux[a + 4]);
 		}
 
 		auto vbo = create_buffer(
-			{BufferInfo::Usage::VERTEX, sizeof(float), vertices.size()}, vertices.data());
+			{BufferInfo::Usage::VERTEX, sizeof(float), gpu_data.size()}, gpu_data.data());
 		auto ebo = create_buffer(
 			{BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()}, indices.data());
 
 		// TODO - see the definition of `Vertex` in gpu.vulkan.cpp
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+		glVertexAttribPointer(
+			0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
 		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(
+			1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(
+			2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+		glEnableVertexAttribArray(2);
 
 		const auto gpu_geometry = new Geometry{vao, std::move(vbo), std::move(ebo), indices.size()};
 
@@ -254,7 +301,7 @@ public:
 	auto destroy_geometry(const Geometry* geometry) -> void override
 	{
 		destroy_buffer(geometry->vbo);
-		destroy_buffer(geometry->vbo);
+		destroy_buffer(geometry->ebo);
 		delete geometry;
 	}
 
@@ -262,19 +309,43 @@ public:
 		const glm::mat4& view,
 		ShaderPipeline* pipeline,
 		const vector<glm::mat4>& transforms,
-		const vector<Geometry*>& renderables,
+		const vector<Geometry*>& geometries,
 		const vector<Descriptors*>& descriptors,
 		function<void()> gui_code) -> void override
 	{
-		glClearColor(0.4, 0.3, 0.8, 1.0);
-		// glViewport(0, 0, 100, 100);
-		glClear(GL_COLOR_BUFFER_BIT);
+		assert(transforms.size() == geometries.size());
+		assert(transforms.size() == descriptors.size());
 
+		GLenum err;
+		while ((err = glGetError()) != GL_NO_ERROR) {
+			cout << "GL Error: " << err << endl;
+		}
+
+		glClearColor(0.4, 0.3, 0.8, 1.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glUseProgram(pipeline->gl_program);
 
-		for (const auto& mesh : renderables) {
-			webgl::bindVertexArray(mesh->vao);
-			glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_INT, 0);
+		auto proj = glm::perspective(glm::radians(90.0f), 0.8888f, 0.1f, 10000.0f);
+		const GLint u_projection = glGetUniformLocation(pipeline->gl_program, "projection");
+		glUniformMatrix4fv(u_projection, 1, GL_FALSE, glm::value_ptr(proj));
+		const GLint u_view = glGetUniformLocation(pipeline->gl_program, "view");
+		glUniformMatrix4fv(u_view, 1, GL_FALSE, glm::value_ptr(view));
+
+		for (int i = 0; i < transforms.size(); i++) {
+			const auto& matrix = transforms[i];
+			const auto& geometry = geometries[i];
+			const auto& descriptor = descriptors[i];
+
+			const GLint u_model = glGetUniformLocation(pipeline->gl_program, "model");
+			glUniformMatrix4fv(u_model, 1, GL_FALSE, glm::value_ptr(matrix));
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, descriptor->albedo->gl_texture);
+			const auto location = glGetUniformLocation(pipeline->gl_program, "tDiffuse");
+			glUniform1i(location, 0);
+
+			webgl::bindVertexArray(geometry->vao);
+			glDrawElements(GL_TRIANGLES, geometry->index_count, GL_UNSIGNED_INT, 0);
 		}
 
 		glfwSwapBuffers(window);

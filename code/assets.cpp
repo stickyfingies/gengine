@@ -1,19 +1,20 @@
 #include "assets.h"
 
-#include "stb/stb_image.h"
-#include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/quaternion.h>
 #include <assimp/scene.h>
+
+#include <assimp/Importer.hpp>
+#include <filesystem>
+#include <fstream>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-#include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
+
+#include "stb/stb_image.h"
 
 /// State belongs to the compilation unit
 /// TODO make an AssetLoader class or something
@@ -48,19 +49,21 @@ auto TextureFactory::load_image_from_file(const std::string& path)
 	const auto data = stbi_load(normalized_path.c_str(), &width, &height, &channel_count, 4);
 
 	if (data == nullptr) {
+		cout << "Error: Cannot load " << normalized_path.string() << endl;
+		// abort();
 		return std::unexpected("Cannot load " + normalized_path.string());
 	}
 
 	const auto image_asset = ImageAsset{
-		path,
+		normalized_path,
 		static_cast<uint32_t>(width),
 		static_cast<uint32_t>(height),
 		static_cast<uint32_t>(4),
 		data};
 
 	image_log.push_back(image_asset);
-	std::cout << "ImageAsset " << path.data() << " (" << width << "x" << height
-			  << ") channels=" << channel_count << " (fixed to 4)" << std::endl;
+	cout << "ImageAsset " << path.data() << " (" << width << "x" << height
+		 << ") channels=" << channel_count << " (fixed to 4)" << endl;
 
 	image_cache[path] = image_asset;
 
@@ -88,8 +91,8 @@ auto TextureFactory::load_image_from_memory(
 		data};
 
 	image_log.push_back(image_asset);
-	std::cout << "ImageAsset " << name << " (" << width << "x" << height
-			  << ") channels=" << channel_count << " (fixed to 4)" << std::endl;
+	cout << "ImageAsset " << name << " (" << width << "x" << height
+		 << ") channels=" << channel_count << " (fixed to 4)" << endl;
 
 	image_cache[name] = image_asset;
 
@@ -105,7 +108,7 @@ auto TextureFactory::unload_image(const ImageAsset& asset) -> void
 auto TextureFactory::unload_all_images() -> void
 {
 	for (auto it = image_cache.begin(); it != image_cache.end();) {
-		std::cout << "~ ImageAsset " << it->first << std::endl;
+		cout << "~ ImageAsset " << it->first << endl;
 		stbi_image_free(it->second.data);
 		image_cache.erase(it++);
 	}
@@ -114,7 +117,6 @@ auto TextureFactory::unload_all_images() -> void
 /// @brief Temporary structure used to track entity relationships
 ///        while decoding an Assimp scene.
 struct AssetDecoding {
-
 	using EmbedIdx = size_t;
 	using ObjectIdx = size_t;
 	using MeshIdx = size_t;
@@ -154,7 +156,6 @@ auto calculateWorldTransform(const aiNode* node) -> glm::mat4
 auto traverseNode(
 	AssetDecoding& decoding, SceneAsset& assets, const aiScene* scene, const aiNode* node) -> void
 {
-
 	const auto transform =
 		calculateWorldTransform(node); // glm::transpose(glm::make_mat4(&node->mTransformation.a1));
 
@@ -223,11 +224,10 @@ auto extractTextures(
 		// Get the path of this texture
 		aiString path;
 		material->GetTexture(type, i, &path);
-		const std::string path_string = path.C_Str();
+		const std::string path_string = string(path.C_Str());
 
 		// Embedded texture
 		if (auto texture = scene->GetEmbeddedTexture(path.C_Str())) {
-
 			// Grab the embedded texture instance
 			const auto index = std::atoi(path_string.substr(1).c_str());
 
@@ -251,7 +251,7 @@ auto load_model(
 
 	filesystem::path normalized_path = filesystem::current_path() / path;
 
-	std::cout << "Scene path: " << normalized_path << std::endl;
+	cout << "Scene path: " << normalized_path << endl;
 
 	uint32_t importFlags = aiProcess_Triangulate | aiProcess_GenNormals;
 	if (flipUVs) {
@@ -260,10 +260,10 @@ auto load_model(
 	if (flipWindingOrder) {
 		importFlags |= aiProcess_FlipWindingOrder;
 	}
-
 	const auto scene = importer.ReadFile(normalized_path.c_str(), importFlags);
 	if ((!scene) || (scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE) || (!scene->mRootNode)) {
 		std::cerr << "Error: Scene cannot be located: " << normalized_path << std::endl;
+		abort();
 		return {};
 	}
 
@@ -274,7 +274,6 @@ auto load_model(
 
 	// Load meshes
 	for (const auto& [mesh_idx, object_indices] : decoding.mesh_to_objects) {
-
 		size_t material_idx;
 		const auto geometry = processGeometry(scene, mesh_idx, material_idx);
 
@@ -303,7 +302,7 @@ auto load_model(
 			assets.objects[object_idx].material = assets.materials.size();
 		}
 
-		assets.materials.push_back({{}, color});
+		assets.materials.push_back(gengine::MaterialAsset({}, color));
 	}
 
 	// Load textures from disk
@@ -311,7 +310,11 @@ auto load_model(
 		const auto imageAsset = texture_factory.load_image_from_file(texture_path);
 		if (imageAsset.has_value()) {
 			// Assign texture to all meshes which use it
-			for (const auto material_idx : material_indices) {
+			for (auto material_idx : material_indices) {
+				// This is because .OBJ material indexing begins at 1, not 0
+				if (material_idx == assets.materials.size()) {
+					material_idx -= 1;
+				}
 				assets.materials[material_idx].textures.push_back(*imageAsset);
 			}
 		}
@@ -338,16 +341,17 @@ auto load_model(
 auto load_file(std::string_view path) -> std::string // TODO? return std::optional<std::string>
 {
 	filesystem::path normalized_path = filesystem::current_path() / path;
-	const auto stream = std::ifstream(normalized_path.c_str(), std::ifstream::binary);
+	const auto stream = ifstream(normalized_path.c_str(), ifstream::binary);
 
 	if (!stream) {
-		std::cout << "Error: failed to open file " << normalized_path << std::endl;
+		cout << "Error: failed to open file " << normalized_path << endl;
+		abort();
 		return ""; // TODO: see function signature
 	}
 
-	std::cout << "File path: " << normalized_path << std::endl;
+	cout << "File path: " << normalized_path << endl;
 
-	std::stringstream buffer{};
+	stringstream buffer{};
 	buffer << stream.rdbuf();
 	return buffer.str();
 }
