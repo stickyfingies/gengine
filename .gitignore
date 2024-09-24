@@ -38,12 +38,12 @@ external/
 artifacts/*
 !artifacts/.gitkeep
 
-# Dependencies
-.vcpkg/
-
 # IDE
 .vs/
 .vscode/
 .clangd/
 .cache/
 CMakeSettings.json
+
+# Miscellaneous
+imgui.ini
