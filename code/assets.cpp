@@ -260,12 +260,28 @@ auto load_model(
 	if (flipWindingOrder) {
 		importFlags |= aiProcess_FlipWindingOrder;
 	}
-	const auto scene = importer.ReadFile(normalized_path.c_str(), importFlags);
+
+	ifstream file(normalized_path.c_str(), ios::binary | ios::ate);
+
+	if (!file.is_open()) {
+		cout << "Error: cannot locate model asset file " << normalized_path.c_str() << endl;
+	}
+	size_t fileSize = file.tellg();
+	file.seekg(0);
+	char* pBuffer = new char[fileSize];
+	file.read(pBuffer, fileSize);
+	file.close();
+
+	const auto scene = importer.ReadFileFromMemory(pBuffer, fileSize, importFlags, "GLFW2");
+	// const auto scene = importer.ReadFile(normalized_path.c_str(), importFlags);
 	if ((!scene) || (scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE) || (!scene->mRootNode)) {
 		std::cerr << "Error: Scene cannot be located: " << normalized_path << std::endl;
+		delete[] pBuffer;
 		// abort();
 		return {};
 	}
+
+	delete[] pBuffer;
 
 	auto decoding = AssetDecoding{};
 	auto assets = SceneAsset{};

@@ -1,8 +1,18 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 718a251..21d253f 100644
+index 718a251e4..798b327c8 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -291,9 +291,9 @@ ELSEIF(MSVC)
+@@ -43,6 +43,9 @@ CMAKE_MINIMUM_REQUIRED( VERSION 3.22 )
+ # Disabled importers: m3d for 5.1 or later
+ ADD_DEFINITIONS( -DASSIMP_BUILD_NO_M3D_IMPORTER)
+ ADD_DEFINITIONS( -DASSIMP_BUILD_NO_M3D_EXPORTER)
++# Disabled importers: gltf 1.x
++ADD_DEFINITIONS( -DASSIMP_BUILD_NO_GLTF1_IMPORTER)
++ADD_DEFINITIONS( -DASSIMP_BUILD_NO_GLTF1_EXPORTER)
+ # Toggles the use of the hunter package manager
+ option(ASSIMP_HUNTER_ENABLED "Enable Hunter package manager support" OFF)
+ 
+@@ -291,9 +294,9 @@ ELSEIF(MSVC)
    ENDIF()
    # supress warning for double to float conversion if Double precision is activated
    ADD_COMPILE_OPTIONS(/wd4244) 
@@ -15,7 +25,7 @@ index 718a251..21d253f 100644
  ELSEIF (CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
    IF(NOT ASSIMP_HUNTER_ENABLED)
      SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
-@@ -421,7 +421,7 @@ ENDIF()
+@@ -421,7 +424,7 @@ ENDIF()
  
  set(GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
  
@@ -24,7 +34,7 @@ index 718a251..21d253f 100644
    set(CONFIG_INSTALL_DIR "lib/cmake/${PROJECT_NAME}")
    set(CMAKE_CONFIG_TEMPLATE_FILE "cmake-modules/assimp-hunter-config.cmake.in")
    set(NAMESPACE "${PROJECT_NAME}::")
-@@ -429,7 +429,7 @@ IF(ASSIMP_HUNTER_ENABLED)
+@@ -429,7 +432,7 @@ IF(ASSIMP_HUNTER_ENABLED)
    set(VERSION_CONFIG "${GENERATED_DIR}/${PROJECT_NAME}ConfigVersion.cmake")
    set(PROJECT_CONFIG "${GENERATED_DIR}/${PROJECT_NAME}Config.cmake")
  ELSE()
@@ -33,7 +43,7 @@ index 718a251..21d253f 100644
    set(CMAKE_CONFIG_TEMPLATE_FILE "cmake-modules/assimp-plain-config.cmake.in")
    string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWERCASE)
    set(NAMESPACE "${PROJECT_NAME_LOWERCASE}::")
-@@ -473,14 +473,14 @@ ENDIF()
+@@ -473,14 +476,14 @@ ENDIF()
  
  # Search for external dependencies, and build them from source if not found
  # Search for zlib
@@ -53,7 +63,7 @@ index 718a251..21d253f 100644
  ELSE()
    # If the zlib is already found outside, add an export in case assimpTargets can't find it.
    IF( ZLIB_FOUND AND ASSIMP_INSTALL)
-@@ -525,12 +525,12 @@ ELSE()
+@@ -525,12 +528,12 @@ ELSE()
  ENDIF()
  
  IF( NOT IOS )
@@ -69,7 +79,7 @@ index 718a251..21d253f 100644
      ENDIF()
    ENDIF ()
 diff --git a/cmake-modules/assimp-plain-config.cmake.in b/cmake-modules/assimp-plain-config.cmake.in
-index 6551dcb..457fcd7 100644
+index 6551dcb68..457fcd755 100644
 --- a/cmake-modules/assimp-plain-config.cmake.in
 +++ b/cmake-modules/assimp-plain-config.cmake.in
 @@ -1,5 +1,20 @@
@@ -94,7 +104,7 @@ index 6551dcb..457fcd7 100644
  
  set(ASSIMP_ROOT_DIR ${PACKAGE_PREFIX_DIR})
 diff --git a/code/AssetLib/3MF/D3MFExporter.cpp b/code/AssetLib/3MF/D3MFExporter.cpp
-index 6caa4c8..c130fcc 100644
+index 6caa4c84e..c130fcc5d 100644
 --- a/code/AssetLib/3MF/D3MFExporter.cpp
 +++ b/code/AssetLib/3MF/D3MFExporter.cpp
 @@ -57,7 +57,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -107,7 +117,7 @@ index 6caa4c8..c130fcc 100644
  
  namespace Assimp {
 diff --git a/code/AssetLib/Blender/BlenderTessellator.h b/code/AssetLib/Blender/BlenderTessellator.h
-index e43535f..a0104c1 100644
+index e43535f6c..a0104c18e 100644
 --- a/code/AssetLib/Blender/BlenderTessellator.h
 +++ b/code/AssetLib/Blender/BlenderTessellator.h
 @@ -143,7 +143,7 @@ namespace Assimp
@@ -120,7 +130,7 @@ index e43535f..a0104c1 100644
  namespace Assimp
  {
 diff --git a/code/AssetLib/IFC/IFCGeometry.cpp b/code/AssetLib/IFC/IFCGeometry.cpp
-index d488b23..1a6c0c7 100644
+index d488b2376..1a6c0c7f8 100644
 --- a/code/AssetLib/IFC/IFCGeometry.cpp
 +++ b/code/AssetLib/IFC/IFCGeometry.cpp
 @@ -45,8 +45,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -135,7 +145,7 @@ index d488b23..1a6c0c7 100644
  #include <iterator>
  #include <memory>
 diff --git a/code/AssetLib/IFC/IFCLoader.cpp b/code/AssetLib/IFC/IFCLoader.cpp
-index 9414697..48ad145 100644
+index 13ea2d429..aeeb311cc 100644
 --- a/code/AssetLib/IFC/IFCLoader.cpp
 +++ b/code/AssetLib/IFC/IFCLoader.cpp
 @@ -53,7 +53,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -148,7 +158,7 @@ index 9414697..48ad145 100644
  #endif
  
 diff --git a/code/AssetLib/IFC/IFCOpenings.cpp b/code/AssetLib/IFC/IFCOpenings.cpp
-index 1d37dd8..eadbc86 100644
+index 1d37dd8ef..eadbc8614 100644
 --- a/code/AssetLib/IFC/IFCOpenings.cpp
 +++ b/code/AssetLib/IFC/IFCOpenings.cpp
 @@ -47,8 +47,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -163,7 +173,7 @@ index 1d37dd8..eadbc86 100644
  #include <deque>
  #include <forward_list>
 diff --git a/code/AssetLib/MMD/MMDPmxParser.cpp b/code/AssetLib/MMD/MMDPmxParser.cpp
-index 5a3e61d..e444dc8 100644
+index 5a3e61dcd..e444dc841 100644
 --- a/code/AssetLib/MMD/MMDPmxParser.cpp
 +++ b/code/AssetLib/MMD/MMDPmxParser.cpp
 @@ -42,7 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -176,7 +186,7 @@ index 5a3e61d..e444dc8 100644
  
  namespace pmx
 diff --git a/code/AssetLib/SIB/SIBImporter.cpp b/code/AssetLib/SIB/SIBImporter.cpp
-index e55e675..fb1a12b 100644
+index e55e67541..fb1a12b99 100644
 --- a/code/AssetLib/SIB/SIBImporter.cpp
 +++ b/code/AssetLib/SIB/SIBImporter.cpp
 @@ -56,7 +56,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -189,7 +199,7 @@ index e55e675..fb1a12b 100644
  #include <assimp/scene.h>
  #include <assimp/DefaultLogger.hpp>
 diff --git a/code/AssetLib/STEPParser/STEPFileEncoding.cpp b/code/AssetLib/STEPParser/STEPFileEncoding.cpp
-index d7f512c..94275f1 100644
+index d7f512cbb..94275f119 100644
 --- a/code/AssetLib/STEPParser/STEPFileEncoding.cpp
 +++ b/code/AssetLib/STEPParser/STEPFileEncoding.cpp
 @@ -45,7 +45,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -202,7 +212,7 @@ index d7f512c..94275f1 100644
  #include <memory>
  
 diff --git a/code/CMakeLists.txt b/code/CMakeLists.txt
-index f4c2936..979e688 100644
+index f4c293672..979e688ac 100644
 --- a/code/CMakeLists.txt
 +++ b/code/CMakeLists.txt
 @@ -922,8 +922,8 @@ SET( Extra_SRCS
@@ -475,7 +485,7 @@ index f4c2936..979e688 100644
  
  IF(ASSIMP_INSTALL)
 diff --git a/code/Common/BaseImporter.cpp b/code/Common/BaseImporter.cpp
-index 3a4c7c3..f247927 100644
+index 3a4c7c329..f24792703 100644
 --- a/code/Common/BaseImporter.cpp
 +++ b/code/Common/BaseImporter.cpp
 @@ -353,7 +353,7 @@ std::string BaseImporter::GetExtension(const std::string &pFile) {
@@ -488,7 +498,7 @@ index 3a4c7c3..f247927 100644
  // ------------------------------------------------------------------------------------------------
  // Convert to UTF8 data
 diff --git a/code/Common/StbCommon.h b/code/Common/StbCommon.h
-index aef23ce..3977fde 100644
+index aef23ce17..1b059ecea 100644
 --- a/code/Common/StbCommon.h
 +++ b/code/Common/StbCommon.h
 @@ -53,7 +53,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -510,7 +520,7 @@ index aef23ce..3977fde 100644
  #if _MSC_VER
  #pragma warning(pop)
 diff --git a/code/Common/ZipArchiveIOSystem.cpp b/code/Common/ZipArchiveIOSystem.cpp
-index 23d7db1..8f9b9ef 100644
+index 23d7db15d..8f9b9ef9a 100644
 --- a/code/Common/ZipArchiveIOSystem.cpp
 +++ b/code/Common/ZipArchiveIOSystem.cpp
 @@ -54,7 +54,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

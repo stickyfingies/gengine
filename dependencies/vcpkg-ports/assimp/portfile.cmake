@@ -5,7 +5,7 @@ vcpkg_from_github(
     SHA512 4bfcc3a1b5a0cf3f382560564cac67088e13c62500c3c77dcef03811e67debe72ff318f5ed145b204d5017b56cb4293f3fe14b4060ca193813cef42b12eebe9d
     HEAD_REF master
     PATCHES
-        build_fixes.patch
+        build_fixes.mine.patch
 )
 
 file(REMOVE "${SOURCE_PATH}/cmake-modules/FindZLIB.cmake")
@@ -31,12 +31,16 @@ vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}"
     OPTIONS
         -DASSIMP_BUILD_ZLIB=OFF
-        -DASSIMP_BUILD_ASSIMP_TOOLS=ON
+        -DASSIMP_BUILD_ASSIMP_TOOLS=OFF
         -DASSIMP_BUILD_TESTS=OFF
         -DASSIMP_WARNINGS_AS_ERRORS=OFF
         -DASSIMP_IGNORE_GIT_HASH=ON
         -DASSIMP_INSTALL_PDB=OFF
+        -DASSIMP_BUILD_GLTF_IMPORTER=OFF
+        -DASSIMP_BUILD_GLTF_EXPORTER=OFF
 )
+
+# add_compile_options(-D ASSIMP_BUILD_NO_GLTF1_IMPORTER)
 
 vcpkg_cmake_install()
 vcpkg_cmake_config_fixup(CONFIG_PATH "lib/cmake/assimp")

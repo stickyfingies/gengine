@@ -3,8 +3,10 @@
 #include "gpu.h"
 #include "physics.h"
 #include "window.h"
-#include <GLFW/glfw3.h>
+#ifndef __EMSCRIPTEN__
 #include <imgui.h>
+#endif
+#include <GLFW/glfw3.h>
 #include <iostream>
 
 namespace gengine {
@@ -36,12 +38,12 @@ public:
 
 		// create game resources
 
-		const auto vert = gengine::load_file("./data/opengl/basic.vert.glsl");
-		const auto frag = gengine::load_file("./data/opengl/basic.frag.glsl");
-		pipeline = renderer->create_pipeline(vert, frag);
+		// const auto vert = gengine::load_file("./data/opengl/basic.vert.glsl");
+		// const auto frag = gengine::load_file("./data/opengl/basic.frag.glsl");
+		// pipeline = renderer->create_pipeline(vert, frag);
 
-		// pipeline = renderer->create_pipeline(
-		// 	gengine::load_file("./data/cube.vert.spv"), gengine::load_file("./data/cube.frag.spv"));
+		pipeline = renderer->create_pipeline(
+			gengine::load_file("./data/cube.vert.spv"), gengine::load_file("./data/cube.frag.spv"));
 
 		// Create physics bodies
 		{ // player
@@ -86,8 +88,19 @@ public:
 			false,
 			false,
 			false);
+		// create_game_object(
+		// 	"./data/skjar-isles/skjarisles.glb",
+		// 	render_components,
+		// 	descriptors,
+		// 	pipeline,
+		// 	collidables,
+		// 	transforms,
+		// 	true,
+		// 	true,
+		// 	false);
+
 		create_game_object(
-			"./data/skjar-isles/skjarisles.glb",
+			"./data/map.obj",
 			render_components,
 			descriptors,
 			pipeline,
@@ -137,8 +150,9 @@ public:
 
 		camera.Position = glm::vec3(transforms[0][3]);
 
-		renderer->render(
-			camera.get_view_matrix(), pipeline, transforms, render_components, descriptors, [&]() {
+#ifndef __EMSCRIPTEN__
+		const auto gui_func =
+			[&]() {
 				using namespace ImGui;
 				// Debug
 				SetNextWindowPos({20.0f, 20.0f});
@@ -175,7 +189,18 @@ public:
 					}
 					End();
 				}
-			});
+			};
+#else
+		const auto gui_func = []() {};
+#endif
+
+			renderer->render(
+				camera.get_view_matrix(),
+				pipeline,
+				transforms,
+				render_components,
+				descriptors,
+				gui_func);
 	}
 
 	auto update_input(float delta, Collidable* player) -> void

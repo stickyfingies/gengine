@@ -74,7 +74,7 @@ public:
 		descriptors.push_back(descriptor);
 
 		// Game object
-		const auto scene = gengine::load_model(texture_factory, "./data/skjar-isles/skjarisles.glb", false, false);
+		const auto scene = gengine::load_model(texture_factory, "./data/map.obj", false, false);
 
 		/// Material --> Descriptors
 		for (const auto& material : scene.materials) {
