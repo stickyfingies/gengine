@@ -37,6 +37,7 @@ out/
 external/
 artifacts/*
 !artifacts/.gitkeep
+dependencies/vcpkg-ports/assimp/assimp
 
 # IDE
 .vs/
