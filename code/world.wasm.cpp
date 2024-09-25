@@ -37,11 +37,14 @@ public:
 
 		physics_engine = make_unique<PhysicsEngine>();
 
-		camera = Camera(glm::vec3(0.0f, 5.0f, 90.0f));
+		camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f));
 
 		const auto vert = gengine::load_file("./data/opengl/basic.vert.glsl");
 		const auto frag = gengine::load_file("./data/opengl/basic.frag.glsl");
 		pipeline = renderer->create_pipeline(vert, frag);
+
+		// pipeline = renderer->create_pipeline(
+		// 	gengine::load_file("./data/cube.vert.spv"), gengine::load_file("./data/cube.frag.spv"));
 
 		// Stack
 		const float vertices[] = {
@@ -60,13 +63,52 @@ public:
 		// Game object
 		const auto triangle = renderer->create_geometry(geometry);
 		meshes.push_back(triangle);
-		const auto matrix = glm::mat4(1.0f);
+		auto matrix = glm::mat4(1.0f);
+		matrix = glm::translate(matrix, glm::vec3(0.f, 0.f, -5.f));
+		// matrix = glm::rotate(matrix, PI, glm::vec3(1.f, 0.f, 0.f));
 		matrices.push_back(matrix);
-		const auto albedo = texture_factory.load_image_from_file("./data/solid_white.png");
+		const auto albedo = texture_factory.load_image_from_file("./data/Albedo.png");
 		const auto albedo_texture = renderer->create_image(*albedo);
 		const auto descriptor =
 			renderer->create_descriptors(pipeline, albedo_texture, glm::vec3(1.f, 1.f, 1.f));
 		descriptors.push_back(descriptor);
+
+		// Game object
+		const auto scene = gengine::load_model(texture_factory, "./data/skjar-isles/skjarisles.glb", false, false);
+
+		/// Material --> Descriptors
+		for (const auto& material : scene.materials) {
+
+			cout << "Starting..." << endl;
+
+			// TODO - move this inside assets.cpp
+			// TODO - move this inside assets.cpp
+			gengine::ImageAsset texture_0{};
+			if (material.textures.size() > 0) {
+				texture_0 = material.textures[0];
+			}
+			if (texture_0.width == 0) {
+				texture_0 = *texture_factory.load_image_from_file("./data/Albedo.png");
+			}
+			auto albedo = renderer->create_image(texture_0);
+			const auto descriptor_0 =
+				renderer->create_descriptors(pipeline, albedo, material.color);
+			descriptors.push_back(descriptor_0);
+
+			cout << "Almost..." << endl;
+
+			auto matrix = glm::mat4(1.0f);
+			matrix = glm::translate(matrix, glm::vec3(-1.f, 0.f, -5.f));
+			matrices.push_back(matrix);
+
+			cout << "Finished." << endl;
+		}
+
+		/// Geometry --> Renderable
+		for (const auto& geometry : scene.geometries) {
+			const auto renderable = renderer->create_geometry(geometry);
+			meshes.push_back(renderable);
+		}
 	}
 
 	~WasmWorld() { renderer->destroy_pipeline(pipeline); }

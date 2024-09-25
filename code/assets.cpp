@@ -263,7 +263,7 @@ auto load_model(
 	const auto scene = importer.ReadFile(normalized_path.c_str(), importFlags);
 	if ((!scene) || (scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE) || (!scene->mRootNode)) {
 		std::cerr << "Error: Scene cannot be located: " << normalized_path << std::endl;
-		abort();
+		// abort();
 		return {};
 	}
 
@@ -345,7 +345,7 @@ auto load_file(std::string_view path) -> std::string // TODO? return std::option
 
 	if (!stream) {
 		cout << "Error: failed to open file " << normalized_path << endl;
-		abort();
+		// abort();
 		return ""; // TODO: see function signature
 	}
 

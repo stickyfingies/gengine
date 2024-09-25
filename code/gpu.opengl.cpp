@@ -124,6 +124,11 @@ public:
 		cout << "Render platform: " << vendor << " on " << hardware << endl;
 
 		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE);
+
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_FRONT);
+		glFrontFace(GL_CCW);
 	}
 
 	~RenderDeviceGL() { cout << "~ RenderDeviceGL" << endl; }
@@ -154,7 +159,7 @@ public:
 		GLuint texture;
 		glGenTextures(1, &texture);
 		glBindTexture(GL_TEXTURE_2D, texture);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
@@ -199,6 +204,7 @@ public:
 			cout << "Error: Pipeline creation failed." << endl;
 			cout << "Reason: Vertex shader compilation failed." << endl;
 			cout << infoLog << endl;
+			// abort();
 		}
 
 		// Compile fragment shader
@@ -210,6 +216,7 @@ public:
 		if (!success) {
 			glGetShaderInfoLog(fragment_shader, 512, nullptr, infoLog);
 			cout << "Fragment shader compilation failed.\n" << infoLog << endl;
+			// abort();
 		}
 
 		// Link shader stages
@@ -221,6 +228,7 @@ public:
 		if (!success) {
 			glGetProgramInfoLog(shader_program, 512, nullptr, infoLog);
 			cout << "Shader linkage failed.\n" << infoLog << endl;
+			// abort();
 		}
 		glDeleteShader(vertex_shader);
 		glDeleteShader(fragment_shader);
@@ -347,9 +355,6 @@ public:
 			webgl::bindVertexArray(geometry->vao);
 			glDrawElements(GL_TRIANGLES, geometry->index_count, GL_UNSIGNED_INT, 0);
 		}
-
-		glfwSwapBuffers(window);
-		glfwPollEvents();
 	}
 };
 

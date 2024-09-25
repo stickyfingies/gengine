@@ -36,12 +36,12 @@ public:
 
 		// create game resources
 
-		// const auto vert = gengine::load_file("./data/opengl/basic.vert.glsl");
-		// const auto frag = gengine::load_file("./data/opengl/basic.frag.glsl");
-		// pipeline = renderer->create_pipeline(vert, frag);
+		const auto vert = gengine::load_file("./data/opengl/basic.vert.glsl");
+		const auto frag = gengine::load_file("./data/opengl/basic.frag.glsl");
+		pipeline = renderer->create_pipeline(vert, frag);
 
-		pipeline = renderer->create_pipeline(
-			gengine::load_file("./data/cube.vert.spv"), gengine::load_file("./data/cube.frag.spv"));
+		// pipeline = renderer->create_pipeline(
+		// 	gengine::load_file("./data/cube.vert.spv"), gengine::load_file("./data/cube.frag.spv"));
 
 		// Create physics bodies
 		{ // player
@@ -259,7 +259,7 @@ public:
 				texture_0 = material.textures[0];
 			}
 			if (texture_0.width == 0) {
-				texture_0 = *texture_factory.load_image_from_file("./data/solid_white.png");
+				texture_0 = *texture_factory.load_image_from_file("./data/Albedo.png");
 			}
 
 			auto albedo = renderer->create_image(texture_0);
