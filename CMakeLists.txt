@@ -3,8 +3,11 @@ project(gengine LANGUAGES CXX)
 
 # >> CLI
 
-message(STATUS "Cmake: System name = ${CMAKE_SYSTEM_NAME}")
-message(STATUS "Cmake: Toolchain file = ${CMAKE_TOOLCHAIN_FILE}")
+message(STATUS "CMAKE_SYSTEM_NAME is ${CMAKE_SYSTEM_NAME}")
+message(STATUS "CMAKE_TOOLCHAIN_FILE is ${CMAKE_TOOLCHAIN_FILE}")
+message(STATUS "CMAKE_CXX_FLAGS_DEBUG is ${CMAKE_CXX_FLAGS_DEBUG}")
+message(STATUS "CMAKE_CXX_FLAGS_RELEASE is ${CMAKE_CXX_FLAGS_RELEASE}")
+message(STATUS "CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}")
 
 # << CLI
 
@@ -43,8 +46,22 @@ elseif(EMSCRIPTEN)
         code/world.native.cpp
     )
 
-    target_link_options(${PROJECT_NAME} PRIVATE -sNO_DISABLE_EXCEPTION_CATCHING -sALLOW_MEMORY_GROWTH -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sFULL_ES3 --embed-file ${CMAKE_CURRENT_SOURCE_DIR}/data@data)
-    target_link_options(gpu PRIVATE -sNO_DISABLE_EXCEPTION_CATCHING -sALLOW_MEMORY_GROWTH -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sFULL_ES3)
+    set(EMSCRIPTEN_COMPILER_SETTINGS
+        "-sSTRICT"
+        "-sMODULARIZE"
+        "-sEXPORT_ES6"
+        "-sALLOW_MEMORY_GROWTH"
+        "-sNO_DISABLE_EXCEPTION_CATCHING"
+        "--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/data@data"
+        "-sUSE_GLFW=3"
+        "-sUSE_WEBGL2=1"
+        "-sMIN_WEBGL_VERSION=2"
+        "-sMAX_WEBGL_VERSION=2"
+        "-sFULL_ES3"
+    )
+
+    target_link_options(${PROJECT_NAME} PRIVATE "${EMSCRIPTEN_COMPILER_SETTINGS}")
+    target_link_options(gpu PRIVATE "${EMSCRIPTEN_COMPILER_SETTINGS}")
 endif()
 
 if(GPU_BACKEND MATCHES Vulkan)

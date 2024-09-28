@@ -2,7 +2,9 @@
 
 ![Screenshot](./data/screenshot_editor.png "Screenshot")
 
-Gengine is an interactive 3D physical simulation engine with a small editor interface.
+![Web Screenshot](./data/screenshot_web.png "Web Screenshot")
+
+Gengine is a real-time, interactive, graphical, and physical 3D simulation engine for Linux and Web platforms. 
 
 GPLv3. See [COPYING](./COPYING). Copyright (c) 2019 Seth Traman.
 

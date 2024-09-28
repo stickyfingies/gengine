@@ -52,6 +52,7 @@ jobs:
     - run: chmod +x setup.sh && ./setup.sh
     - run: cmake --workflow --preset linux-vk-app
     - run: cmake --workflow --preset web-gl-app
+    - run: cmake --build --preset web-gl-app --target install
 
     # Push packages to GitHub Releases
 
@@ -65,4 +66,11 @@ jobs:
         files: |
           artifacts/linux-vk-app.zip
           artifacts/web-gl-app.zip
+
+    - name: Deploy web app
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./artifacts/web-gl-app/bin
+        publish_branch: gh-pages
 
