@@ -5,9 +5,9 @@ project(gengine LANGUAGES CXX)
 
 message(STATUS "CMAKE_SYSTEM_NAME is ${CMAKE_SYSTEM_NAME}")
 message(STATUS "CMAKE_TOOLCHAIN_FILE is ${CMAKE_TOOLCHAIN_FILE}")
+message(STATUS "CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}")
 message(STATUS "CMAKE_CXX_FLAGS_DEBUG is ${CMAKE_CXX_FLAGS_DEBUG}")
 message(STATUS "CMAKE_CXX_FLAGS_RELEASE is ${CMAKE_CXX_FLAGS_RELEASE}")
-message(STATUS "CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}")
 
 # << CLI
 
@@ -47,12 +47,16 @@ elseif(EMSCRIPTEN)
     )
 
     set(EMSCRIPTEN_COMPILER_SETTINGS
+        # Assets
+        "--preload-file"
+        "${CMAKE_CURRENT_SOURCE_DIR}/data@data"
+        # Compiler
         "-sSTRICT"
         "-sMODULARIZE"
         "-sEXPORT_ES6"
         "-sALLOW_MEMORY_GROWTH"
         "-sNO_DISABLE_EXCEPTION_CATCHING"
-        "--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/data@data"
+        # Graphics
         "-sUSE_GLFW=3"
         "-sUSE_WEBGL2=1"
         "-sMIN_WEBGL_VERSION=2"
@@ -61,7 +65,6 @@ elseif(EMSCRIPTEN)
     )
 
     target_link_options(${PROJECT_NAME} PRIVATE "${EMSCRIPTEN_COMPILER_SETTINGS}")
-    target_link_options(gpu PRIVATE "${EMSCRIPTEN_COMPILER_SETTINGS}")
 endif()
 
 if(GPU_BACKEND MATCHES Vulkan)
