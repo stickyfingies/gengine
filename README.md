@@ -1,25 +1,31 @@
-# GameEngine
+![Gengine](./data/cover_image.png "Cover image")
 
-![Screenshot](./data/screenshot_editor.png "Screenshot")
+> Copyright (c) 2019 Seth Traman as [GPLv3](./COPYING).
 
-![Web Screenshot](./data/screenshot_web.png "Web Screenshot")
-
-Gengine is a real-time, interactive, graphical, and physical 3D simulation engine for Linux and Web platforms. 
-
-GPLv3. See [COPYING](./COPYING). Copyright (c) 2019 Seth Traman.
-
-Players - _Download and Play_
 ---
 
-Download for [x64 Linux](https://github.com/stickyfingies/gengine/releases/download/master/linux-vk-app.zip) and extract, then run `./bin/gengine` to play.
+Gengine is a software framework for making cross-platform video games in the C++ language.  It's named after "Game Engine". 
 
-Download for [Web](https://github.com/stickyfingies/gengine/releases/download/master/web-gl-app.zip) and extract then run `python3 http.server` and open the URL.
 
-| Web | Linux | Mac | Windows |
-| --- | ----- | --- | ------- |
-| ✅   | ✅    | ❓   | ❌       |
+This project is proud of the following features:
+- **Adaptive** GPU backend uses either Vulkan or WebGL/ES.
+- **Automated** the software lifecycle using CI/CD pipelines
+- **Performant** virtual worlds powered by Bullet³ physics
+- **Supported** platforms are desktop Linux and the Web.
 
-Developers - _Getting Started_
+Play or Download
+---
+
+[**Try it online**](https://stickyfingies.github.io/gengine/gengine.html) using a web browser.
+
+[**Download for x64 Linux**](https://github.com/stickyfingies/gengine/releases/download/master/linux-vk-app.zip) using the instructions below.
+1. Download the .zip
+2. Extract (`unzip linux-vk-app.zip`).
+3. Run (`./bin/gengine`) to play.
+
+Other platforms aren't supported yet.
+
+Let's Get Coding
 ---
 
 Download the project using git.
@@ -30,7 +36,9 @@ git submodule init
 git submodule update
 ```
 
-This step may take a couple of minutes, but `setup.sh` automatically configures your developer environment and fetches the dependencies that we use.
+In the next step, `setup.sh` automatically configures your developer environment and fetches the dependencies that we use.
+
+> **Note:** `setup.sh` may run for several minutes.
 
 ```sh
 chmod +x setup.sh
@@ -58,7 +66,7 @@ python3 -m http.server
 # Game running: '0.0.0.0:8000/gengine.html'
 ```
 
-Software Overview
+What's Inside
 ---
 
 | Technology | Description |
@@ -73,7 +81,7 @@ Software Overview
 | ![WebGL](https://a11ybadges.com/badge?logo=webgl) | A GPU interface for web browsers, similar to OpenGL.  Emscripten will automatically convert OpenGL code into WebGL, which is pretty freaking awesome. |
 | ![Bullet](https://a11ybadges.com/badge?text=Bullet&badgeColor=goldenrod&logo=crosshair) | A customizable physics engine that supports complex 3D shapes and provides the base for complex spatial logic. |
 
-Game Data Pipeline
+Diagrams!
 ---
 
 > Note: the figure below may be outdated.
