@@ -48,14 +48,16 @@ elseif(EMSCRIPTEN)
 
     set(EMSCRIPTEN_COMPILER_SETTINGS
         # Assets
-        "--preload-file"
-        "${CMAKE_CURRENT_SOURCE_DIR}/data@data"
+        "--preload-file" "${CMAKE_CURRENT_SOURCE_DIR}/data@data"
         # Compiler
-        "-sSTRICT"
-        "-sMODULARIZE"
-        "-sEXPORT_ES6"
+        # "-sSTRICT"
+        # "-sMODULARIZE"
+        # "-sEXPORT_ES6"
+        "-sFETCH"
         "-sALLOW_MEMORY_GROWTH"
-        "-sNO_DISABLE_EXCEPTION_CATCHING"
+        # "-sNO_DISABLE_EXCEPTION_CATCHING"
+        # "-sINCOMING_MODULE_JS_API=preRun,canvas,monitorRunDependencies,print,setStatus"
+        # "--proxy-to-worker"
         # Graphics
         "-sUSE_GLFW=3"
         "-sUSE_WEBGL2=1"

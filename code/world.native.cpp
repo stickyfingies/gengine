@@ -39,8 +39,8 @@ public:
 		// create game resources
 
 #ifdef __EMSCRIPTEN__
-		const auto vert = gengine::load_file("./data/opengl/basic.vert.glsl");
-		const auto frag = gengine::load_file("./data/opengl/basic.frag.glsl");
+		const auto vert = gengine::load_file("./data/gl.vert.glsl");
+		const auto frag = gengine::load_file("./data/gl.frag.glsl");
 		pipeline = renderer->create_pipeline(vert, frag);
 #else
 		const auto vert = gengine::load_file("./data/cube.vert.spv");

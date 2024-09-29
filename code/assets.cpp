@@ -1,20 +1,23 @@
 #include "assets.h"
+#include "stb/stb_image.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/fetch.h>
+#endif
+
+#include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/quaternion.h>
 #include <assimp/scene.h>
-
-#include <assimp/Importer.hpp>
-#include <filesystem>
-#include <fstream>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
-
-#include "stb/stb_image.h"
 
 /// State belongs to the compilation unit
 /// TODO make an AssetLoader class or something
@@ -356,6 +359,26 @@ auto load_model(
 
 auto load_file(std::string_view path) -> std::string // TODO? return std::optional<std::string>
 {
+#ifdef FALSE
+	cout << "Loading " << path.data() << endl;
+	emscripten_fetch_attr_t attr;
+	emscripten_fetch_attr_init(&attr);
+	cout << "Before strcpy" << endl;
+	strcpy(attr.requestMethod, "GET");
+	attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_SYNCHRONOUS;
+	cout << "Before fetch" << endl;
+	emscripten_fetch_t* fetch =
+		emscripten_fetch(&attr, "./data/compile.sh"); // Blocks here until the operation is complete.
+	if (fetch->status == 200) {
+		printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
+		// The data is now available at fetch->data[0] through fetch->data[fetch->numBytes-1];
+	}
+	else {
+		printf("Downloading %s failed, HTTP failure status code: %d.\n", fetch->url, fetch->status);
+	}
+	emscripten_fetch_close(fetch);
+	return "";
+#else
 	filesystem::path normalized_path = filesystem::current_path() / path;
 	const auto stream = ifstream(normalized_path.c_str(), ifstream::binary);
 
@@ -370,6 +393,7 @@ auto load_file(std::string_view path) -> std::string // TODO? return std::option
 	stringstream buffer{};
 	buffer << stream.rdbuf();
 	return buffer.str();
+#endif
 }
 
 } // namespace gengine
