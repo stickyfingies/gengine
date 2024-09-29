@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.30)
 project(gengine LANGUAGES CXX)
 
-
 # >> Config
 
 set(CXX_STANDARD_REQUIRED ON)
@@ -104,6 +103,7 @@ set_target_properties(core
 
 target_sources(core
     PRIVATE
+    code/main.cpp
     code/assets.cpp
     code/physics.cpp
     code/stb/stb_image.cpp
@@ -123,6 +123,7 @@ target_link_directories(core PRIVATE ${BULLET_LIBRARY_DIRS})
 # For every world.cpp file in code/
 file(GLOB FILES "code/world.*.cpp")
 foreach(FILE ${FILES})
+
     # Strip the directory prefix and file extension
     get_filename_component(APP_NAME "${FILE}" NAME_WLE)
     message(STATUS "App ${APP_NAME}")
@@ -137,16 +138,15 @@ foreach(FILE ${FILES})
         CXX_EXTENSIONS OFF
         CXX_STANDARD 23
         CMAKE_CXX_STANDARD_REQUIRED ON
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${APP_NAME}/"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${APP_NAME}/"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${APP_NAME}/"
     )
 
-    target_sources(${APP_NAME}
-        PRIVATE
-        code/main.cpp
-        ${FILE}
-    )
+    target_sources(${APP_NAME} PRIVATE ${FILE})
 
     if(EMSCRIPTEN)
-        set_target_properties(${APP_NAME} PROPERTIES OUTPUT_NAME "${APP_NAME}")
+        set_target_properties(${APP_NAME} PROPERTIES OUTPUT_NAME "index")
 
         set(EMSCRIPTEN_COMPILER_SETTINGS
             ### Assets
