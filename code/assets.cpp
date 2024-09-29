@@ -264,27 +264,28 @@ auto load_model(
 		importFlags |= aiProcess_FlipWindingOrder;
 	}
 
-	ifstream file(normalized_path.c_str(), ios::binary | ios::ate);
+	// ifstream file(normalized_path.c_str(), ios::binary | ios::ate);
 
-	if (!file.is_open()) {
-		cout << "Error: cannot locate model asset file " << normalized_path.c_str() << endl;
-	}
-	size_t fileSize = file.tellg();
-	file.seekg(0);
-	char* pBuffer = new char[fileSize];
-	file.read(pBuffer, fileSize);
-	file.close();
+	// if (!file.is_open()) {
+	// 	cout << "Error: cannot locate model asset file " << normalized_path.c_str() << endl;
+	// }
+	// size_t fileSize = file.tellg();
+	// file.seekg(0);
+	// char* pBuffer = new char[fileSize];
+	// file.read(pBuffer, fileSize);
+	// file.close();
+	// cout << "Scene " << normalized_path.c_str() << " with size " << fileSize << endl;
 
-	const auto scene = importer.ReadFileFromMemory(pBuffer, fileSize, importFlags, "GLFW2");
-	// const auto scene = importer.ReadFile(normalized_path.c_str(), importFlags);
+	// const auto scene = importer.ReadFileFromMemory(pBuffer, fileSize, importFlags, "GLFW2");
+	const auto scene = importer.ReadFile(normalized_path.c_str(), importFlags);
 	if ((!scene) || (scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE) || (!scene->mRootNode)) {
 		std::cerr << "Error: Scene cannot be located: " << normalized_path << std::endl;
-		delete[] pBuffer;
+		// delete[] pBuffer;
 		// abort();
 		return {};
 	}
 
-	delete[] pBuffer;
+	// delete[] pBuffer;
 
 	auto decoding = AssetDecoding{};
 	auto assets = SceneAsset{};

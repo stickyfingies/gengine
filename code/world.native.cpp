@@ -92,7 +92,7 @@ public:
 			false,
 			false);
 		// create_game_object(
-		// 	"./data/skjar-isles/skjarisles.glb",
+		// 	"./data/skjarisles.glb",
 		// 	render_components,
 		// 	descriptors,
 		// 	pipeline,

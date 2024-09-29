@@ -81,15 +81,47 @@ What's Inside
 | ![WebGL](https://a11ybadges.com/badge?logo=webgl) | A GPU interface for web browsers, similar to OpenGL.  Emscripten will automatically convert OpenGL code into WebGL, which is pretty freaking awesome. |
 | ![Bullet](https://a11ybadges.com/badge?text=Bullet&badgeColor=goldenrod&logo=crosshair) | A customizable physics engine that supports complex 3D shapes and provides the base for complex spatial logic. |
 
-Diagrams!
+Diagrams!!!
 ---
+
+**Compilation Strategy:**
+
+```mermaid
+flowchart LR
+
+    subgraph GPU[GPU Library]
+        direction BT
+        gpu.h[GPU Interface]
+        gpu.vk.cpp[Vulkan Backend]
+        gpu.gl.cpp[OpenGL Backend]
+        gpu.webgl.cpp[WebGL Backend]
+
+        gpu.h -->|Platform Detect| gpu.vk.cpp
+        gpu.h -->|Platform Detect| gpu.gl.cpp
+        gpu.gl.cpp -->|Emscripten| gpu.webgl.cpp
+    end
+
+    subgraph World[World Library]
+        world.native.cpp[Game A]
+        world.wasm.cpp[Simulation X]
+    end
+
+    subgraph Engine[Engine Library]
+        direction LR
+        assets.cpp[Asset Processing]
+        physics.cpp[Physics Simulation]
+        glfw.h[Window Management]
+    end
+
+    Engine <-->|Static Link| World <-->|Static Link| GPU
+
+```
+
+**Loading Objects from Asset Files:**
 
 > Note: the figure below may be outdated.
 
 ```mermaid
----
-title: Loading Objects from Asset Files
----
 flowchart TB
 
     Asset --> Matrix & Geometry & Texture
