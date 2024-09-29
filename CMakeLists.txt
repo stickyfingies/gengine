@@ -1,7 +1,14 @@
 cmake_minimum_required(VERSION 3.30)
 project(gengine LANGUAGES CXX)
 
-# >> CLI
+
+# >> Config
+
+set(CXX_STANDARD_REQUIRED ON)
+include(GNUInstallDirs)
+if(EMSCRIPTEN)
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+endif()
 
 message(STATUS "CMAKE_SYSTEM_NAME is ${CMAKE_SYSTEM_NAME}")
 message(STATUS "CMAKE_TOOLCHAIN_FILE is ${CMAKE_TOOLCHAIN_FILE}")
@@ -9,148 +16,183 @@ message(STATUS "CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}")
 message(STATUS "CMAKE_CXX_FLAGS_DEBUG is ${CMAKE_CXX_FLAGS_DEBUG}")
 message(STATUS "CMAKE_CXX_FLAGS_RELEASE is ${CMAKE_CXX_FLAGS_RELEASE}")
 
-# << CLI
-
-# >> Binaries
-
-if(EMSCRIPTEN)
-    set(CMAKE_EXECUTABLE_SUFFIX ".html")
-endif()
-
-add_executable(${PROJECT_NAME})
-add_library(gpu STATIC)
-
-target_include_directories(${PROJECT_NAME}
-    PUBLIC
-    ${Vulkan_INCLUDE_DIRS}
-)
-
-target_sources(${PROJECT_NAME}
-    PRIVATE
-    code/main.cpp
-    code/assets.cpp
-    code/physics.cpp
-    code/stb/stb_image.cpp
-)
-
-if(CMAKE_SYSTEM_NAME MATCHES Linux)
-    target_sources(${PROJECT_NAME}
-        PRIVATE
-        # code/world.wasm.cpp
-        code/world.native.cpp
-    )
-elseif(EMSCRIPTEN)
-    target_sources(${PROJECT_NAME}
-        PRIVATE
-        # code/world.wasm.cpp
-        code/world.native.cpp
-    )
-
-    set(EMSCRIPTEN_COMPILER_SETTINGS
-        # Assets
-        "--preload-file" "${CMAKE_CURRENT_SOURCE_DIR}/data@data"
-        # Compiler
-        # "-sSTRICT"
-        # "-sMODULARIZE"
-        # "-sEXPORT_ES6"
-        "-sFETCH"
-        "-sALLOW_MEMORY_GROWTH"
-        # "-sNO_DISABLE_EXCEPTION_CATCHING"
-        # "-sINCOMING_MODULE_JS_API=preRun,canvas,monitorRunDependencies,print,setStatus"
-        # "--proxy-to-worker"
-        # Graphics
-        "-sUSE_GLFW=3"
-        "-sUSE_WEBGL2=1"
-        "-sMIN_WEBGL_VERSION=2"
-        "-sMAX_WEBGL_VERSION=2"
-        "-sFULL_ES3"
-    )
-
-    target_link_options(${PROJECT_NAME} PRIVATE "${EMSCRIPTEN_COMPILER_SETTINGS}")
-endif()
-
-if(GPU_BACKEND MATCHES Vulkan)
-    target_sources(gpu
-        PRIVATE
-        code/gpu.vulkan.cpp
-    )
-elseif(GPU_BACKEND MATCHES GL)
-    target_sources(gpu
-        PRIVATE
-        code/gpu.opengl.cpp
-    )
-endif()
-
-# << Binaries
+# << Config
 
 # >> Dependencies
 
+# The target 'dep_common' is a virtual library.
+# It does not contain source files.
+#
+# Instead, we locate all our project's dependencies,
+# and then link them with 'dep_common' so that later,
+# other engine components just link with 'dep_common'
+# and are transitively linked with our dependencies.
+add_library(dep_common INTERFACE)
+
 find_package(glm CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
-target_link_libraries(gpu PRIVATE glm::glm)
-
-find_package(assimp CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
-
-find_package(Bullet CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE BulletDynamics BulletCollision Bullet3Common LinearMath)
-target_link_directories(${PROJECT_NAME} PRIVATE ${BULLET_LIBRARY_DIRS})
+target_link_libraries(dep_common INTERFACE glm::glm)
 
 if(CMAKE_SYSTEM_NAME MATCHES Linux)
 
     find_package(glfw3 CONFIG REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
-
-    find_package(glad CONFIG REQUIRED)
-    target_link_libraries(gpu PRIVATE glad)
-    target_link_libraries(${PROJECT_NAME} PRIVATE glad)
-
-    find_package(Vulkan REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES})
+    target_link_libraries(dep_common INTERFACE glfw)
 
     find_package(imgui CONFIG REQUIRED)
-    target_link_libraries(gpu PUBLIC imgui::imgui)
+    target_link_libraries(dep_common INTERFACE imgui::imgui)
 
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE gpu)
-
 # << Dependencies
 
-# >> Build system
+# >> GPU
 
-set(CXX_STANDARD_REQUIRED ON)
+# The target 'gpu' is our cross-platform rendering library.
+#
+# The interface gpu.h is common across implementations,
+# but the .cpp implementations depend on what platform we're
+# comipling the library for.
+add_library(gpu STATIC)
 
-include(GNUInstallDirs)
+target_link_libraries(gpu PRIVATE dep_common)
 
-set_target_properties(${PROJECT_NAME} gpu
+set_target_properties(gpu
     PROPERTIES
     CXX_EXTENSIONS OFF
     CXX_STANDARD 23
     CMAKE_CXX_STANDARD_REQUIRED ON
 )
 
-if(NOT EMSCRIPTEN)
-    install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_BINDIR}")
-    install(DIRECTORY
-        "${CMAKE_SOURCE_DIR}/data/"
-        DESTINATION "data/")
-else()
-    install(FILES
-        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.js"
-        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.wasm"
-        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.data"
-        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.html"
-        DESTINATION "${CMAKE_INSTALL_BINDIR}")
+if(GPU_BACKEND MATCHES Vulkan)
+    # Begin Vulkan implementation
+    target_sources(gpu
+        PRIVATE
+        code/gpu.vulkan.cpp
+    )
+    find_package(Vulkan REQUIRED)
+    target_link_libraries(gpu INTERFACE ${Vulkan_LIBRARIES})
+    target_include_directories(gpu PUBLIC ${Vulkan_INCLUDE_DIRS})
+    # End Vulkan implementation
+elseif(GPU_BACKEND MATCHES GL)
+    # Begin OpenGL ES / WebGL implementation
+    target_sources(gpu
+        PRIVATE
+        code/gpu.opengl.cpp
+    )
+
+    # Glad is used for OpenGL ES, but is not needed for WebGL.
+    if(CMAKE_SYSTEM_NAME MATCHES Linux)
+        find_package(glad CONFIG REQUIRED)
+        target_link_libraries(dep_common INTERFACE glad)
+    endif()
+    # End OpenGL ES / WebGL implementation
 endif()
 
-# Set Package Name
+# << GPU
+
+# >> Core
+
+add_library(core STATIC)
+
+target_link_libraries(core PRIVATE dep_common)
+
+set_target_properties(core
+    PROPERTIES
+    CXX_EXTENSIONS OFF
+    CXX_STANDARD 23
+    CMAKE_CXX_STANDARD_REQUIRED ON
+)
+
+target_sources(core
+    PRIVATE
+    code/assets.cpp
+    code/physics.cpp
+    code/stb/stb_image.cpp
+)
+
+find_package(assimp CONFIG REQUIRED)
+target_link_libraries(core PRIVATE assimp::assimp)
+
+find_package(Bullet CONFIG REQUIRED)
+target_link_libraries(core PRIVATE BulletDynamics BulletCollision Bullet3Common LinearMath)
+target_link_directories(core PRIVATE ${BULLET_LIBRARY_DIRS})
+
+# << Core
+
+# >> Apps
+
+# For every world.cpp file in code/
+file(GLOB FILES "code/world.*.cpp")
+foreach(FILE ${FILES})
+    # Strip the directory prefix and file extension
+    get_filename_component(APP_NAME "${FILE}" NAME_WLE)
+    message(STATUS "App ${APP_NAME}")
+
+    # Create an executable for this app
+    add_executable(${APP_NAME})
+
+    target_link_libraries(${APP_NAME} PRIVATE dep_common core gpu)
+
+    set_target_properties(${APP_NAME}
+        PROPERTIES
+        CXX_EXTENSIONS OFF
+        CXX_STANDARD 23
+        CMAKE_CXX_STANDARD_REQUIRED ON
+    )
+
+    target_sources(${APP_NAME}
+        PRIVATE
+        code/main.cpp
+        ${FILE}
+    )
+
+    if(EMSCRIPTEN)
+        set_target_properties(${APP_NAME} PROPERTIES OUTPUT_NAME "${APP_NAME}")
+
+        set(EMSCRIPTEN_COMPILER_SETTINGS
+            ### Assets
+            "--preload-file" "${CMAKE_CURRENT_SOURCE_DIR}/data@data"
+            ### Compiler
+            # "-sSTRICT"
+            # "-sMODULARIZE"
+            # "-sEXPORT_ES6"
+            "-sFETCH"
+            "-sALLOW_MEMORY_GROWTH"
+            # "-sNO_DISABLE_EXCEPTION_CATCHING"
+            # "-sINCOMING_MODULE_JS_API=preRun,canvas,monitorRunDependencies,print,setStatus"
+            ### Graphics
+            "-sUSE_GLFW=3"
+            "-sUSE_WEBGL2=1"
+            "-sMIN_WEBGL_VERSION=2"
+            "-sMAX_WEBGL_VERSION=2"
+            "-sFULL_ES3"
+        )
+
+        target_link_options(${APP_NAME} PRIVATE "${EMSCRIPTEN_COMPILER_SETTINGS}")
+    endif()
+
+    if(NOT EMSCRIPTEN)
+        # Install gengine.exe --> dist/bin/
+        install(TARGETS ${APP_NAME} DESTINATION "${APP_NAME}/${CMAKE_INSTALL_BINDIR}")
+        # Install data/ --> dist/data/
+        install(DIRECTORY "${CMAKE_SOURCE_DIR}/data/" DESTINATION "${APP_NAME}/data/")
+    else()
+        # Install outputs --> dist/bin
+        install(FILES
+            "$<TARGET_FILE_DIR:${APP_NAME}>/${APP_NAME}.js"
+            "$<TARGET_FILE_DIR:${APP_NAME}>/${APP_NAME}.wasm"
+            "$<TARGET_FILE_DIR:${APP_NAME}>/${APP_NAME}.data"
+            "$<TARGET_FILE_DIR:${APP_NAME}>/${APP_NAME}.html"
+            DESTINATION "${APP_NAME}/${CMAKE_INSTALL_BINDIR}")
+    endif()
+endforeach()
+
+# << Apps
+
+# >> Build system
+
 set(CPACK_PACKAGE_NAME "gengine")
-# Set The Version Information of The Installation Package
 set(CPACK_PACKAGE_VERSION "1.0.0")
-# Set The Group Name
 set(CPACK_RPM_PACKAGE_GROUP "gengine")
-# Set The Vendor Name
 set(CPACK_PACKAGE_VENDOR "gengine")
 include(CPack)
 
