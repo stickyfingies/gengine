@@ -1,7 +1,5 @@
 #include "gpu.h"
 
-#include <GLFW/glfw3.h>
-
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #define GL_GLEXT_PROTOTYPES
@@ -9,8 +7,13 @@
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
 #else
-#include <glad/gl.h>
+#include <glad/glad.h>
 #endif
+
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
 
@@ -22,6 +25,14 @@ struct gpu::Buffer {
 
 struct gpu::ShaderPipeline {
 	GLuint gl_program;
+};
+
+struct gpu::Image {
+	GLuint gl_texture;
+};
+
+struct gpu::Descriptors {
+	gpu::Image* albedo;
 };
 
 struct gpu::Geometry {
@@ -52,7 +63,37 @@ void bindVertexArray(GLuint vao)
 #endif
 }
 
+void GLAPIENTRY messageCallback(
+	GLenum source,
+	GLenum type,
+	GLuint id,
+	GLenum severity,
+	GLsizei length,
+	const GLchar* message,
+	const void* userParam)
+{
+	cout << "GL: (" << type << ") " << message << endl;
+}
+
+bool init_gl()
+{
+#ifndef __EMSCRIPTEN__
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+		cout << "Error: Failed to initialize GLAD" << endl;
+		return false;
+	}
+	// glEnable(GL_DEBUG_OUTPUT);
+	// glDebugMessageCallback(webgl::messageCallback, 0);
+#endif
+	return true;
+}
+
 } // namespace webgl
+
+void glfw_framebuffer_size_cb(GLFWwindow* window, int width, int height)
+{
+	glViewport(0, 0, width, height);
+}
 
 namespace gpu {
 
@@ -67,6 +108,13 @@ public:
 	{
 		glfwMakeContextCurrent(window);
 		glfwSwapInterval(1);
+		glfwSetFramebufferSizeCallback(window, glfw_framebuffer_size_cb);
+
+		cout << "RenderDeviceGL" << endl;
+
+		const auto gl_success = webgl::init_gl();
+		if (!gl_success)
+			return;
 
 		const GLubyte* vendor = glGetString(GL_VENDOR);
 		const GLubyte* hardware = glGetString(GL_RENDERER);
@@ -74,7 +122,16 @@ public:
 
 		cout << "Render driver: " << version << endl;
 		cout << "Render platform: " << vendor << " on " << hardware << endl;
+
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE);
+
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_FRONT);
+		glFrontFace(GL_CCW);
 	}
+
+	~RenderDeviceGL() { cout << "~ RenderDeviceGL" << endl; }
 
 	auto create_buffer(const BufferInfo& info, const void* data) -> std::unique_ptr<Buffer> override
 	{
@@ -82,7 +139,8 @@ public:
 
 		const auto buffer_type = BUFFER_USAGE_TABLE[static_cast<unsigned int>(info.usage)];
 
-		std::cout << "Buffer size: " << size << std::endl;
+		cout << "GPU Buffer size: " << size << " stride: " << info.stride << " type: 0x" << hex
+			 << buffer_type << dec << endl;
 		GLuint VBO;
 		glGenBuffers(1, &VBO);
 		glBindBuffer(buffer_type, VBO);
@@ -92,14 +150,38 @@ public:
 
 	auto destroy_buffer(shared_ptr<Buffer> buffer) -> void override
 	{
-		//
-		std::cout << "Destroying buffer" << std::endl;
+		cout << "~ GPU Buffer " << buffer << endl;
+		glDeleteBuffers(1, &buffer->gl_buffer);
 	}
 
 	auto create_image(const gengine::ImageAsset& image_asset) -> Image* override
 	{
-		std::cout << "Creating image" << std::endl;
-		return nullptr;
+		GLuint texture;
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+		// const float tex_border_color[] = {1.0f, 1.0f, 0.0f, 1.0f};
+		// glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
+		glTexImage2D(
+			GL_TEXTURE_2D,
+			0,
+			GL_RGBA,
+			image_asset.width,
+			image_asset.height,
+			0,
+			GL_RGBA,
+			GL_UNSIGNED_BYTE,
+			image_asset.data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		const auto image = new Image{texture};
+
+		cout << "GPU Image " << image_asset.name << " " << image << endl;
+
+		return image;
 	}
 
 	auto destroy_all_images() -> void override { cout << "Destroying all images" << endl; }
@@ -122,6 +204,7 @@ public:
 			cout << "Error: Pipeline creation failed." << endl;
 			cout << "Reason: Vertex shader compilation failed." << endl;
 			cout << infoLog << endl;
+			// abort();
 		}
 
 		// Compile fragment shader
@@ -133,6 +216,7 @@ public:
 		if (!success) {
 			glGetShaderInfoLog(fragment_shader, 512, nullptr, infoLog);
 			cout << "Fragment shader compilation failed.\n" << infoLog << endl;
+			// abort();
 		}
 
 		// Link shader stages
@@ -144,27 +228,33 @@ public:
 		if (!success) {
 			glGetProgramInfoLog(shader_program, 512, nullptr, infoLog);
 			cout << "Shader linkage failed.\n" << infoLog << endl;
+			// abort();
 		}
 		glDeleteShader(vertex_shader);
 		glDeleteShader(fragment_shader);
 
-		cout << "Pipeline" << endl;
 		const auto pipeline = new ShaderPipeline{shader_program};
+
+		cout << "Pipeline " << pipeline << endl;
+
 		return pipeline;
 	}
 
 	auto create_descriptors(ShaderPipeline* pipeline, Image* albedo, const glm::vec3& color)
 		-> Descriptors* override
 	{
-		std::cout << "Creating descriptors" << std::endl;
-		return nullptr;
+		const auto descriptor = new Descriptors{albedo};
+
+		cout << "GPU Descriptor " << descriptor << endl;
+
+		return descriptor;
 	}
 
 	auto destroy_pipeline(ShaderPipeline* pso) -> void override
 	{
+		cout << "Destroying pipeline " << pso << endl;
 		glDeleteProgram(pso->gl_program);
 		delete pso;
-		std::cout << "Destroyed pipeline" << std::endl;
 	}
 
 	auto create_geometry(const gengine::GeometryAsset& geometry) -> Geometry* override
@@ -194,21 +284,32 @@ public:
 		}
 
 		auto vbo = create_buffer(
-			{BufferInfo::Usage::VERTEX, sizeof(float), vertices.size()}, vertices.data());
+			{BufferInfo::Usage::VERTEX, sizeof(float), gpu_data.size()}, gpu_data.data());
 		auto ebo = create_buffer(
 			{BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()}, indices.data());
 
 		// TODO - see the definition of `Vertex` in gpu.vulkan.cpp
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+		glVertexAttribPointer(
+			0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
 		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(
+			1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(
+			2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+		glEnableVertexAttribArray(2);
 
-		return new Geometry{vao, std::move(vbo), std::move(ebo), indices.size()};
+		const auto gpu_geometry = new Geometry{vao, std::move(vbo), std::move(ebo), indices.size()};
+
+		cout << "GPU Geometry indices: " << indices.size() << " " << gpu_geometry << endl;
+
+		return gpu_geometry;
 	}
 
 	auto destroy_geometry(const Geometry* geometry) -> void override
 	{
 		destroy_buffer(geometry->vbo);
-		destroy_buffer(geometry->vbo);
+		destroy_buffer(geometry->ebo);
 		delete geometry;
 	}
 
@@ -216,23 +317,44 @@ public:
 		const glm::mat4& view,
 		ShaderPipeline* pipeline,
 		const vector<glm::mat4>& transforms,
-		const vector<Geometry*>& renderables,
+		const vector<Geometry*>& geometries,
 		const vector<Descriptors*>& descriptors,
 		function<void()> gui_code) -> void override
 	{
-		glClearColor(0.4, 0.3, 0.8, 1.0);
-		glViewport(0, 0, 1, 1);
-		glClear(GL_COLOR_BUFFER_BIT);
+		assert(transforms.size() == geometries.size());
+		assert(transforms.size() == descriptors.size());
 
-		glUseProgram(pipeline->gl_program);
-
-		for (const auto& mesh : renderables) {
-			webgl::bindVertexArray(mesh->vao);
-			glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_INT, 0);
+		GLenum err;
+		while ((err = glGetError()) != GL_NO_ERROR) {
+			cout << "GL Error: " << err << endl;
 		}
 
-		glfwSwapBuffers(window);
-		glfwPollEvents();
+		glClearColor(0.4, 0.3, 0.8, 1.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glUseProgram(pipeline->gl_program);
+
+		auto proj = glm::perspective(glm::radians(90.0f), 0.8888f, 0.1f, 10000.0f);
+		const GLint u_projection = glGetUniformLocation(pipeline->gl_program, "projection");
+		glUniformMatrix4fv(u_projection, 1, GL_FALSE, glm::value_ptr(proj));
+		const GLint u_view = glGetUniformLocation(pipeline->gl_program, "view");
+		glUniformMatrix4fv(u_view, 1, GL_FALSE, glm::value_ptr(view));
+
+		for (int i = 0; i < transforms.size(); i++) {
+			const auto& matrix = transforms[i];
+			const auto& geometry = geometries[i];
+			const auto& descriptor = descriptors[i];
+
+			const GLint u_model = glGetUniformLocation(pipeline->gl_program, "model");
+			glUniformMatrix4fv(u_model, 1, GL_FALSE, glm::value_ptr(matrix));
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, descriptor->albedo->gl_texture);
+			const auto location = glGetUniformLocation(pipeline->gl_program, "tDiffuse");
+			glUniform1i(location, 0);
+
+			webgl::bindVertexArray(geometry->vao);
+			glDrawElements(GL_TRIANGLES, geometry->index_count, GL_UNSIGNED_INT, 0);
+		}
 	}
 };
 
@@ -244,7 +366,9 @@ auto RenderDevice::create(GLFWwindow* window) -> std::unique_ptr<RenderDevice>
 auto RenderDevice::configure_glfw() -> void
 {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+	cout << "Configured GLFW" << endl;
 }
 
 } // namespace gpu

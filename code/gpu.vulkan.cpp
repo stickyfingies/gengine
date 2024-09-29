@@ -15,8 +15,8 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
-#include <vector>
 #include <memory>
+#include <vector>
 #include <vulkan/vulkan_core.h>
 
 #include <imgui.h>
@@ -691,7 +691,7 @@ public:
 		const auto& vertices = geometry.vertices;
 		const auto& vertices_aux = geometry.vertices_aux;
 		const auto& indices = geometry.indices;
-		
+
 		auto gpu_data = std::vector<float>{};
 		for (int i = 0; i < vertices.size() / 3; i++) {
 			const auto v = (i * 3);
@@ -709,13 +709,13 @@ public:
 		auto vbo = create_buffer(
 			{BufferInfo::Usage::VERTEX, sizeof(float), gpu_data.size()}, gpu_data.data());
 		auto ebo = create_buffer(
-			{BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()},
-			indices.data());
+			{BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()}, indices.data());
 
 		return new Geometry{std::move(vbo), std::move(ebo), indices.size()};
 	}
 
-	auto destroy_geometry(const Geometry* geometry) -> void override {
+	auto destroy_geometry(const Geometry* geometry) -> void override
+	{
 		destroy_buffer(geometry->vbo);
 		destroy_buffer(geometry->ebo);
 		delete geometry;
@@ -865,7 +865,11 @@ public:
 		const auto scissor = vk::Rect2D(vk::Offset2D(), extent);
 
 		const auto viewport_state = vk::PipelineViewportStateCreateInfo(
-			{}, 1, /* dynamic */ nullptr, 1, /* dynamic */ nullptr);
+			{},
+			1,
+			/* dynamic */ nullptr,
+			1,
+			/* dynamic */ nullptr);
 
 		const auto rasterizer = vk::PipelineRasterizationStateCreateInfo(
 			{},
@@ -908,8 +912,8 @@ public:
 		const auto dynamic_states =
 			std::array{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
 
-		const auto dynamic_state = vk::PipelineDynamicStateCreateInfo(
-			{}, dynamic_states.size(), dynamic_states.data());
+		const auto dynamic_state =
+			vk::PipelineDynamicStateCreateInfo({}, dynamic_states.size(), dynamic_states.data());
 
 		const auto pipeline_info = vk::GraphicsPipelineCreateInfo(
 			{},
@@ -1037,7 +1041,8 @@ public:
 			const auto& cmdbuf = cmd_buffers[current_frame];
 			cmdbuf.reset({});
 
-			return std::make_unique<RenderContextVk>(cmdbuf, backbuffer_pass, backbuffers[image_idx], extent);
+			return std::make_unique<RenderContextVk>(
+				cmdbuf, backbuffer_pass, backbuffers[image_idx], extent);
 		}
 		catch (vk::OutOfDateKHRError) {
 			re_create_swapchain();
@@ -1497,8 +1502,6 @@ auto RenderDevice::create(GLFWwindow* window) -> std::unique_ptr<RenderDevice>
 	return std::make_unique<RenderDeviceVk>(window);
 }
 
-auto RenderDevice::configure_glfw() -> void {
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-}
+auto RenderDevice::configure_glfw() -> void { glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); }
 
-} // namespace gengine
+} // namespace gpu

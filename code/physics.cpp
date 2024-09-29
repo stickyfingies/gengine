@@ -36,8 +36,7 @@ PhysicsEngine::PhysicsEngine()
 	dynamics_world->setGravity(btVector3(0, -9.8, 0));
 }
 
-PhysicsEngine::~PhysicsEngine()
-{}
+PhysicsEngine::~PhysicsEngine() {}
 
 auto PhysicsEngine::create_box(float mass, const glm::mat4& model_matrix) -> Collidable*
 {
@@ -67,7 +66,8 @@ auto PhysicsEngine::create_box(float mass, const glm::mat4& model_matrix) -> Col
 		collidable->shape->calculateLocalInertia(mass, inertia);
 	}
 
-	collidable->body = std::make_unique<btRigidBody>(btScalar(mass), collidable->motion_state.get(), collidable->shape.get(), inertia);
+	collidable->body = std::make_unique<btRigidBody>(
+		btScalar(mass), collidable->motion_state.get(), collidable->shape.get(), inertia);
 	collidable->body->setFriction(0.4);
 	collidable->body->setRollingFriction(0.3);
 	collidable->body->setSpinningFriction(0.3);
@@ -103,7 +103,8 @@ auto PhysicsEngine::create_sphere(float const size, float mass, const glm::mat4&
 		collidable->shape->calculateLocalInertia(mass, inertia);
 	}
 
-	collidable->body = std::make_unique<btRigidBody>(btScalar(mass), collidable->motion_state.get(), collidable->shape.get(), inertia);
+	collidable->body = std::make_unique<btRigidBody>(
+		btScalar(mass), collidable->motion_state.get(), collidable->shape.get(), inertia);
 	collidable->body->setFriction(0.3);
 	collidable->body->setRollingFriction(0.3);
 	collidable->body->setSpinningFriction(0.3);
@@ -138,8 +139,8 @@ auto PhysicsEngine::create_capsule(float mass, const glm::mat4& model_matrix) ->
 		collidable->shape->calculateLocalInertia(mass, inertia);
 	}
 
-	collidable->body =
-		std::make_unique<btRigidBody>(btScalar(mass), collidable->motion_state.get(), collidable->shape.get(), inertia);
+	collidable->body = std::make_unique<btRigidBody>(
+		btScalar(mass), collidable->motion_state.get(), collidable->shape.get(), inertia);
 	collidable->body->setFriction(0.3);
 	collidable->body->setAngularFactor(0.0);
 
@@ -149,9 +150,7 @@ auto PhysicsEngine::create_capsule(float mass, const glm::mat4& model_matrix) ->
 }
 
 auto PhysicsEngine::create_mesh(
-	float mass,
-	const GeometryAsset& geometry,
-	const glm::mat4& model_matrix) -> Collidable*
+	float mass, const GeometryAsset& geometry, const glm::mat4& model_matrix) -> Collidable*
 {
 	auto collidable = new Collidable{};
 
@@ -220,7 +219,8 @@ auto PhysicsEngine::create_mesh(
 		collidable->shape->calculateLocalInertia(mass, inertia);
 	}
 
-	collidable->body = std::make_unique<btRigidBody>(mass, collidable->motion_state.get(), collidable->shape.get(), inertia);
+	collidable->body = std::make_unique<btRigidBody>(
+		mass, collidable->motion_state.get(), collidable->shape.get(), inertia);
 	collidable->body->setFriction(0.3);
 	collidable->body->setAngularFactor(0.0);
 

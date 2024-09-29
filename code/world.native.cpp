@@ -3,8 +3,10 @@
 #include "gpu.h"
 #include "physics.h"
 #include "window.h"
-#include <GLFW/glfw3.h>
+#ifndef __EMSCRIPTEN__
 #include <imgui.h>
+#endif
+#include <GLFW/glfw3.h>
 #include <iostream>
 
 namespace gengine {
@@ -36,8 +38,15 @@ public:
 
 		// create game resources
 
-		pipeline = renderer->create_pipeline(
-			gengine::load_file("./data/cube.vert.spv"), gengine::load_file("./data/cube.frag.spv"));
+#ifdef __EMSCRIPTEN__
+		const auto vert = gengine::load_file("./data/gl.vert.glsl");
+		const auto frag = gengine::load_file("./data/gl.frag.glsl");
+		pipeline = renderer->create_pipeline(vert, frag);
+#else
+		const auto vert = gengine::load_file("./data/cube.vert.spv");
+		const auto frag = gengine::load_file("./data/cube.frag.spv");
+		pipeline = renderer->create_pipeline(vert, frag);
+#endif
 
 		// Create physics bodies
 		{ // player
@@ -82,8 +91,19 @@ public:
 			false,
 			false,
 			false);
+		// create_game_object(
+		// 	"./data/skjar-isles/skjarisles.glb",
+		// 	render_components,
+		// 	descriptors,
+		// 	pipeline,
+		// 	collidables,
+		// 	transforms,
+		// 	true,
+		// 	true,
+		// 	false);
+
 		create_game_object(
-			"./data/skjar-isles/skjarisles.glb",
+			"./data/map.obj",
 			render_components,
 			descriptors,
 			pipeline,
@@ -133,45 +153,56 @@ public:
 
 		camera.Position = glm::vec3(transforms[0][3]);
 
+#ifndef __EMSCRIPTEN__
+		const auto gui_func = [&]() {
+			using namespace ImGui;
+			// Debug
+			SetNextWindowPos({20.0f, 20.0f});
+			SetNextWindowSize({0.0f, 0.0f});
+			Begin("Debug Menu", nullptr, ImGuiWindowFlags_NoCollapse);
+			Text("ms / frame: %.2f", static_cast<float>(elapsed_time));
+			Text("Objects: %i", transforms.size());
+			// Text("GPU Images: %i", images.size());
+			End();
+			// Matrices
+			SetNextWindowSize({0.0f, 0.0f});
+			SetNextWindowPos({200.0f, 20.0f});
+			Begin("Matrices");
+			PushItemWidth(200.0f);
+			for (auto i = 0u; i < transforms.size(); i++) {
+				auto& transform = transforms[i];
+				const std::string label = "Pos " + i;
+				InputFloat3(std::to_string(i).c_str(), &transform[3][0]);
+			}
+			PopItemWidth();
+			End();
+			// Textures
+			const auto* images_loaded = texture_factory.get_image_log();
+			if (images_loaded->size() > 0) {
+				SetNextWindowSize({0.0f, 0.0f});
+				SetNextWindowPos({500.0f, 20.0f});
+				Begin("Texture Loading Timeline", nullptr, ImGuiWindowFlags_NoCollapse);
+				for (const auto& image_asset : *images_loaded) {
+					Text(
+						"%s (%i x %i)",
+						image_asset.name.c_str(),
+						image_asset.width,
+						image_asset.height);
+				}
+				End();
+			}
+		};
+#else
+		const auto gui_func = []() {};
+#endif
+
 		renderer->render(
-			camera.get_view_matrix(), pipeline, transforms, render_components, descriptors, [&]() {
-				using namespace ImGui;
-				// Debug
-				SetNextWindowPos({20.0f, 20.0f});
-				SetNextWindowSize({0.0f, 0.0f});
-				Begin("Debug Menu", nullptr, ImGuiWindowFlags_NoCollapse);
-				Text("ms / frame: %.2f", static_cast<float>(elapsed_time));
-				Text("Objects: %i", transforms.size());
-				// Text("GPU Images: %i", images.size());
-				End();
-				// Matrices
-				SetNextWindowSize({0.0f, 0.0f});
-				SetNextWindowPos({200.0f, 20.0f});
-				Begin("Matrices");
-				PushItemWidth(200.0f);
-				for (auto i = 0u; i < transforms.size(); i++) {
-					auto& transform = transforms[i];
-					const std::string label = "Pos " + i;
-					InputFloat3(std::to_string(i).c_str(), &transform[3][0]);
-				}
-				PopItemWidth();
-				End();
-				// Textures
-				const auto* images_loaded = texture_factory.get_image_log();
-				if (images_loaded->size() > 0) {
-					SetNextWindowSize({0.0f, 0.0f});
-					SetNextWindowPos({500.0f, 20.0f});
-					Begin("Texture Loading Timeline", nullptr, ImGuiWindowFlags_NoCollapse);
-					for (const auto& image_asset : *images_loaded) {
-						Text(
-							"%s (%i x %i)",
-							image_asset.name.c_str(),
-							image_asset.width,
-							image_asset.height);
-					}
-					End();
-				}
-			});
+			camera.get_view_matrix(),
+			pipeline,
+			transforms,
+			render_components,
+			descriptors,
+			gui_func);
 	}
 
 	auto update_input(float delta, Collidable* player) -> void
@@ -255,7 +286,7 @@ public:
 				texture_0 = material.textures[0];
 			}
 			if (texture_0.width == 0) {
-				texture_0 = *texture_factory.load_image_from_file("./data/solid_white.png");
+				texture_0 = *texture_factory.load_image_from_file("./data/Albedo.png");
 			}
 
 			auto albedo = renderer->create_image(texture_0);

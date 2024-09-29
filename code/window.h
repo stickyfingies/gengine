@@ -10,4 +10,4 @@ struct WindowData {
 	double delta_mouse_y;
 };
 
-}
+} // namespace gengine

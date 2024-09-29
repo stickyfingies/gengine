@@ -37,9 +37,7 @@ out/
 external/
 artifacts/*
 !artifacts/.gitkeep
-
-# Dependencies
-.vcpkg/
+dependencies/vcpkg-ports/assimp/assimp
 
 # IDE
 .vs/
@@ -47,3 +45,6 @@ artifacts/*
 .clangd/
 .cache/
 CMakeSettings.json
+
+# Miscellaneous
+imgui.ini

@@ -3,12 +3,12 @@
 #include <glm/glm.hpp>
 
 #include <expected>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
-#include <memory>
 
 namespace gengine {
 
@@ -75,8 +75,11 @@ struct SceneAsset {
 	std::vector<MaterialAsset> materials;
 };
 
-auto load_model(TextureFactory& texture_factory, std::string_view path, bool flipUVs = false, bool flipWindingOrder = false)
-	-> SceneAsset;
+auto load_model(
+	TextureFactory& texture_factory,
+	std::string_view path,
+	bool flipUVs = false,
+	bool flipWindingOrder = false) -> SceneAsset;
 
 auto load_file(std::string_view path) -> std::string;
 } // namespace gengine

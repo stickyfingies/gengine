@@ -86,7 +86,7 @@ auto main(int argc, char** argv) -> int
 
 	shared_ptr<gpu::RenderDevice> renderer = gpu::RenderDevice::create(window);
 
-	const auto world = World::create(window, renderer);
+	auto world = World::create(window, renderer);
 
 	// << System startup
 
@@ -135,6 +135,9 @@ auto main(int argc, char** argv) -> int
 	cout << "System shutting down..." << endl;
 
 	renderer->destroy_all_images();
+
+	world.reset();
+	renderer.reset();
 
 	glfwDestroyWindow(window);
 

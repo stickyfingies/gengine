@@ -196,6 +196,32 @@
           "name": "web-gl-app"
         }
       ]
+    },
+    {
+      "name": "web-gl-dev",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "web-gl-dev"
+        },
+        {
+          "type": "build",
+          "name": "web-gl-dev"
+        }
+      ]
+    },
+    {
+      "name": "linux-gl-dev",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "linux-gl-dev"
+        },
+        {
+          "type": "build",
+          "name": "linux-gl-dev"
+        }
+      ]
     }
   ]
 }
