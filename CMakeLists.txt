@@ -1,5 +1,5 @@
-# Resources
-# - Emscripten compiler settings: https://emscripten.org/docs/tools_reference/settings_reference.html
+# Emscripten compiler settings:
+# - https://emscripten.org/docs/tools_reference/settings_reference.html
 
 cmake_minimum_required(VERSION 3.30)
 project(gengine LANGUAGES CXX)
@@ -7,12 +7,12 @@ project(gengine LANGUAGES CXX)
 # >> Config
 
 set(CXX_STANDARD_REQUIRED ON)
+
 include(GNUInstallDirs)
+
 if(EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
 endif()
-
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
 
 message(STATUS "CMAKE_SYSTEM_NAME is ${CMAKE_SYSTEM_NAME}")
 message(STATUS "CMAKE_TOOLCHAIN_FILE is ${CMAKE_TOOLCHAIN_FILE}")
@@ -69,23 +69,28 @@ foreach(FILE ${FILES})
     # Create an executable for this app
     add_executable(${APP_NAME})
 
+    # Combine engine components
     target_link_libraries(${APP_NAME} PRIVATE dep_common core gpu)
 
     set_target_properties(${APP_NAME}
         PROPERTIES
+        # Standard C++23
         CXX_EXTENSIONS OFF
         CXX_STANDARD 23
         CMAKE_CXX_STANDARD_REQUIRED ON
+        # For convenience
         OUTPUT_NAME "${APP_NAME}.bin"
+        # Separate world builds
         ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${APP_NAME}/"
         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${APP_NAME}/"
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${APP_NAME}/"
     )
 
+    # Today, worlds are limited to one source file
     target_sources(${APP_NAME} PRIVATE ${FILE})
 
     if(EMSCRIPTEN)
-        # Generate [index.data, index.html, index.js, index.wasm]
+        # This instructs Emscripten how to name [index.data, index.html, index.js, index.wasm]
         set_target_properties(${APP_NAME} PROPERTIES OUTPUT_NAME "index")
 
         set(EMSCRIPTEN_COMPILER_SETTINGS
@@ -93,11 +98,14 @@ foreach(FILE ${FILES})
             "--preload-file" "${CMAKE_CURRENT_SOURCE_DIR}/data@data"
             ### Compiler
             # "-sSTRICT"
-            # "-sMODULARIZE"
-            # "-sEXPORT_ES6"
-            "-sALLOW_MEMORY_GROWTH"
-            # "-sNO_DISABLE_EXCEPTION_CATCHING"
+            "-sMODULARIZE"
+            "-sEXPORT_ES6"
+            "-sASSERTIONS"
+            "-sDEFAULT_TO_CXX"
+            "-sAUTO_JS_LIBRARIES"
+            "-sAUTO_NATIVE_LIBRARIES"
             # "-sINCOMING_MODULE_JS_API=preRun,canvas,monitorRunDependencies,print,setStatus"
+            "-sALLOW_MEMORY_GROWTH"
             ### Graphics
             "-sUSE_GLFW=3"
             "-sUSE_WEBGL2=1"

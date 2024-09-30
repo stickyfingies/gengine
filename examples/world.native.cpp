@@ -81,7 +81,7 @@ public:
 			transforms,
 			false,
 			false,
-			false);
+			true);
 		create_game_object(
 			"./data/spinny.obj",
 			render_components,
@@ -91,7 +91,7 @@ public:
 			transforms,
 			false,
 			false,
-			false);
+			true);
 		// create_game_object(
 		// 	"./data/skjarisles.glb",
 		// 	render_components,
@@ -112,7 +112,7 @@ public:
 			transforms,
 			true,
 			true,
-			false);
+			true);
 
 		// Assumes all images are uploaded to the GPU and are useless in system memory.
 		texture_factory.unload_all_images();
