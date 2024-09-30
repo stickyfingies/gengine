@@ -43,22 +43,18 @@ endif()
 
 # << Dependencies
 
-# >> GPU
+# >> Components
 
 add_subdirectory(gpu)
 
-# << GPU
-
-# >> Core
-
 add_subdirectory(core)
 
-# << Core
+# << Components
 
 # >> Apps
 
-# For every world.cpp file in code/
-file(GLOB FILES "code/world.*.cpp")
+# For every world.cpp file in examples/
+file(GLOB FILES "examples/world.*.cpp")
 foreach(FILE ${FILES})
 
     # Strip the directory prefix and file extension
@@ -84,6 +80,7 @@ foreach(FILE ${FILES})
     target_sources(${APP_NAME} PRIVATE ${FILE})
 
     if(EMSCRIPTEN)
+        # Generate [index.data, index.html, index.js, index.wasm]
         set_target_properties(${APP_NAME} PROPERTIES OUTPUT_NAME "index")
 
         set(EMSCRIPTEN_COMPILER_SETTINGS
@@ -116,10 +113,10 @@ foreach(FILE ${FILES})
     else()
         # Install outputs --> dist/bin
         install(FILES
-            "$<TARGET_FILE_DIR:${APP_NAME}>/${APP_NAME}.js"
-            "$<TARGET_FILE_DIR:${APP_NAME}>/${APP_NAME}.wasm"
-            "$<TARGET_FILE_DIR:${APP_NAME}>/${APP_NAME}.data"
-            "$<TARGET_FILE_DIR:${APP_NAME}>/${APP_NAME}.html"
+            "$<TARGET_FILE_DIR:${APP_NAME}>/index.js"
+            "$<TARGET_FILE_DIR:${APP_NAME}>/index.wasm"
+            "$<TARGET_FILE_DIR:${APP_NAME}>/index.data"
+            "$<TARGET_FILE_DIR:${APP_NAME}>/index.html"
             DESTINATION "${APP_NAME}/${CMAKE_INSTALL_BINDIR}")
     endif()
 endforeach()
