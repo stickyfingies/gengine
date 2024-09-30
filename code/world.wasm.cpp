@@ -61,14 +61,16 @@ public:
 			vertices_aux, vertices_aux + sizeof(vertices_aux) / sizeof(*vertices_aux));
 
 		// Game object
-		const auto triangle = renderer->create_geometry(geometry);
+		const auto triangle =
+			renderer->create_geometry(geometry.vertices, geometry.vertices_aux, geometry.indices);
 		meshes.push_back(triangle);
 		auto matrix = glm::mat4(1.0f);
 		matrix = glm::translate(matrix, glm::vec3(0.f, 0.f, -5.f));
 		// matrix = glm::rotate(matrix, PI, glm::vec3(1.f, 0.f, 0.f));
 		matrices.push_back(matrix);
 		const auto albedo = texture_factory.load_image_from_file("./data/Albedo.png");
-		const auto albedo_texture = renderer->create_image(*albedo);
+		const auto albedo_texture = renderer->create_image(
+			albedo->name, albedo->width, albedo->height, albedo->channel_count, albedo->data);
 		const auto descriptor =
 			renderer->create_descriptors(pipeline, albedo_texture, glm::vec3(1.f, 1.f, 1.f));
 		descriptors.push_back(descriptor);
@@ -90,7 +92,12 @@ public:
 			if (texture_0.width == 0) {
 				texture_0 = *texture_factory.load_image_from_file("./data/Albedo.png");
 			}
-			auto albedo = renderer->create_image(texture_0);
+			auto albedo = renderer->create_image(
+				texture_0.name,
+				texture_0.width,
+				texture_0.height,
+				texture_0.channel_count,
+				texture_0.data);
 			const auto descriptor_0 =
 				renderer->create_descriptors(pipeline, albedo, material.color);
 			descriptors.push_back(descriptor_0);
@@ -106,7 +113,8 @@ public:
 
 		/// Geometry --> Renderable
 		for (const auto& geometry : scene.geometries) {
-			const auto renderable = renderer->create_geometry(geometry);
+			const auto renderable = renderer->create_geometry(
+				geometry.vertices, geometry.vertices_aux, geometry.indices);
 			meshes.push_back(renderable);
 		}
 	}

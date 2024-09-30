@@ -154,7 +154,7 @@ public:
 		glDeleteBuffers(1, &buffer->gl_buffer);
 	}
 
-	auto create_image(const gengine::ImageAsset& image_asset) -> Image* override
+	auto create_image(const std::string& name, int width, int height, int channel_count, unsigned char* data_in) -> Image* override
 	{
 		GLuint texture;
 		glGenTextures(1, &texture);
@@ -169,17 +169,17 @@ public:
 			GL_TEXTURE_2D,
 			0,
 			GL_RGBA,
-			image_asset.width,
-			image_asset.height,
+			width,
+			height,
 			0,
 			GL_RGBA,
 			GL_UNSIGNED_BYTE,
-			image_asset.data);
+			data_in);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 		const auto image = new Image{texture};
 
-		cout << "GPU Image " << image_asset.name << " " << image << endl;
+		cout << "GPU Image " << name << " " << image << endl;
 
 		return image;
 	}
@@ -257,7 +257,7 @@ public:
 		delete pso;
 	}
 
-	auto create_geometry(const gengine::GeometryAsset& geometry) -> Geometry* override
+	auto create_geometry(const std::vector<float>& vertices_in, const std::vector<float>& vertices_aux_in, const std::vector<unsigned int>& indices_in) -> Geometry* override
 	{
 		std::cout << "Creating geometry" << std::endl;
 
@@ -265,9 +265,9 @@ public:
 		webgl::genVertexArrays(1, &vao);
 		webgl::bindVertexArray(vao);
 
-		const auto& vertices = geometry.vertices;
-		const auto& vertices_aux = geometry.vertices_aux;
-		const auto& indices = geometry.indices;
+		const auto& vertices = vertices_in;
+		const auto& vertices_aux = vertices_aux_in;
+		const auto& indices = indices_in;
 
 		auto gpu_data = std::vector<float>{};
 		for (int i = 0; i < vertices.size() / 3; i++) {

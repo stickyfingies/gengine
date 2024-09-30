@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 
-#include "assets.h"
+// #include "assets.h"
 
 #include <functional>
 #include <memory>
@@ -50,7 +50,7 @@ public:
 	/// TODO - These are conflicting goals.
 	virtual auto destroy_buffer(std::shared_ptr<Buffer> buffer) -> void = 0;
 
-	virtual auto create_image(const gengine::ImageAsset& image_asset) -> Image* = 0;
+	virtual auto create_image(const std::string& name, int width, int height, int channel_count, unsigned char* data) -> Image* = 0;
 
 	virtual auto destroy_all_images() -> void = 0;
 
@@ -62,7 +62,7 @@ public:
 
 	virtual auto destroy_pipeline(ShaderPipeline* pso) -> void = 0;
 
-	virtual auto create_geometry(const gengine::GeometryAsset& geometry) -> Geometry* = 0;
+	virtual auto create_geometry(const std::vector<float>& vertices, const std::vector<float>& vertices_aux, const std::vector<unsigned int>& indices) -> Geometry* = 0;
 
 	virtual auto destroy_geometry(const Geometry* geometry) -> void = 0;
 

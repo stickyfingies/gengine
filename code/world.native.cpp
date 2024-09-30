@@ -38,6 +38,7 @@ public:
 
 		// create game resources
 
+// TODO: this is incorrect because GL rendering on Desktop Linux will break
 #ifdef __EMSCRIPTEN__
 		const auto vert = gengine::load_file("./data/gl.vert.glsl");
 		const auto frag = gengine::load_file("./data/gl.frag.glsl");
@@ -289,7 +290,12 @@ public:
 				texture_0 = *texture_factory.load_image_from_file("./data/Albedo.png");
 			}
 
-			auto albedo = renderer->create_image(texture_0);
+			auto albedo = renderer->create_image(
+				texture_0.name,
+				texture_0.width,
+				texture_0.height,
+				texture_0.channel_count,
+				texture_0.data);
 
 			const auto descriptor_0 =
 				renderer->create_descriptors(pipeline, albedo, material.color);
@@ -299,7 +305,8 @@ public:
 
 		/// Geometry --> Renderable
 		for (const auto& geometry : scene.geometries) {
-			const auto renderable = renderer->create_geometry(geometry);
+			const auto renderable = renderer->create_geometry(
+				geometry.vertices, geometry.vertices_aux, geometry.indices);
 			renderable_cache.push_back(renderable);
 		}
 
