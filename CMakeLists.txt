@@ -1,3 +1,6 @@
+# Resources
+# - Emscripten compiler settings: https://emscripten.org/docs/tools_reference/settings_reference.html
+
 cmake_minimum_required(VERSION 3.30)
 project(gengine LANGUAGES CXX)
 
@@ -8,6 +11,8 @@ include(GNUInstallDirs)
 if(EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
 endif()
+
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
 
 message(STATUS "CMAKE_SYSTEM_NAME is ${CMAKE_SYSTEM_NAME}")
 message(STATUS "CMAKE_TOOLCHAIN_FILE is ${CMAKE_TOOLCHAIN_FILE}")
@@ -90,7 +95,6 @@ foreach(FILE ${FILES})
             # "-sSTRICT"
             # "-sMODULARIZE"
             # "-sEXPORT_ES6"
-            "-sFETCH"
             "-sALLOW_MEMORY_GROWTH"
             # "-sNO_DISABLE_EXCEPTION_CATCHING"
             # "-sINCOMING_MODULE_JS_API=preRun,canvas,monitorRunDependencies,print,setStatus"
@@ -101,6 +105,26 @@ foreach(FILE ${FILES})
             "-sMAX_WEBGL_VERSION=2"
             "-sFULL_ES3"
         )
+
+        if(CMAKE_BUILD_TYPE MATCHES Debug)
+            message(STATUS "Adding Emscripten debug flags")
+            # Reference for speeding up linking process:
+            # https://github.com/emscripten-core/emscripten/issues/17019
+            set(EMSCRIPTEN_COMPILER_SETTINGS
+                "${EMSCRIPTEN_COMPILER_SETTINGS}"
+                "-sGL_ASSERTIONS=1"
+                "-sERROR_ON_WASM_CHANGES_AFTER_LINK"
+                "-sWASM_BIGINT"
+                "-O1"
+            )
+        elseif(CMAKE_BUILD_TYPE MATCHES Release)
+            message(STATUS "Adding Emscripten debug flags")
+            set(EMSCRIPTEN_COMPILER_SETTINGS
+                "${EMSCRIPTEN_COMPILER_SETTINGS}"
+                "-sASSERTIONS=0"
+                "-O3"
+            )
+        endif()
 
         target_link_options(${APP_NAME} PRIVATE "${EMSCRIPTEN_COMPILER_SETTINGS}")
     endif()
