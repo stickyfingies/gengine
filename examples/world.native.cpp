@@ -9,30 +9,28 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
-namespace gengine {
-
 using namespace std;
 
 class NativeWorld : public World {
 	// Engine services
 	GLFWwindow* window;
-	unique_ptr<PhysicsEngine> physics_engine;
-	shared_ptr<gpu::RenderDevice> renderer;
-	TextureFactory texture_factory{};
+	unique_ptr<gengine::PhysicsEngine> physics_engine;
+	shared_ptr<gpu::RenderDevice> gpu;
+	gengine::TextureFactory texture_factory{};
 
 	// Game data
 	Camera camera;
 	vector<glm::mat4> transforms{};
-	vector<Collidable*> collidables{};
+	vector<gengine::Collidable*> collidables{};
 	vector<gpu::Geometry*> render_components{};
 	vector<gpu::Descriptors*> descriptors{};
 	gpu::ShaderPipeline* pipeline;
 
 public:
-	NativeWorld(GLFWwindow* window, shared_ptr<gpu::RenderDevice> renderer)
-		: window{window}, renderer{renderer}
+	NativeWorld(GLFWwindow* window, shared_ptr<gpu::RenderDevice> gpu)
+		: window{window}, gpu{gpu}
 	{
-		physics_engine = make_unique<PhysicsEngine>();
+		physics_engine = make_unique<gengine::PhysicsEngine>();
 
 		camera = Camera(glm::vec3(0.0f, 5.0f, 90.0f));
 
@@ -42,11 +40,11 @@ public:
 #ifdef __EMSCRIPTEN__
 		const auto vert = gengine::load_file("./data/gl.vert.glsl");
 		const auto frag = gengine::load_file("./data/gl.frag.glsl");
-		pipeline = renderer->create_pipeline(vert, frag);
+		pipeline = gpu->create_pipeline(vert, frag);
 #else
 		const auto vert = gengine::load_file("./data/cube.vert.spv");
 		const auto frag = gengine::load_file("./data/cube.frag.spv");
-		pipeline = renderer->create_pipeline(vert, frag);
+		pipeline = gpu->create_pipeline(vert, frag);
 #endif
 
 		// Create physics bodies
@@ -133,12 +131,12 @@ public:
 
 		// TODO: automate cleanup
 
-		renderer->destroy_pipeline(pipeline);
+		gpu->destroy_pipeline(pipeline);
 
-		// renderer->destroy_image(albedo);
+		// gpu->destroy_image(albedo);
 
 		for (auto renderComponent : render_components) {
-			renderer->destroy_geometry(renderComponent);
+			gpu->destroy_geometry(renderComponent);
 		}
 	}
 
@@ -197,7 +195,7 @@ public:
 		const auto gui_func = []() {};
 #endif
 
-		renderer->render(
+		gpu->render(
 			camera.get_view_matrix(),
 			pipeline,
 			transforms,
@@ -206,11 +204,11 @@ public:
 			gui_func);
 	}
 
-	auto update_input(float delta, Collidable* player) -> void
+	auto update_input(float delta, gengine::Collidable* player) -> void
 	{
 		auto sprinting = false;
 
-		auto window_data = static_cast<WindowData*>(glfwGetWindowUserPointer(window));
+		auto window_data = static_cast<gengine::WindowData*>(glfwGetWindowUserPointer(window));
 
 		camera.process_mouse_movement(window_data->delta_mouse_x, window_data->delta_mouse_y);
 
@@ -290,7 +288,7 @@ public:
 				texture_0 = *texture_factory.load_image_from_file("./data/Albedo.png");
 			}
 
-			auto albedo = renderer->create_image(
+			auto albedo = gpu->create_image(
 				texture_0.name,
 				texture_0.width,
 				texture_0.height,
@@ -298,14 +296,14 @@ public:
 				texture_0.data);
 
 			const auto descriptor_0 =
-				renderer->create_descriptors(pipeline, albedo, material.color);
+				gpu->create_descriptors(pipeline, albedo, material.color);
 
 			descriptor_cache.push_back(descriptor_0);
 		}
 
 		/// Geometry --> Renderable
 		for (const auto& geometry : scene.geometries) {
-			const auto renderable = renderer->create_geometry(
+			const auto renderable = gpu->create_geometry(
 				geometry.vertices, geometry.vertices_aux, geometry.indices);
 			renderable_cache.push_back(renderable);
 		}
@@ -338,9 +336,7 @@ public:
 	}
 };
 
-unique_ptr<World> World::create(GLFWwindow* window, shared_ptr<gpu::RenderDevice> renderer)
+unique_ptr<World> World::create(GLFWwindow* window, shared_ptr<gpu::RenderDevice> gpu)
 {
-	return make_unique<NativeWorld>(window, renderer);
+	return make_unique<NativeWorld>(window, gpu);
 }
-
-} // namespace gengine

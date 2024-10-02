@@ -17,15 +17,13 @@
 
 using namespace std;
 
-namespace gengine {
-
 class WasmWorld : public World {
 
 	GLFWwindow* window;
 	shared_ptr<gpu::RenderDevice> renderer;
-	unique_ptr<PhysicsEngine> physics_engine;
+	unique_ptr<gengine::PhysicsEngine> physics_engine;
 	Camera camera;
-	TextureFactory texture_factory;
+	gengine::TextureFactory texture_factory;
 	gengine::SceneAsset scene;
 	gpu::ShaderPipeline* pipeline;
 	vector<gpu::Geometry*> meshes;
@@ -38,7 +36,7 @@ public:
 	{
 		cout << "Hello, Web!" << endl;
 
-		physics_engine = make_unique<PhysicsEngine>();
+		physics_engine = make_unique<gengine::PhysicsEngine>();
 
 		camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f));
 
@@ -102,5 +100,3 @@ unique_ptr<World> World::create(GLFWwindow* window, shared_ptr<gpu::RenderDevice
 {
 	return make_unique<WasmWorld>(window, renderer);
 }
-
-} // namespace gengine

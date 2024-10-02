@@ -363,7 +363,7 @@ auto RenderDevice::create(GLFWwindow* window) -> std::unique_ptr<RenderDevice>
 	return std::make_unique<RenderDeviceGL>(window);
 }
 
-auto RenderDevice::configure_glfw() -> void
+auto gpu::configure_glfw() -> void
 {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);

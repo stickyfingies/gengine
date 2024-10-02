@@ -28,13 +28,13 @@ struct BufferInfo {
 	size_t element_count;
 };
 
+auto configure_glfw() -> void;
+
 class RenderDevice {
 public:
 	// device management
 
 	static auto create(GLFWwindow* window) -> std::unique_ptr<RenderDevice>;
-
-	static auto configure_glfw() -> void;
 
 	virtual ~RenderDevice() = default;
 
