@@ -81,9 +81,9 @@ foreach(FILE ${FILES})
         # For convenience
         OUTPUT_NAME "${APP_NAME}.bin"
         # Separate world builds
-        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${APP_NAME}/"
-        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${APP_NAME}/"
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${APP_NAME}/"
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples/${APP_NAME}/"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples/${APP_NAME}/"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples/${APP_NAME}/"
     )
 
     # Today, worlds are limited to one source file
@@ -139,9 +139,9 @@ foreach(FILE ${FILES})
 
     if(NOT EMSCRIPTEN)
         # Install gengine.exe --> dist/bin/
-        install(TARGETS ${APP_NAME} DESTINATION "${APP_NAME}/${CMAKE_INSTALL_BINDIR}")
+        install(TARGETS ${APP_NAME} DESTINATION "${CMAKE_INSTALL_BINDIR}")
         # Install data/ --> dist/data/
-        install(DIRECTORY "${CMAKE_SOURCE_DIR}/data/" DESTINATION "${APP_NAME}/data/")
+        install(DIRECTORY "${CMAKE_SOURCE_DIR}/data/" DESTINATION "data/")
     else()
         # Install outputs --> dist/bin
         install(FILES
@@ -149,7 +149,7 @@ foreach(FILE ${FILES})
             "$<TARGET_FILE_DIR:${APP_NAME}>/index.wasm"
             "$<TARGET_FILE_DIR:${APP_NAME}>/index.data"
             "$<TARGET_FILE_DIR:${APP_NAME}>/index.html"
-            DESTINATION "${APP_NAME}/${CMAKE_INSTALL_BINDIR}")
+            DESTINATION "examples/${APP_NAME}")
     endif()
 endforeach()
 
