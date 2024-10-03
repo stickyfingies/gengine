@@ -497,10 +497,10 @@ public:
 		device.freeMemory(buffer->mem);
 	}
 
-	auto create_image(const gengine::ImageAsset& info) -> Image* override
+	auto create_image(const std::string& name, int width, int height, int channel_count, unsigned char* data_in) -> Image* override
 	{
-		if (image_cache.find(info.name) != image_cache.end()) {
-			return &image_cache.at(info.name);
+		if (image_cache.find(name) != image_cache.end()) {
+			return &image_cache.at(name);
 		}
 
 		// TODO - determine if we even need a staging buffer!
@@ -508,7 +508,7 @@ public:
 		auto staging_buffer = vk::Buffer{};
 		auto staging_mem = vk::DeviceMemory{};
 
-		const auto image_buffer_size = info.width * info.height * info.channel_count;
+		const auto image_buffer_size = width * height * channel_count;
 
 		createBufferVk(
 			device,
@@ -520,7 +520,7 @@ public:
 			staging_mem);
 
 		auto data = device.mapMemory(staging_mem, 0, image_buffer_size);
-		memcpy(data, info.data, image_buffer_size);
+		memcpy(data, data_in, image_buffer_size);
 		device.unmapMemory(staging_mem);
 
 		auto image = vk::Image{};
@@ -529,9 +529,9 @@ public:
 		auto mipLevels = 0u;
 
 		create_image_vk(
-			info.name,
-			info.width,
-			info.height,
+			name,
+			width,
+			height,
 			vk::Format::eR8G8B8A8Unorm,
 			vk::ImageTiling::eOptimal,
 			vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst |
@@ -546,10 +546,10 @@ public:
 			vk::ImageLayout::eUndefined,
 			vk::ImageLayout::eTransferDstOptimal,
 			mipLevels);
-		copy_buffer_to_image(staging_buffer, image, info.width, info.height);
+		copy_buffer_to_image(staging_buffer, image, width, height);
 
 		// This also handles the final image layout transition
-		generate_mipmaps(image, info.width, info.height, mipLevels);
+		generate_mipmaps(image, width, height, mipLevels);
 
 		std::cout << "[info]\t ~ GpuBuffer" << std::endl;
 		device.destroyBuffer(staging_buffer);
@@ -560,11 +560,11 @@ public:
 
 		const auto sampler = create_sampler(mipLevels);
 
-		const auto gpu_image = Image{info.name, image, image_view, image_mem, sampler};
+		const auto gpu_image = Image{name, image, image_view, image_mem, sampler};
 
-		image_cache[info.name] = gpu_image;
+		image_cache[name] = gpu_image;
 
-		return &image_cache[info.name];
+		return &image_cache[name];
 	}
 
 	auto
@@ -686,11 +686,11 @@ public:
 		device.destroySampler(image->sampler);
 	}
 
-	auto create_geometry(const gengine::GeometryAsset& geometry) -> Geometry* override
+	auto create_geometry(const std::vector<float>& vertices_in, const std::vector<float>& vertices_aux_in, const std::vector<unsigned int>& indices_in) -> Geometry* override
 	{
-		const auto& vertices = geometry.vertices;
-		const auto& vertices_aux = geometry.vertices_aux;
-		const auto& indices = geometry.indices;
+		const auto& vertices = vertices_in;
+		const auto& vertices_aux = vertices_aux_in;
+		const auto& indices = indices_in;
 
 		auto gpu_data = std::vector<float>{};
 		for (int i = 0; i < vertices.size() / 3; i++) {
@@ -877,7 +877,7 @@ public:
 			false,
 			vk::PolygonMode::eFill,
 			vk::CullModeFlagBits::eBack,
-			vk::FrontFace::eClockwise,
+			vk::FrontFace::eCounterClockwise,
 			false,
 			0.0f,
 			0.0f,
@@ -1502,6 +1502,6 @@ auto RenderDevice::create(GLFWwindow* window) -> std::unique_ptr<RenderDevice>
 	return std::make_unique<RenderDeviceVk>(window);
 }
 
-auto RenderDevice::configure_glfw() -> void { glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); }
-
 } // namespace gpu
+
+void gpu::configure_glfw() { glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); }

@@ -8,8 +8,6 @@ namespace gpu {
 struct RenderDevice;
 }
 
-namespace gengine {
-
 class World {
 public:
 	static std::unique_ptr<World>
@@ -19,5 +17,3 @@ public:
 
 	virtual void update(double elapsed_time) = 0;
 };
-
-} // namespace gengine

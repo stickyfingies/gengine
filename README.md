@@ -21,7 +21,7 @@ Play or Download
 [**Download for x64 Linux**](https://github.com/stickyfingies/gengine/releases/download/master/linux-vk-app.zip) using the instructions below.
 1. Download the .zip
 2. Extract (`unzip linux-vk-app.zip`).
-3. Run (`./bin/gengine`) to play.
+3. Run (`./bin/world.native.bin`) to play.
 
 Other platforms aren't supported yet.
 

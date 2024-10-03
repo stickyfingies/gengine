@@ -40,6 +40,7 @@ auto mouse_callback(GLFWwindow* window, double pos_x, double pos_y) -> void
 	window_data->mouse_y = pos_y;
 }
 
+// Bullshit because Emscripten needs a pointer to the main loop
 function<void()> loop;
 void main_loop() { loop(); }
 
@@ -68,7 +69,7 @@ auto main(int argc, char** argv) -> int
 
 	glfwInit();
 
-	gpu::RenderDevice::configure_glfw();
+	gpu::configure_glfw();
 
 	const auto window = glfwCreateWindow(1280, 720, "Gengine", nullptr, nullptr);
 
