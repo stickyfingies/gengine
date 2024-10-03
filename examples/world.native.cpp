@@ -52,7 +52,7 @@ public:
 			auto transform = glm::mat4(1.0f);
 			transform = glm::translate(transform, glm::vec3(20.0f, 100.0f, 20.0f));
 			const auto body = physics_engine->create_capsule(mass, transform);
-			sceneBuilder.add_game_object(pipeline, transform, body, "./data/spinny.obj", false, false, true);
+			sceneBuilder.add_game_object(pipeline, transform, body, "./data/spinny.obj", false, true);
 		}
 		{
 			const auto mass = 62.0f;
@@ -60,16 +60,16 @@ public:
 			transform = glm::translate(transform, glm::vec3(10.0f, 100.0f, 0.0f));
 			transform = glm::scale(transform, glm::vec3(6.0f, 6.0f, 6.0f));
 			const auto body = physics_engine->create_sphere(1.0f, mass, transform);
-			sceneBuilder.add_game_object(pipeline, transform, body, "./data/spinny.obj", false, false, true);
+			sceneBuilder.add_game_object(pipeline, transform, body, "./data/spinny.obj", false, true);
 		}
 
 		sceneBuilder.add_game_object(
-			pipeline, glm::mat4{}, nullptr, "./data/map.obj", true, true, true);
+			pipeline, glm::mat4{}, nullptr, "./data/map.obj", true, true);
 
 		// Assumes all images are uploaded to the GPU and are useless in system memory.
 		texture_factory.unload_all_images();
 
-		scene = sceneBuilder.get_scene();
+		scene = sceneBuilder.finish();
 
 		cout << "[info]\t SUCCESS!! Created scene with " << scene->transforms.size() << " objects"
 			 << endl;

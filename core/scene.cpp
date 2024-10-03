@@ -25,15 +25,9 @@ void SceneBuilder::add_game_object(
 	const glm::mat4& matrix,
 	gengine::Collidable* rigidbody,
 	std::string_view model_path,
-	bool makeMesh,
 	bool flipUVs,
 	bool flipWindingOrder)
 {
-
-	if (rigidbody == nullptr && makeMesh == false) {
-		cout << "Error: Scene builder must have a rigidbody to make a game object." << endl;
-		return;
-	}
 
 	std::vector<gpu::Descriptors*> descriptor_cache;
 	std::vector<gpu::Geometry*> renderable_cache;
@@ -87,21 +81,19 @@ void SceneBuilder::add_game_object(
 		// gengine::unload_image(texture_0);
 
 		// Generate a physics model when makeMesh == true
-		if (makeMesh) {
+		if (rigidbody == nullptr) {
 			// auto tr = glm::mat4{1.0f};
 			auto tr = t;
 			// tr = glm::rotate(tr, 3.14f, glm::vec3(0, 1, 0));
 			scene->transforms.push_back(tr);
 			scene->collidables.push_back(
 				physics_engine->create_mesh(0.0f, model.geometries[geometry_idx], tr));
-			cout << "MADE STATIC BODY" << endl;
 		}
 		else {
-			cout << "MADE BODY" << endl;
 			scene->transforms.push_back(matrix);
 			scene->collidables.push_back(rigidbody);
 		}
 	}
 }
 
-unique_ptr<Scene> SceneBuilder::get_scene() { return std::move(scene); }
+unique_ptr<Scene> SceneBuilder::finish() { return std::move(scene); }
