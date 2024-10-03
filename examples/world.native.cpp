@@ -3,6 +3,7 @@
 #include "gpu.h"
 #include "physics.h"
 #include "window.h"
+#include "scene.h"
 #ifndef __EMSCRIPTEN__
 #include <imgui.h>
 #endif
@@ -15,20 +16,16 @@ class NativeWorld : public World {
 	// Engine services
 	GLFWwindow* window;
 	unique_ptr<gengine::PhysicsEngine> physics_engine;
+	unique_ptr<Scene> scene;
 	shared_ptr<gpu::RenderDevice> gpu;
 	gengine::TextureFactory texture_factory{};
 
 	// Game data
 	Camera camera;
-	vector<glm::mat4> transforms{};
-	vector<gengine::Collidable*> collidables{};
-	vector<gpu::Geometry*> render_components{};
-	vector<gpu::Descriptors*> descriptors{};
 	gpu::ShaderPipeline* pipeline;
 
 public:
-	NativeWorld(GLFWwindow* window, shared_ptr<gpu::RenderDevice> gpu)
-		: window{window}, gpu{gpu}
+	NativeWorld(GLFWwindow* window, shared_ptr<gpu::RenderDevice> gpu) : window{window}, gpu{gpu}
 	{
 		physics_engine = make_unique<gengine::PhysicsEngine>();
 
@@ -47,75 +44,35 @@ public:
 		pipeline = gpu->create_pipeline(vert, frag);
 #endif
 
+		SceneBuilder sceneBuilder(gpu.get(), physics_engine.get(), &texture_factory);
+
 		// Create physics bodies
 		{ // player
 			const auto mass = 70.0f;
-
 			auto transform = glm::mat4(1.0f);
-
 			transform = glm::translate(transform, glm::vec3(20.0f, 100.0f, 20.0f));
-
-			transforms.push_back(transform);
-			collidables.push_back(physics_engine->create_capsule(mass, transform));
+			const auto body = physics_engine->create_capsule(mass, transform);
+			sceneBuilder.add_game_object(pipeline, transform, body, "./data/spinny.obj", false, false, true);
 		}
 		{
 			const auto mass = 62.0f;
-
 			auto transform = glm::mat4(1.0f);
-
 			transform = glm::translate(transform, glm::vec3(10.0f, 100.0f, 0.0f));
 			transform = glm::scale(transform, glm::vec3(6.0f, 6.0f, 6.0f));
-
-			transforms.push_back(transform);
-			collidables.push_back(physics_engine->create_sphere(1.0f, mass, transform));
+			const auto body = physics_engine->create_sphere(1.0f, mass, transform);
+			sceneBuilder.add_game_object(pipeline, transform, body, "./data/spinny.obj", false, false, true);
 		}
 
-		create_game_object(
-			"./data/spinny.obj",
-			render_components,
-			descriptors,
-			pipeline,
-			collidables,
-			transforms,
-			false,
-			false,
-			true);
-		create_game_object(
-			"./data/spinny.obj",
-			render_components,
-			descriptors,
-			pipeline,
-			collidables,
-			transforms,
-			false,
-			false,
-			true);
-		// create_game_object(
-		// 	"./data/skjarisles.glb",
-		// 	render_components,
-		// 	descriptors,
-		// 	pipeline,
-		// 	collidables,
-		// 	transforms,
-		// 	true,
-		// 	true,
-		// 	false);
-
-		create_game_object(
-			"./data/map.obj",
-			render_components,
-			descriptors,
-			pipeline,
-			collidables,
-			transforms,
-			true,
-			true,
-			true);
+		sceneBuilder.add_game_object(
+			pipeline, glm::mat4{}, nullptr, "./data/map.obj", true, true, true);
 
 		// Assumes all images are uploaded to the GPU and are useless in system memory.
 		texture_factory.unload_all_images();
 
-		cout << "[info]\t SUCCESS!! Created scene with " << transforms.size() << " objects" << endl;
+		scene = sceneBuilder.get_scene();
+
+		cout << "[info]\t SUCCESS!! Created scene with " << scene->transforms.size() << " objects"
+			 << endl;
 
 		// start getting things going
 		update_physics(0.16f);
@@ -125,7 +82,7 @@ public:
 	{
 		cout << "~ NativeWorld" << endl;
 
-		for (const auto& collidable : collidables) {
+		for (const auto& collidable : scene->collidables) {
 			physics_engine->destroy_collidable(collidable);
 		}
 
@@ -135,7 +92,7 @@ public:
 
 		// gpu->destroy_image(albedo);
 
-		for (auto renderComponent : render_components) {
+		for (auto renderComponent : scene->render_components) {
 			gpu->destroy_geometry(renderComponent);
 		}
 	}
@@ -146,11 +103,11 @@ public:
 		const bool editor_enabled = false;
 
 		if (!editor_enabled) {
-			update_input(elapsed_time, collidables[0]);
+			update_input(elapsed_time, scene->collidables[0]);
 			update_physics(elapsed_time);
 		}
 
-		camera.Position = glm::vec3(transforms[0][3]);
+		camera.Position = glm::vec3(scene->transforms[0][3]);
 
 #ifndef __EMSCRIPTEN__
 		const auto gui_func = [&]() {
@@ -160,7 +117,7 @@ public:
 			SetNextWindowSize({0.0f, 0.0f});
 			Begin("Debug Menu", nullptr, ImGuiWindowFlags_NoCollapse);
 			Text("ms / frame: %.2f", static_cast<float>(elapsed_time));
-			Text("Objects: %i", transforms.size());
+			Text("Objects: %i", scene->transforms.size());
 			// Text("GPU Images: %i", images.size());
 			End();
 			// Matrices
@@ -168,8 +125,8 @@ public:
 			SetNextWindowPos({200.0f, 20.0f});
 			Begin("Matrices");
 			PushItemWidth(200.0f);
-			for (auto i = 0u; i < transforms.size(); i++) {
-				auto& transform = transforms[i];
+			for (auto i = 0u; i < scene->transforms.size(); i++) {
+				auto& transform = scene->transforms[i];
 				const std::string label = "Pos " + i;
 				InputFloat3(std::to_string(i).c_str(), &transform[3][0]);
 			}
@@ -198,9 +155,9 @@ public:
 		gpu->render(
 			camera.get_view_matrix(),
 			pipeline,
-			transforms,
-			render_components,
-			descriptors,
+			scene->transforms,
+			scene->render_components,
+			scene->descriptors,
 			gui_func);
 	}
 
@@ -255,83 +212,8 @@ public:
 	{
 		physics_engine->step(delta, 10);
 
-		for (auto i = 0; i < collidables.size(); ++i) {
-			physics_engine->get_model_matrix(collidables[i], transforms[i]);
-		}
-	}
-
-	auto create_game_object(
-		std::string_view path,
-		std::vector<gpu::Geometry*>& render_components,
-		std::vector<gpu::Descriptors*>& descriptors,
-		gpu::ShaderPipeline* pipeline,
-		std::vector<gengine::Collidable*>& collidables,
-		std::vector<glm::mat4>& transforms,
-		bool makeMesh = false,
-		bool flipUVs = false,
-		bool flipWindingOrder = false) -> void
-	{
-		std::vector<gpu::Descriptors*> descriptor_cache;
-		std::vector<gpu::Geometry*> renderable_cache;
-
-		const auto scene = gengine::load_model(texture_factory, path, flipUVs, flipWindingOrder);
-
-		/// Material --> Descriptors
-		for (const auto& material : scene.materials) {
-
-			// TODO - move this inside assets.cpp
-			gengine::ImageAsset texture_0{};
-			if (material.textures.size() > 0) {
-				texture_0 = material.textures[0];
-			}
-			if (texture_0.width == 0) {
-				texture_0 = *texture_factory.load_image_from_file("./data/Albedo.png");
-			}
-
-			auto albedo = gpu->create_image(
-				texture_0.name,
-				texture_0.width,
-				texture_0.height,
-				texture_0.channel_count,
-				texture_0.data);
-
-			const auto descriptor_0 =
-				gpu->create_descriptors(pipeline, albedo, material.color);
-
-			descriptor_cache.push_back(descriptor_0);
-		}
-
-		/// Geometry --> Renderable
-		for (const auto& geometry : scene.geometries) {
-			const auto renderable = gpu->create_geometry(
-				geometry.vertices, geometry.vertices_aux, geometry.indices);
-			renderable_cache.push_back(renderable);
-		}
-
-		// Game objects
-		for (const auto& object : scene.objects) {
-			const auto& [t, geometry_idx, material_idx] = object;
-
-			std::cout << "Creating object: " << geometry_idx << ", " << material_idx << " | "
-					  << renderable_cache.size() << ", " << descriptor_cache.size() << std::endl;
-
-			render_components.push_back(renderable_cache[geometry_idx]);
-
-			// Materials
-
-			descriptors.push_back(descriptor_cache[material_idx]);
-
-			// gengine::unload_image(texture_0);
-
-			// Generate a physics model when makeMesh == true
-			if (makeMesh) {
-				// auto tr = glm::mat4{1.0f};
-				auto tr = t;
-				// tr = glm::rotate(tr, 3.14f, glm::vec3(0, 1, 0));
-				transforms.push_back(tr);
-				collidables.push_back(
-					physics_engine->create_mesh(0.0f, scene.geometries[geometry_idx], tr));
-			}
+		for (auto i = 0; i < scene->collidables.size(); ++i) {
+			physics_engine->get_model_matrix(scene->collidables[i], scene->transforms[i]);
 		}
 	}
 };

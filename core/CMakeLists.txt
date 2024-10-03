@@ -16,6 +16,7 @@ target_sources(core
     main.cpp
     assets.cpp
     physics.cpp
+    scene.cpp
     stb/stb_image.cpp
 )
 
