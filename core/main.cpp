@@ -115,6 +115,15 @@ auto main(int argc, char** argv) -> int
 
 		glfwPollEvents();
 
+		if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+			cout << "Esc" << endl;
+			glfwSetWindowShouldClose(window, true);
+#ifdef __EMSCRIPTEN__
+			emscripten_cancel_main_loop();
+#endif
+			return;
+		}
+
 		world->update(elapsed_time);
 
 		glfwSwapBuffers(window);

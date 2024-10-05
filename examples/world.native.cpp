@@ -1,9 +1,10 @@
 #include "world.h"
 #include "camera.hpp"
+#include "fps_controller.h"
 #include "gpu.h"
 #include "physics.h"
-#include "window.h"
 #include "scene.h"
+#include "window.h"
 #ifndef __EMSCRIPTEN__
 #include <imgui.h>
 #endif
@@ -22,6 +23,7 @@ class NativeWorld : public World {
 
 	// Game data
 	Camera camera;
+	unique_ptr<FirstPersonController> fps_controller;
 	gpu::ShaderPipeline* pipeline;
 
 public:
@@ -52,7 +54,8 @@ public:
 			auto transform = glm::mat4(1.0f);
 			transform = glm::translate(transform, glm::vec3(20.0f, 100.0f, 20.0f));
 			const auto body = physics_engine->create_capsule(mass, transform);
-			sceneBuilder.add_game_object(pipeline, transform, body, "./data/spinny.obj", false, true);
+			sceneBuilder.add_game_object(
+				pipeline, transform, body, "./data/spinny.obj", false, true);
 		}
 		{
 			const auto mass = 62.0f;
@@ -60,11 +63,11 @@ public:
 			transform = glm::translate(transform, glm::vec3(10.0f, 100.0f, 0.0f));
 			transform = glm::scale(transform, glm::vec3(6.0f, 6.0f, 6.0f));
 			const auto body = physics_engine->create_sphere(1.0f, mass, transform);
-			sceneBuilder.add_game_object(pipeline, transform, body, "./data/spinny.obj", false, true);
+			sceneBuilder.add_game_object(
+				pipeline, transform, body, "./data/spinny.obj", false, true);
 		}
 
-		sceneBuilder.add_game_object(
-			pipeline, glm::mat4{}, nullptr, "./data/map.obj", true, true);
+		sceneBuilder.add_game_object(pipeline, glm::mat4{}, nullptr, "./data/map.obj", true, true);
 
 		// Assumes all images are uploaded to the GPU and are useless in system memory.
 		texture_factory.unload_all_images();
@@ -73,6 +76,9 @@ public:
 
 		cout << "[info]\t SUCCESS!! Created scene with " << scene->transforms.size() << " objects"
 			 << endl;
+
+		fps_controller =
+			make_unique<FirstPersonController>(physics_engine.get(), camera, scene->collidables[0]);
 
 		// start getting things going
 		update_physics(0.16f);
@@ -99,13 +105,9 @@ public:
 
 	void update(double elapsed_time) override
 	{
-		// TODO get this from main.cpp
-		const bool editor_enabled = false;
 
-		if (!editor_enabled) {
-			update_input(elapsed_time, scene->collidables[0]);
-			update_physics(elapsed_time);
-		}
+		update_input(elapsed_time, scene->collidables[0]);
+		update_physics(elapsed_time);
 
 		camera.Position = glm::vec3(scene->transforms[0][3]);
 
@@ -163,49 +165,14 @@ public:
 
 	auto update_input(float delta, gengine::Collidable* player) -> void
 	{
-		auto sprinting = false;
-
 		auto window_data = static_cast<gengine::WindowData*>(glfwGetWindowUserPointer(window));
 
 		camera.process_mouse_movement(window_data->delta_mouse_x, window_data->delta_mouse_y);
 
+		fps_controller->update(window, delta);
+
 		window_data->delta_mouse_x = 0;
 		window_data->delta_mouse_y = 0;
-
-		if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
-			glfwSetWindowShouldClose(window, true);
-		}
-		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
-			sprinting = true;
-		}
-		if (glfwGetKey(window, GLFW_KEY_SPACE)) {
-			const auto on_ground = physics_engine->raycast(
-				camera.Position,
-				glm::vec3(camera.Position.x, camera.Position.y - 5, camera.Position.z));
-
-			if (on_ground) {
-				physics_engine->apply_force(player, glm::vec3(0.0f, 15.0f, 0.0f) * (delta * 1000));
-			}
-		}
-
-		if (glfwGetKey(window, GLFW_KEY_W)) {
-			physics_engine->apply_force(
-				player,
-				glm::vec3(camera.Front.x, 0.0f, camera.Front.z) * (delta * 1000) *
-					(1.0f + sprinting * 5.0f));
-		}
-		else if (glfwGetKey(window, GLFW_KEY_S)) {
-			physics_engine->apply_force(
-				player, glm::vec3(-camera.Front.x, 0.0f, -camera.Front.z) * (delta * 1000));
-		}
-		if (glfwGetKey(window, GLFW_KEY_A)) {
-			physics_engine->apply_force(
-				player, glm::vec3(-camera.Right.x, 0.0f, -camera.Right.z) * (delta * 1000));
-		}
-		else if (glfwGetKey(window, GLFW_KEY_D)) {
-			physics_engine->apply_force(
-				player, glm::vec3(camera.Right.x, 0.0f, camera.Right.z) * (delta * 1000));
-		}
 	}
 
 	auto update_physics(float delta) -> void
