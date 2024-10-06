@@ -31,11 +31,33 @@ public:
 	{
 		physics_engine = make_unique<gengine::PhysicsEngine>();
 
+		SceneBuilder sceneBuilder{};
+
 		camera = Camera(glm::vec3(0.0f, 5.0f, 90.0f));
 
-		// create game resources
+		auto player_pos = glm::mat4(1.0f);
+		player_pos = glm::translate(player_pos, glm::vec3(20.0f, 100.0f, 20.0f));
+		sceneBuilder.add_game_object(
+			player_pos,
+			TactileCapsule{.mass = 70.0f},
+			VisualModel{
+				.model_path = "./data/spinny.obj", .flip_uvs = false, .flipWindingOrder = true});
 
-// TODO: this is incorrect because GL rendering on Desktop Linux will break
+		auto ball_pos = glm::mat4(1.0f);
+		ball_pos = glm::translate(ball_pos, glm::vec3(10.0f, 100.0f, 0.0f));
+		ball_pos = glm::scale(ball_pos, glm::vec3(6.0f, 6.0f, 6.0f));
+		sceneBuilder.add_game_object(
+			ball_pos,
+			TactileSphere{.mass = 62.0f, .radius = 1.0f},
+			VisualModel{
+				.model_path = "./data/spinny.obj", .flip_uvs = false, .flipWindingOrder = true});
+
+		sceneBuilder.add_game_object(
+			glm::mat4{},
+			VisualModel{
+				.model_path = "./data/map.obj", .flip_uvs = true, .flipWindingOrder = true});
+
+		// TODO: this is incorrect because GL rendering on Desktop Linux will break
 #ifdef __EMSCRIPTEN__
 		const auto vert = gengine::load_file("./data/gl.vert.glsl");
 		const auto frag = gengine::load_file("./data/gl.frag.glsl");
@@ -46,33 +68,10 @@ public:
 		pipeline = gpu->create_pipeline(vert, frag);
 #endif
 
-		SceneBuilder sceneBuilder(gpu.get(), physics_engine.get(), &texture_factory);
-
-		// Create physics bodies
-		{ // player
-			const auto mass = 70.0f;
-			auto transform = glm::mat4(1.0f);
-			transform = glm::translate(transform, glm::vec3(20.0f, 100.0f, 20.0f));
-			const auto body = physics_engine->create_capsule(mass, transform);
-			sceneBuilder.add_game_object(
-				pipeline, transform, body, "./data/spinny.obj", false, true);
-		}
-		{
-			const auto mass = 62.0f;
-			auto transform = glm::mat4(1.0f);
-			transform = glm::translate(transform, glm::vec3(10.0f, 100.0f, 0.0f));
-			transform = glm::scale(transform, glm::vec3(6.0f, 6.0f, 6.0f));
-			const auto body = physics_engine->create_sphere(1.0f, mass, transform);
-			sceneBuilder.add_game_object(
-				pipeline, transform, body, "./data/spinny.obj", false, true);
-		}
-
-		sceneBuilder.add_game_object(pipeline, glm::mat4{}, nullptr, "./data/map.obj", true, true);
+		scene = sceneBuilder.build(pipeline, gpu.get(), physics_engine.get(), &texture_factory);
 
 		// Assumes all images are uploaded to the GPU and are useless in system memory.
 		texture_factory.unload_all_images();
-
-		scene = sceneBuilder.finish();
 
 		cout << "[info]\t SUCCESS!! Created scene with " << scene->transforms.size() << " objects"
 			 << endl;

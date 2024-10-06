@@ -6,14 +6,7 @@
 #include <memory>
 using namespace std;
 
-SceneBuilder::SceneBuilder(
-	gpu::RenderDevice* gpu,
-	gengine::PhysicsEngine* physics_engine,
-	gengine::TextureFactory* texture_factory)
-	: texture_factory{texture_factory}, gpu{gpu}, physics_engine{physics_engine}
-{
-	scene = make_unique<Scene>();
-}
+SceneBuilder::SceneBuilder() { scene = make_unique<Scene>(); }
 
 SceneBuilder::~SceneBuilder()
 {
@@ -21,7 +14,91 @@ SceneBuilder::~SceneBuilder()
 }
 
 void SceneBuilder::add_game_object(
+	const glm::mat4& matrix, TactileCapsule&& capsule, VisualModel&& model)
+{
+	game_objects.push_back(
+		{.matrix = matrix,
+		 .shape_type = TactileType::CAPSULE,
+		 .shape_idx = capsule_shapes.size(),
+		 .model_idx = models.size()});
+	capsule_shapes.push_back(capsule);
+	models.push_back(model);
+}
+
+void SceneBuilder::add_game_object(
+	const glm::mat4& matrix, TactileSphere&& sphere, VisualModel&& model)
+{
+	game_objects.push_back(
+		{.matrix = matrix,
+		 .shape_type = TactileType::SPHERE,
+		 .shape_idx = sphere_shapes.size(),
+		 .model_idx = models.size()});
+	sphere_shapes.push_back(sphere);
+	models.push_back(model);
+}
+
+void SceneBuilder::add_game_object(const glm::mat4& matrix, VisualModel&& model)
+{
+	game_objects.push_back(
+		{.matrix = matrix,
+		 .shape_type = TactileType::MESH,
+		 .shape_idx = models.size(),
+		 .model_idx = models.size()});
+	models.push_back(model);
+}
+
+unique_ptr<Scene> SceneBuilder::build(
 	gpu::ShaderPipeline* pipeline,
+	gpu::RenderDevice* gpu,
+	gengine::PhysicsEngine* physics_engine,
+	gengine::TextureFactory* texture_factory)
+{
+	for (const GameObject& game_object : game_objects) {
+
+		gengine::Collidable* rigidbody = nullptr;
+
+		switch (game_object.shape_type) {
+		case TactileType::CAPSULE: {
+			const auto details = capsule_shapes[game_object.shape_idx];
+			rigidbody = physics_engine->create_capsule(details.mass, game_object.matrix);
+			break;
+		}
+		case TactileType::SPHERE: {
+			const auto details = sphere_shapes[game_object.shape_idx];
+			rigidbody =
+				physics_engine->create_sphere(details.radius, details.mass, game_object.matrix);
+			break;
+		}
+		case TactileType::MESH: {
+			rigidbody = nullptr;
+			break;
+		}
+		default: {
+			std::cout << "Error: unknown tactile type for scene object" << std::endl;
+			assert(false);
+		}
+		}
+
+		make_game_object(
+			pipeline,
+			gpu,
+			physics_engine,
+			texture_factory,
+			game_object.matrix,
+			rigidbody,
+			models[game_object.model_idx].model_path,
+			models[game_object.model_idx].flip_uvs,
+			models[game_object.model_idx].flipWindingOrder);
+	}
+
+	return std::move(scene);
+}
+
+void SceneBuilder::make_game_object(
+	gpu::ShaderPipeline* pipeline,
+	gpu::RenderDevice* gpu,
+	gengine::PhysicsEngine* physics_engine,
+	gengine::TextureFactory* texture_factory,
 	const glm::mat4& matrix,
 	gengine::Collidable* rigidbody,
 	std::string_view model_path,
@@ -95,5 +172,3 @@ void SceneBuilder::add_game_object(
 		}
 	}
 }
-
-unique_ptr<Scene> SceneBuilder::finish() { return std::move(scene); }
