@@ -232,7 +232,7 @@ auto extractTextures(
 		// Get the path of this texture
 		aiString path;
 		material->GetTexture(type, i, &path);
-		const std::string path_string = string(path.C_Str());
+		const string path_string = string(path.C_Str());
 
 		// Embedded texture
 		if (auto texture = scene->GetEmbeddedTexture(path.C_Str())) {
@@ -353,6 +353,9 @@ auto load_model(
 				assets.materials[material_idx].textures.push_back(*imageAsset);
 			}
 		}
+		else {
+			std::cout << "Error: " << imageAsset.error() << std::endl;
+		}
 	}
 
 	// Load textures from memory
@@ -370,12 +373,14 @@ auto load_model(
 		}
 	}
 
+	importer.FreeScene();
+
 	return assets;
 }
 
 auto load_file(std::string_view path) -> std::string // TODO? return std::optional<std::string>
 {
-#ifdef FALSE
+#if 0
 	cout << "Loading " << path.data() << endl;
 	emscripten_fetch_attr_t attr;
 	emscripten_fetch_attr_init(&attr);

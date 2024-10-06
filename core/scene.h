@@ -7,16 +7,24 @@
 #include <vector>
 
 /**
- * @brief Use \c SceneBuilder (see below) to create a Scene.
+ * @brief A container for everything we need to simulate and render a game scene.
  */
 struct Scene {
+	// The Scene implements an index-based entity system.
+	// Each entity in the scene has one slot in each of the below vectors.
+	// The resources in the vectors "belong" to the res_* equivalents below.
 	std::vector<glm::mat4> transforms{};
 	std::vector<gengine::Collidable*> collidables{};
 	std::vector<gpu::Geometry*> render_components{};
 	std::vector<gpu::Descriptors*> descriptors{};
+
+	// The Scene "owns" these resources, used by above vectors.
+	std::vector<gengine::Collidable*> res_collidables{};
+	std::vector<gpu::Geometry*> res_render_components{};
+	std::vector<gpu::Descriptors*> res_descriptors{};
 };
 
-/// Building block used for creating Capusle shapes.
+/// Building block used for creating Capsule shapes.
 struct TactileCapsule {
 	float mass;
 };
@@ -29,7 +37,7 @@ struct TactileSphere {
 
 /// Building block used for creating game objects from 3D model files.
 struct VisualModel {
-	std::string_view model_path;
+	std::string model_path;
 	bool flip_uvs;
 	bool flipWindingOrder;
 };
@@ -38,14 +46,42 @@ struct VisualModel {
  * @brief \c SceneBuilder is an interface for describing and creating a \c Scene.
  */
 class SceneBuilder {
+public:
+	SceneBuilder();
+	~SceneBuilder();
 
-	/// The scene to build
-	std::unique_ptr<Scene> scene;
+	SceneBuilder(const SceneBuilder&) = delete;
+	SceneBuilder& operator=(const SceneBuilder&) = delete;
 
+	/// Adds a tangible capsule to the scene, with some visual model applied
+	void add_game_object(const glm::mat4& matrix, TactileCapsule&&, VisualModel&&);
+
+	/// Adds a tangible sphere to the scene, with some visual model applied
+	void add_game_object(const glm::mat4& matrix, TactileSphere&&, VisualModel&&);
+
+	/// Adds a tangible model to the scene
+	void add_game_object(const glm::mat4& matrix, VisualModel&&);
+
+	/**
+	 * @brief Actualizes the Scene we've been building so far.
+	 *
+	 * @param pipeline raster pipeline to use for building materials
+	 * @param gpu device to use for creating GPU resources
+	 * @param physics_engine used for creating collidable shapes
+	 * @param texture_factory used for loading textures etc
+	 * @return A fully built Scene object
+	 */
+	std::unique_ptr<Scene> build(
+		gpu::ShaderPipeline* pipeline,
+		gpu::RenderDevice* gpu,
+		gengine::PhysicsEngine* physics_engine,
+		gengine::TextureFactory* texture_factory);
+
+private:
 	/// Different types of collision shapes
 	enum class TactileType { CAPSULE, SPHERE, MESH };
 
-	/// Describes a game object to be created
+	/// Describes a game object that we'll build eventually
 	struct GameObject {
 		glm::mat4 matrix;
 		TactileType shape_type;
@@ -53,52 +89,15 @@ class SceneBuilder {
 		size_t model_idx;
 	};
 
-	/// Growable list of game objects, to be actualized later
+	/// Growable list of game objects, to be built later
 	std::vector<GameObject> game_objects;
 
-	/// Growable list of shape descriptions, to be actualized later
+	/// Growable list of shape descriptions, to be built later
 	std::vector<TactileCapsule> capsule_shapes;
 
-	/// Growable list of shape descriptions, to be actualized later
+	/// Growable list of shape descriptions, to be built later
 	std::vector<TactileSphere> sphere_shapes;
 
-	/// Growable list of model descriptions, to be actualized later
+	/// Growable list of model descriptions, to be built later
 	std::vector<VisualModel> models;
-
-public:
-	SceneBuilder();
-	~SceneBuilder();
-
-	/**
-	 * @brief Introduce a new game object into a \c Scene.
-	 *
-	 * @param pipeline raster pipeline
-	 * @param matrix world-space transform
-	 * @param rigidbody collidable model, use 'nullptr' to generate from 3D model asset
-	 * @param model_path path to the 3D model asset
-	 * @param flipUVs when 'true' flip textures along the Y-axis
-	 * @param flipWindingOrder fiddling with this parameter may fix models that appear broken.
-	 */
-	void make_game_object(
-		gpu::ShaderPipeline* pipeline,
-		gpu::RenderDevice* gpu,
-		gengine::PhysicsEngine* physics_engine,
-		gengine::TextureFactory* texture_factory,
-		const glm::mat4& matrix,
-		gengine::Collidable* rigidbody,
-		std::string_view model_path,
-		bool flipUVs = false,
-		bool flipWindingOrder = false);
-
-	void add_game_object(const glm::mat4& matrix, TactileCapsule&&, VisualModel&&);
-
-	void add_game_object(const glm::mat4& matrix, TactileSphere&&, VisualModel&&);
-
-	void add_game_object(const glm::mat4& matrix, VisualModel&&);
-
-	std::unique_ptr<Scene> build(
-		gpu::ShaderPipeline* pipeline,
-		gpu::RenderDevice* gpu,
-		gengine::PhysicsEngine* physics_engine,
-		gengine::TextureFactory* texture_factory);
 };

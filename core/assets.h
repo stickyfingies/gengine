@@ -60,7 +60,7 @@ struct MaterialAsset {
 	glm::vec3 color;
 };
 
-/// @brief A mesh belongs to a scene.
+/// @brief A MeshAsset belongs to a SceneAsset.
 struct MeshAsset {
 	glm::mat4 transform;
 	/// Index into SceneAsset::geometries

@@ -178,7 +178,7 @@ class RenderDeviceVk final : public RenderDevice {
 public:
 	RenderDeviceVk(GLFWwindow* window) : window{window}
 	{
-		static const auto debug = false;
+		static const auto debug = true;
 
 		std::cout << "[info]\t Vulkan renderer initializing >:)" << std::endl;
 

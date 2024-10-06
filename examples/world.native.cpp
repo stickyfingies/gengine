@@ -87,7 +87,7 @@ public:
 	{
 		cout << "~ NativeWorld" << endl;
 
-		for (const auto& collidable : scene->collidables) {
+		for (const auto& collidable : scene->res_collidables) {
 			physics_engine->destroy_collidable(collidable);
 		}
 
@@ -97,7 +97,7 @@ public:
 
 		// gpu->destroy_image(albedo);
 
-		for (auto renderComponent : scene->render_components) {
+		for (auto renderComponent : scene->res_render_components) {
 			gpu->destroy_geometry(renderComponent);
 		}
 	}

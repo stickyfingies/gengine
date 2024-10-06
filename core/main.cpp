@@ -144,9 +144,10 @@ auto main(int argc, char** argv) -> int
 
 	cout << "System shutting down..." << endl;
 
+	world.reset();
+
 	renderer->destroy_all_images();
 
-	world.reset();
 	renderer.reset();
 
 	glfwDestroyWindow(window);
