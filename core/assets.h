@@ -70,6 +70,7 @@ struct MeshAsset {
 };
 
 struct SceneAsset {
+	std::string path;
 	std::vector<MeshAsset> objects;
 	std::vector<GeometryAsset> geometries;
 	std::vector<MaterialAsset> materials;

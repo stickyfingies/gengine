@@ -304,6 +304,7 @@ auto load_model(
 
 	auto decoding = AssetDecoding{};
 	auto assets = SceneAsset{};
+	assets.path = normalized_path;
 
 	traverseNode(decoding, assets, ai_scene, ai_scene->mRootNode);
 

@@ -5,6 +5,21 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
+#include <unordered_set>
+
+struct ResourceContainer {
+
+	/**
+	 * A set which takes ownership of resources whose destruction order does not matter.
+	 * @tparam Resource some resource.
+	 */
+	template <class Resource> using ResourceSet = std::unordered_set<Resource>;
+
+	ResourceSet<gengine::Collidable*> rigidbodies;
+	ResourceSet<gpu::Descriptors*> gpu_descriptors;
+	ResourceSet<gpu::Geometry*> gpu_geometries;
+	ResourceSet<gpu::Image*> gpu_images;
+};
 
 /**
  * @brief A container for everything we need to simulate and render a game scene.
@@ -17,11 +32,6 @@ struct Scene {
 	std::vector<gengine::Collidable*> collidables{};
 	std::vector<gpu::Geometry*> render_components{};
 	std::vector<gpu::Descriptors*> descriptors{};
-
-	// The Scene "owns" these resources, used by above vectors.
-	std::vector<gengine::Collidable*> res_collidables{};
-	std::vector<gpu::Geometry*> res_render_components{};
-	std::vector<gpu::Descriptors*> res_descriptors{};
 };
 
 /// Building block used for creating Capsule shapes.
@@ -37,9 +47,14 @@ struct TactileSphere {
 
 /// Building block used for creating game objects from 3D model files.
 struct VisualModel {
-	std::string model_path;
+	std::string path;
+};
+
+/// Settings we apply while processing a 3D model file
+struct VisualModelSettings {
 	bool flip_uvs;
-	bool flipWindingOrder;
+	bool flip_triangle_winding;
+	bool make_rigidbody;
 };
 
 /**
@@ -62,6 +77,8 @@ public:
 	/// Adds a tangible model to the scene
 	void add_game_object(const glm::mat4& matrix, VisualModel&&);
 
+	void apply_model_settings(const std::string& model_path, VisualModelSettings&&);
+
 	/**
 	 * @brief Actualizes the Scene we've been building so far.
 	 *
@@ -72,6 +89,7 @@ public:
 	 * @return A fully built Scene object
 	 */
 	std::unique_ptr<Scene> build(
+		ResourceContainer& resources,
 		gpu::ShaderPipeline* pipeline,
 		gpu::RenderDevice* gpu,
 		gengine::PhysicsEngine* physics_engine,
@@ -100,4 +118,7 @@ private:
 
 	/// Growable list of model descriptions, to be built later
 	std::vector<VisualModel> models;
+
+	/// Hashmap of model_path --> model_settings
+	std::unordered_map<std::string, VisualModelSettings> model_settings_storage;
 };

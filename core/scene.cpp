@@ -4,30 +4,31 @@
 
 #include <iostream>
 #include <memory>
+#include <unordered_set>
 
 using namespace std;
+
+// Cache GPU images that we've seen before
+using GpuImageIndex = std::unordered_map<std::string, gpu::Image*>;
 
 /// TODO this shouldn't be void, make it return some information about WHERE in the Scene* this
 /// model's GPU resources have been placed, so that future objects which use that model can simply
 /// copy those regions from the Scene* and append them back into its self.
-static void make_game_object(
-	Scene* scene,
+static ResourceContainer make_game_object(
+	ResourceContainer& global_resources,
 	gpu::ShaderPipeline* pipeline,
 	gpu::RenderDevice* gpu,
-	gengine::PhysicsEngine* physics_engine,
 	gengine::TextureFactory* texture_factory,
-	const glm::mat4& matrix,
-	gengine::Collidable* rigidbody,
-	gengine::SceneAsset model)
+	GpuImageIndex& gpu_image_index,
+	const gengine::SceneAsset& model)
 {
+	cout << "Creating ResourceContainer for " << model.path << endl;
+	ResourceContainer local_resources;
 
-	std::vector<gpu::Descriptors*> descriptor_cache;
-	std::vector<gpu::Geometry*> renderable_cache;
-
-	/// Material --> Descriptors
+	/// For each material in this model...
 	for (const auto& material : model.materials) {
 
-		// TODO - move this inside assets.cpp
+		// Load its texture, using a default (if needed)
 		gengine::ImageAsset texture_0{};
 		if (material.textures.size() > 0) {
 			texture_0 = material.textures[0];
@@ -36,54 +37,57 @@ static void make_game_object(
 			texture_0 = *texture_factory->load_image_from_file("./data/Albedo.png");
 		}
 
-		auto albedo = gpu->create_image(
-			texture_0.name,
-			texture_0.width,
-			texture_0.height,
-			texture_0.channel_count,
-			texture_0.data);
+		// Create GPU image (if we haven't already)
+		if (!gpu_image_index.contains(texture_0.name)) {
+			const auto albedo = gpu->create_image(
+				texture_0.name,
+				texture_0.width,
+				texture_0.height,
+				texture_0.channel_count,
+				texture_0.data);
+			global_resources.gpu_images.insert(albedo);
+			gpu_image_index[texture_0.name] = albedo;
+		}
+		const auto albedo = gpu_image_index[texture_0.name];
 
+		// Create descriptor
 		const auto descriptor_0 = gpu->create_descriptors(pipeline, albedo, material.color);
 
-		descriptor_cache.push_back(descriptor_0);
+		global_resources.gpu_descriptors.insert(descriptor_0);
+		local_resources.gpu_descriptors.insert(descriptor_0);
 	}
 
 	/// Geometry --> Renderable
 	for (const auto& geometry : model.geometries) {
-		const auto renderable =
+		const auto gpu_geometry =
 			gpu->create_geometry(geometry.vertices, geometry.vertices_aux, geometry.indices);
-		renderable_cache.push_back(renderable);
+		global_resources.gpu_geometries.insert(gpu_geometry);
+		local_resources.gpu_geometries.insert(gpu_geometry);
 	}
 
 	// Game objects
+
+	cout << "ResourceContainer completed" << endl;
+
+	return local_resources;
+}
+
+struct RigidBodySet {
+	std::vector<glm::mat4> transforms;
+	std::vector<gengine::Collidable*> rigidbodies;
+};
+
+static RigidBodySet
+make_rigidbody_from_model(gengine::PhysicsEngine* physics_engine, const gengine::SceneAsset& model)
+{
+	RigidBodySet rbs;
 	for (const auto& object : model.objects) {
 		const auto& [t, geometry_idx, material_idx] = object;
-
-		std::cout << "Creating object: " << geometry_idx << ", " << material_idx << " | "
-				  << renderable_cache.size() << ", " << descriptor_cache.size() << std::endl;
-
-		scene->render_components.push_back(renderable_cache[geometry_idx]);
-
-		// Materials
-
-		scene->descriptors.push_back(descriptor_cache[material_idx]);
-
-		// gengine::unload_image(texture_0);
-
-		// Generate a physics model when makeMesh == true
-		if (rigidbody == nullptr) {
-			// auto tr = glm::mat4{1.0f};
-			auto tr = t;
-			// tr = glm::rotate(tr, 3.14f, glm::vec3(0, 1, 0));
-			scene->transforms.push_back(tr);
-			scene->collidables.push_back(
-				physics_engine->create_mesh(0.0f, model.geometries[geometry_idx], tr));
-		}
-		else {
-			// scene->transforms.push_back(matrix);
-			// scene->collidables.push_back(rigidbody);
-		}
+		rbs.transforms.push_back(t);
+		rbs.rigidbodies.push_back(
+			physics_engine->create_mesh(0.0f, model.geometries[geometry_idx], t));
 	}
+	return rbs;
 }
 
 SceneBuilder::SceneBuilder() {}
@@ -122,9 +126,17 @@ void SceneBuilder::add_game_object(const glm::mat4& matrix, VisualModel&& model)
 		 .shape_idx = models.size(),
 		 .model_idx = models.size()});
 	models.push_back(model);
+	model_settings_storage[model.path].make_rigidbody = true;
+}
+
+void SceneBuilder::apply_model_settings(
+	const std::string& model_path, VisualModelSettings&& settings)
+{
+	model_settings_storage[model_path] = settings;
 }
 
 unique_ptr<Scene> SceneBuilder::build(
+	ResourceContainer& resources,
 	gpu::ShaderPipeline* pipeline,
 	gpu::RenderDevice* gpu,
 	gengine::PhysicsEngine* physics_engine,
@@ -133,115 +145,116 @@ unique_ptr<Scene> SceneBuilder::build(
 	/* Everything inside this function is horribly named. */
 	auto scene = make_unique<Scene>();
 
-	/// scene_path --> Engine's Scene IR
-	unordered_map<string, gengine::SceneAsset> scene_cache;
+	/// scene path --> Scene object
+	/// this bridges phase 1 and 2
+	unordered_map<string, ResourceContainer> asset_resource_lookup;
 
-	/// scene_path --> Engine's Renderable Scene IR
-	unordered_map<string, Scene> render_scene_cache;
+	/// scene path --> (tranform[], rigidbody[])
+	/// this bridges phase 1 and 2
+	unordered_map<string, RigidBodySet> rigid_body_storage;
+
+	////
+	// Phase 1: process 3D assets
+	////
+
+	GpuImageIndex gpu_image_index;
+
+	// For each 3D model used in this scene...
+	for (const auto& [model_path, model_settings] : model_settings_storage) {
+
+		// Load this model
+		const auto model = gengine::load_model(
+			*texture_factory,
+			model_path,
+			model_settings.flip_uvs,
+			model_settings.flip_triangle_winding);
+
+		// Generate rigid bodies (if necessary)
+		bool make_rigidbody = model_settings_storage.at(model_path).make_rigidbody;
+		if (make_rigidbody) {
+			rigid_body_storage[model_path] = make_rigidbody_from_model(physics_engine, model);
+		}
+
+		// Instantiate the Renderable Scene by creating GPU resources
+		asset_resource_lookup[model_path] = make_game_object(resources, pipeline, gpu, texture_factory, gpu_image_index, model);
+		const ResourceContainer& asset_resources = asset_resource_lookup[model_path];
+	}
+
+	////
+	// Phase 2: use processed 3D assets to create game objects
+	////
 
 	// For each object we've queued,
 	for (const GameObject& game_object : game_objects) {
 
-		// Construct its rigid body using the physics engine
-		gengine::Collidable* rigidbody = nullptr;
-		switch (game_object.shape_type) {
-		case TactileType::CAPSULE: {
-			const auto details = capsule_shapes[game_object.shape_idx];
-			rigidbody = physics_engine->create_capsule(details.mass, game_object.matrix);
-			break;
-		}
-		case TactileType::SPHERE: {
-			const auto details = sphere_shapes[game_object.shape_idx];
-			rigidbody =
-				physics_engine->create_sphere(details.radius, details.mass, game_object.matrix);
-			break;
-		}
-		case TactileType::MESH: {
-			rigidbody = nullptr;
-			break;
-		}
-		default: {
-			std::cout << "Error: unknown tactile type for scene object" << std::endl;
-			assert(false);
-		}
-		}
+		const auto& model_path = models[game_object.model_idx].path;
 
 		// If we haven't loaded this model from Assimp yet,
-		if (!scene_cache.contains(models[game_object.model_idx].model_path)) {
-
-			// Load this model
-			const auto model = gengine::load_model(
-				*texture_factory,
-				models[game_object.model_idx].model_path,
-				models[game_object.model_idx].flip_uvs,
-				models[game_object.model_idx].flipWindingOrder);
-
-			// Cache this model
-			scene_cache[models[game_object.model_idx].model_path] = model;
-		}
-
-		// If we don't have a renderable scene for this model,
-		if (!render_scene_cache.contains(models[game_object.model_idx].model_path)) {
-
-			// Get model from cache
-			const auto model = scene_cache[models[game_object.model_idx].model_path];
-
-			// Create a blank Renderable Scene in the cache
-			render_scene_cache[models[game_object.model_idx].model_path] = Scene{};
-
-			// Instantiate the Renderable Scene by creating GPU resources
-			make_game_object(
-				&render_scene_cache[models[game_object.model_idx].model_path],
-				pipeline,
-				gpu,
-				physics_engine,
-				texture_factory,
-				game_object.matrix,
-				rigidbody,
-				model);
-
-			// Get this renderable scene from the cache
-			const Scene& renderable_scene =
-				render_scene_cache[models[game_object.model_idx].model_path];
-
-			for (const auto& c : renderable_scene.collidables) {
-				scene->res_collidables.push_back(c);
-			}
-			for (const auto& g : renderable_scene.render_components) {
-				scene->res_render_components.push_back(g);
-			}
-			for (const auto& d : renderable_scene.descriptors) {
-				scene->res_descriptors.push_back(d);
-			}
+		if (!asset_resource_lookup.contains(model_path)) {
+			cout << "Error: unrecognized scene path " << model_path << endl;
+			continue;
 		}
 
 		// Get this renderable scene from the cache
-		const Scene& renderable_scene =
-			render_scene_cache[models[game_object.model_idx].model_path];
+		const ResourceContainer& asset_resources =
+			asset_resource_lookup[models[game_object.model_idx].path];
 
-		// If rigidbody == nullptr, then we're generating collidables and transforms from the
-		// imported scene.  So, let's grab them from there.
-		if (rigidbody == nullptr) {
-			for (const auto& c : renderable_scene.collidables) {
-				scene->collidables.push_back(c);
+		///
+		// Inserting rigidbodies into the scene has two modes of action.
+		// (1) Generate them from a 3D model, which may produce multiple rigidbodies.
+		// (2) Create them from a shape primitive, which produces one rigidbody.
+		//
+		// Generate a rigidbody...
+		if (game_object.shape_type == TactileType::MESH) {
+
+			// Ensure this mesh has been previously processed into a rigidbody
+			if (!rigid_body_storage.contains(model_path)) {
+				cout << "Error: trying to use generated rigidbody from a model " << model_path
+					 << " which was not configured for rigidbody generation." << endl;
+				continue;
 			}
-			for (const auto& t : renderable_scene.transforms) {
-				scene->transforms.push_back(t);
+			// Grab the cached rigidbodies and append them hoes
+			// TODO: we should be making rigidbodies once-per- game entity (i.e. on site).
+			// TODO: rigid_body_storage should store shape info.
+			const auto& rigidbodies = rigid_body_storage.at(model_path);
+			for (const auto& transform : rigidbodies.transforms) {
+				scene->transforms.push_back(transform);
+			}
+			for (const auto& rigidbody : rigidbodies.rigidbodies) {
+				scene->collidables.push_back(rigidbody);
 			}
 		}
-		// Otherwise, we're providing our own collidable and transform from the game_object that the
-		// API user described during the scene building phase.  Let's use that one instead.
+		// Else, create shape primitive...
 		else {
-			scene->transforms.push_back(game_object.matrix);
+			// Construct its rigid body using the physics engine
+			gengine::Collidable* rigidbody = nullptr;
+			switch (game_object.shape_type) {
+			case TactileType::CAPSULE: {
+				const auto details = capsule_shapes[game_object.shape_idx];
+				rigidbody = physics_engine->create_capsule(details.mass, game_object.matrix);
+				break;
+			}
+			case TactileType::SPHERE: {
+				const auto details = sphere_shapes[game_object.shape_idx];
+				rigidbody =
+					physics_engine->create_sphere(details.radius, details.mass, game_object.matrix);
+				break;
+			}
+			default: {
+				std::cout << "Error: unknown tactile type for scene object" << std::endl;
+				assert(false);
+			}
+			}
 			scene->collidables.push_back(rigidbody);
+			scene->transforms.push_back(game_object.matrix);
 		}
 
 		// For render components and material descriptors, we can re-use whatever we created from
 		// the function `make_game_object`.
-		for (const auto& g : renderable_scene.render_components) {
+		for (const auto& g : asset_resources.gpu_geometries) {
 			scene->render_components.push_back(g);
 		}
-		for (const auto& d : renderable_scene.descriptors) {
+		for (const auto& d : asset_resources.gpu_descriptors) {
 			scene->descriptors.push_back(d);
 		}
 	}
