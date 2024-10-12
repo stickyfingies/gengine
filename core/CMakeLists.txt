@@ -4,6 +4,9 @@ target_link_libraries(core PRIVATE dep_common gpu)
 
 target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
+find_path(TINYGLTF_INCLUDE_DIRS "tiny_gltf.h")
+target_include_directories(core PRIVATE ${TINYGLTF_INCLUDE_DIRS})
+
 set_target_properties(core
     PROPERTIES
     CXX_EXTENSIONS OFF

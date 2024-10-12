@@ -1,14 +1,19 @@
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "scene.h"
 #include "gpu.h"
 #include "physics.h"
+#include "tiny_gltf.h"
 
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <unordered_set>
 
 using namespace std;
 
-// Cache GPU images that we've seen before
+// A dictionary to cache GPU images that we've seen before
 using GpuImageIndex = std::unordered_map<std::string, gpu::Image*>;
 
 /// TODO this shouldn't be void, make it return some information about WHERE in the Scene* this
@@ -135,6 +140,77 @@ void SceneBuilder::apply_model_settings(
 	model_settings_storage[model_path] = settings;
 }
 
+/**
+ * Docs with example:
+ * https://github.com/syoyo/tinygltf/blob/release/examples/basic/main.cpp#L162
+ */
+void load_model_gltf(std::string_view model_path_raw, bool flip_uvs, bool flip_triangle_winding)
+{
+	const string model_path = filesystem::current_path() / model_path_raw;
+
+	tinygltf::TinyGLTF loader;
+	tinygltf::Model gltf_model;
+	string err, warn;
+
+	bool res = loader.LoadBinaryFromFile(&gltf_model, &err, &warn, model_path);
+	if (!warn.empty()) {
+		cout << "Warning while parsing glTF model (" << model_path << "): " << warn << endl;
+	}
+	if (!err.empty()) {
+		cout << "Error while parsing glTF model (" << model_path << "): " << err << endl;
+	}
+	if (!res) {
+		cout << "Failed to load glTF: " << model_path << endl;
+		return;
+	}
+	cout << "glTF loaded from file: " << model_path << endl;
+	const tinygltf::Scene& gltf_scene = gltf_model.scenes[gltf_model.defaultScene];
+
+	// Process model buffers
+	const int TINYGLTF_UNKNOWN_TARGET = 0;
+	const int TINYGLTF_VERTEX_BUFFER_TARGET = 34962;
+	const int TINYGLTF_INDEX_BUFFER_TARGET = 34963;
+	for (tinygltf::BufferView& gltf_buffer_view : gltf_model.bufferViews) {
+		const tinygltf::Buffer& gltf_buffer = gltf_model.buffers[gltf_buffer_view.buffer];
+
+		switch (gltf_buffer_view.target) {
+		case TINYGLTF_UNKNOWN_TARGET:
+			break;
+		case TINYGLTF_VERTEX_BUFFER_TARGET: {
+			cout << "glTF decoded a vertex buffer." << endl;
+			
+			break;
+		}
+		case TINYGLTF_INDEX_BUFFER_TARGET: {
+			cout << "glTF decoded an index buffer." << endl;
+			break;
+		}
+		default:
+			cerr << "Error in glTF decoder: unknown value for tinygltf::BufferView::target "
+				 << "\"" << gltf_buffer_view.target << "\"" << endl;
+			return;
+		}
+	}
+
+	// Process scene nodes
+	for (size_t gltf_node_idx : gltf_scene.nodes) {
+		assert((gltf_node_idx >= 0) && (gltf_node_idx < gltf_model.nodes.size()));
+		const tinygltf::Node& gltf_node = gltf_model.nodes[gltf_node_idx];
+
+		// If: this node has a mesh.
+		if (gltf_node.mesh >= 0 && gltf_node.mesh < gltf_model.meshes.size()) {
+			const tinygltf::Mesh& gltf_mesh = gltf_model.meshes[gltf_node.mesh];
+			// TODO(Seth) - process each mesh in the node
+		}
+		// Else if: this node has no mesh.
+		else {
+			// Tell me.  I'm curious if this ever happens.
+			// TODO(Seth) - delete after investigating
+			cout << "glTF decoder found a node without a mesh." << endl;
+		}
+	}
+}
+
 unique_ptr<Scene> SceneBuilder::build(
 	ResourceContainer& resources,
 	gpu::ShaderPipeline* pipeline,
@@ -162,6 +238,9 @@ unique_ptr<Scene> SceneBuilder::build(
 	// For each 3D model used in this scene...
 	for (const auto& [model_path, model_settings] : model_settings_storage) {
 
+		// TODO(Seth) - temporary code to try loading .glTF model
+		load_model_gltf(model_path, model_settings.flip_uvs, model_settings.flip_triangle_winding);
+
 		// Load this model
 		const auto model = gengine::load_model(
 			*texture_factory,
@@ -176,7 +255,8 @@ unique_ptr<Scene> SceneBuilder::build(
 		}
 
 		// Instantiate the Renderable Scene by creating GPU resources
-		asset_resource_lookup[model_path] = make_game_object(resources, pipeline, gpu, texture_factory, gpu_image_index, model);
+		asset_resource_lookup[model_path] =
+			make_game_object(resources, pipeline, gpu, texture_factory, gpu_image_index, model);
 		const ResourceContainer& asset_resources = asset_resource_lookup[model_path];
 	}
 

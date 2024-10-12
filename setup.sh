@@ -18,6 +18,8 @@ chmod +x ./vcpkg/bootstrap-vcpkg.sh
 ./vcpkg/vcpkg install bullet3:wasm32-emscripten
 ./vcpkg/vcpkg install assimp:x64-linux --overlay-ports=vcpkg-ports/assimp
 ./vcpkg/vcpkg install assimp:wasm32-emscripten --overlay-ports=vcpkg-ports/assimp
+./vcpkg/vcpkg install tinygltf:x64-linux
+./vcpkg/vcpkg install tinygltf:wasm32-emscripten
 ./vcpkg/vcpkg install glad
 ./vcpkg/vcpkg install glm:x64-linux
 ./vcpkg/vcpkg install glm:wasm32-emscripten
