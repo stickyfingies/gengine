@@ -26,6 +26,7 @@ struct gpu::Buffer {
 
 struct gpu::ShaderPipeline {
 	GLuint gl_program;
+	std::vector<gpu::VertexAttribute> vertex_attributes;
 };
 
 struct gpu::Image {
@@ -182,8 +183,10 @@ public:
 
 	auto destroy_all_images() -> void override { cout << "Destroying all images" << endl; }
 
-	auto create_pipeline(const string_view vert_code, const string_view frag_code)
-		-> ShaderPipeline* override
+	auto create_pipeline(
+		string_view vert_code,
+		string_view frag_code,
+		const vector<VertexAttribute>& vertex_attributes) -> ShaderPipeline* override
 	{
 		// Reserved for GL error strings
 		int success;
@@ -229,7 +232,7 @@ public:
 		glDeleteShader(vertex_shader);
 		glDeleteShader(fragment_shader);
 
-		const auto pipeline = new ShaderPipeline{shader_program};
+		const auto pipeline = new ShaderPipeline{shader_program, vertex_attributes};
 
 		cout << "Pipeline " << pipeline << endl;
 
@@ -253,7 +256,8 @@ public:
 		delete pso;
 	}
 
-	auto create_geometry(Buffer* vertex_buffer, Buffer* index_buffer) -> Geometry* override
+	auto create_geometry(ShaderPipeline* pipeline, Buffer* vertex_buffer, Buffer* index_buffer)
+		-> Geometry* override
 	{
 		std::cout << "Creating geometry" << std::endl;
 
@@ -267,15 +271,33 @@ public:
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer->gl_buffer);
 
 		// TODO - see the definition of `Vertex` in gpu.vulkan.cpp
-		glVertexAttribPointer(
-			0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(
-			1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(
-			2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-		glEnableVertexAttribArray(2);
+		size_t vertex_size = 0;
+		const size_t attribute_count = pipeline->vertex_attributes.size();
+		// First, calculate the size of one vertex
+		for (size_t attribute_idx = 0; attribute_idx < attribute_count; attribute_idx++) {
+			const auto attribute = pipeline->vertex_attributes.at(attribute_idx);
+			if (attribute == VertexAttribute::VEC3_FLOAT)
+				vertex_size += 3 * sizeof(float);
+			else if (attribute == VertexAttribute::VEC2_FLOAT)
+				vertex_size += 2 * sizeof(float);
+		}
+		// Next, generate the gl vertex attributes
+		size_t attribute_offset = 0;
+		for (size_t attribute_idx = 0; attribute_idx < attribute_count; attribute_idx++) {
+			const auto attribute = pipeline->vertex_attributes.at(attribute_idx);
+			if (attribute == VertexAttribute::VEC3_FLOAT) {
+				glVertexAttribPointer(
+					attribute_idx, 3, GL_FLOAT, GL_FALSE, vertex_size, (void*)(attribute_offset));
+				glEnableVertexAttribArray(attribute_idx);
+				attribute_offset += 3 * sizeof(float);
+			}
+			else if (attribute == VertexAttribute::VEC2_FLOAT) {
+				glVertexAttribPointer(
+					attribute_idx, 2, GL_FLOAT, GL_FALSE, vertex_size, (void*)(attribute_offset));
+				glEnableVertexAttribArray(attribute_idx);
+				attribute_offset += 2 * sizeof(float);
+			}
+		}
 
 		const auto index_count = index_buffer->info.element_count;
 		const auto gpu_geometry = new Geometry{

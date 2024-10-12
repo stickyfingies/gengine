@@ -83,7 +83,7 @@ static ResourceContainer make_game_object(
 			{gpu::BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()}, indices.data());
 
 		const auto gpu_geometry =
-			gpu->create_geometry(vbo, ebo);
+			gpu->create_geometry(pipeline, vbo, ebo);
 		global_resources.gpu_geometries.insert(gpu_geometry);
 		local_resources.gpu_geometries.insert(gpu_geometry);
 	}

@@ -34,31 +34,51 @@ auto instance = vk::Instance{};
 const auto FRAMES_IN_FLIGHT = 2;
 const auto SWAPCHAIN_SIZE = 3;
 
-struct Vertex {
-	glm::vec3 pos;
-	glm::vec3 norm;
-	glm::vec2 uv;
+/**
+ * Utility function to convert a list of gpu::VertexAttribtute into Vulkan attribute descriptions
+ */
+void transcode_vertex_attributes(
+	const std::vector<gpu::VertexAttribute>& attributes_in,
+	std::vector<vk::VertexInputAttributeDescription>& vk_attributes_out,
+	vk::VertexInputBindingDescription& binding_out)
+{
 
-	static auto get_binding_desc() -> vk::VertexInputBindingDescription
-	{
-		const auto binding_desc =
-			vk::VertexInputBindingDescription(0, sizeof(Vertex), vk::VertexInputRate::eVertex);
+	// There's only one vertex buffer, so hard-code the binding to 0.
+	const int VERTEX_BUFFER_BINDING = 0;
 
-		return binding_desc;
+	const size_t attribute_count = attributes_in.size();
+	vk_attributes_out.clear();
+	vk_attributes_out.reserve(attribute_count);
+
+	// Convert each attribute to its vulkan counterpart
+	size_t vertex_size = 0;
+	for (size_t attribute_idx = 0; attribute_idx < attribute_count; attribute_idx++) {
+		const auto attribute_in = attributes_in.at(attribute_idx);
+		// [float, float, float]
+		if (attribute_in == gpu::VertexAttribute::VEC3_FLOAT) {
+			const vk::VertexInputAttributeDescription vk_attribute(
+				attribute_idx, VERTEX_BUFFER_BINDING, vk::Format::eR32G32B32Sfloat, vertex_size);
+			vk_attributes_out.push_back(vk_attribute);
+			vertex_size += 3 * sizeof(float);
+		}
+		// [float, float]
+		else if (attribute_in == gpu::VertexAttribute::VEC2_FLOAT) {
+			const vk::VertexInputAttributeDescription vk_attribute(
+				attribute_idx, VERTEX_BUFFER_BINDING, vk::Format::eR32G32Sfloat, vertex_size);
+			vk_attributes_out.push_back(vk_attribute);
+			vertex_size += 2 * sizeof(float);
+		}
+		// unknown
+		else {
+			std::cerr << "Error while processing vertex attributes: unknown attribute "
+					  << static_cast<int>(attribute_in) << std::endl;
+		}
 	}
 
-	static auto get_attribute_descs() -> std::array<vk::VertexInputAttributeDescription, 3>
-	{
-		const auto pos_attr = vk::VertexInputAttributeDescription(
-			0, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, pos));
-		const auto norm_attr = vk::VertexInputAttributeDescription(
-			1, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, norm));
-		const auto uv_attr = vk::VertexInputAttributeDescription(
-			2, 0, vk::Format::eR32G32Sfloat, offsetof(Vertex, uv));
-
-		return {pos_attr, norm_attr, uv_attr};
-	}
-};
+	// Generate the Vulkan vertex binding
+	binding_out = vk::VertexInputBindingDescription(
+		VERTEX_BUFFER_BINDING, vertex_size, vk::VertexInputRate::eVertex);
+}
 
 struct PushConstantData {
 	glm::mat4 model;
@@ -500,7 +520,9 @@ public:
 		delete buffer;
 	}
 
-	auto create_image(const std::string& name, int width, int height, int channel_count, unsigned char* data_in) -> Image* override
+	auto create_image(
+		const std::string& name, int width, int height, int channel_count, unsigned char* data_in)
+		-> Image* override
 	{
 		if (image_cache.find(name) != image_cache.end()) {
 			return &image_cache.at(name);
@@ -689,7 +711,8 @@ public:
 		device.destroySampler(image->sampler);
 	}
 
-	auto create_geometry(Buffer* vertex_buffer, Buffer* index_buffer) -> Geometry* override
+	auto create_geometry(ShaderPipeline* pipeline, Buffer* vertex_buffer, Buffer* index_buffer)
+		-> Geometry* override
 	{
 		return new Geometry{vertex_buffer, index_buffer, index_buffer->size};
 	}
@@ -763,8 +786,10 @@ public:
 		return new Descriptors{descset, color};
 	}
 
-	auto create_pipeline(std::string_view vert_code, std::string_view frag_code)
-		-> ShaderPipeline* override
+	auto create_pipeline(
+		std::string_view vert_code,
+		std::string_view frag_code,
+		const std::vector<VertexAttribute>& vertex_attributes) -> ShaderPipeline* override
 	{
 		// Create uniform buffer
 
@@ -824,12 +849,12 @@ public:
 
 		// general graphics pipeline info
 
-		const auto binding_desc = Vertex::get_binding_desc();
-
-		const auto attribute_descs = Vertex::get_attribute_descs();
+		std::vector<vk::VertexInputAttributeDescription> vk_vertex_attributes;
+		vk::VertexInputBindingDescription vk_vertex_binding;
+		transcode_vertex_attributes(vertex_attributes, vk_vertex_attributes, vk_vertex_binding);
 
 		const auto vertex_input_info = vk::PipelineVertexInputStateCreateInfo(
-			{}, 1, &binding_desc, attribute_descs.size(), attribute_descs.data());
+			{}, 1, &vk_vertex_binding, vk_vertex_attributes.size(), vk_vertex_attributes.data());
 
 		const auto input_assembly = vk::PipelineInputAssemblyStateCreateInfo(
 			{}, vk::PrimitiveTopology::eTriangleList, false);
