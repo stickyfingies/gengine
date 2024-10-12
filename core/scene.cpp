@@ -59,8 +59,31 @@ static ResourceContainer make_game_object(
 
 	/// Geometry --> Renderable
 	for (const auto& geometry : model.geometries) {
+
+		auto gpu_data = std::vector<float>{};
+		const auto& vertices = geometry.vertices;
+		const auto& vertices_aux = geometry.vertices_aux;
+		const auto& indices = geometry.indices;
+		for (int i = 0; i < vertices.size() / 3; i++) {
+			const auto v = (i * 3);
+			gpu_data.push_back(vertices[v + 0]);
+			gpu_data.push_back(-vertices[v + 1]);
+			gpu_data.push_back(vertices[v + 2]);
+			const auto a = (i * 5);
+			gpu_data.push_back(vertices_aux[a + 0]);
+			gpu_data.push_back(vertices_aux[a + 1]);
+			gpu_data.push_back(vertices_aux[a + 2]);
+			gpu_data.push_back(vertices_aux[a + 3]);
+			gpu_data.push_back(vertices_aux[a + 4]);
+		}
+
+		auto vbo = gpu->create_buffer(
+			{gpu::BufferInfo::Usage::VERTEX, sizeof(float), gpu_data.size()}, gpu_data.data());
+		auto ebo = gpu->create_buffer(
+			{gpu::BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()}, indices.data());
+
 		const auto gpu_geometry =
-			gpu->create_geometry(geometry.vertices, geometry.vertices_aux, geometry.indices);
+			gpu->create_geometry(vbo, ebo);
 		global_resources.gpu_geometries.insert(gpu_geometry);
 		local_resources.gpu_geometries.insert(gpu_geometry);
 	}
@@ -176,7 +199,8 @@ unique_ptr<Scene> SceneBuilder::build(
 		}
 
 		// Instantiate the Renderable Scene by creating GPU resources
-		asset_resource_lookup[model_path] = make_game_object(resources, pipeline, gpu, texture_factory, gpu_image_index, model);
+		asset_resource_lookup[model_path] =
+			make_game_object(resources, pipeline, gpu, texture_factory, gpu_image_index, model);
 		const ResourceContainer& asset_resources = asset_resource_lookup[model_path];
 	}
 

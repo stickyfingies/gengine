@@ -20,6 +20,7 @@
 using namespace std;
 
 struct gpu::Buffer {
+	gpu::BufferInfo info;
 	GLuint gl_buffer;
 };
 
@@ -133,7 +134,7 @@ public:
 
 	~RenderDeviceGL() { cout << "~ RenderDeviceGL" << endl; }
 
-	auto create_buffer(const BufferInfo& info, const void* data) -> std::unique_ptr<Buffer> override
+	auto create_buffer(const BufferInfo& info, const void* data) -> Buffer* override
 	{
 		const auto size = info.element_count * info.stride;
 
@@ -145,16 +146,19 @@ public:
 		glGenBuffers(1, &VBO);
 		glBindBuffer(buffer_type, VBO);
 		glBufferData(buffer_type, size, data, GL_STATIC_DRAW);
-		return make_unique<Buffer>(VBO);
+		return new Buffer{info, VBO};
 	}
 
-	auto destroy_buffer(shared_ptr<Buffer> buffer) -> void override
+	auto destroy_buffer(Buffer* buffer) -> void override
 	{
 		cout << "~ GPU Buffer " << buffer << endl;
 		glDeleteBuffers(1, &buffer->gl_buffer);
+		delete buffer;
 	}
 
-	auto create_image(const std::string& name, int width, int height, int channel_count, unsigned char* data_in) -> Image* override
+	auto create_image(
+		const std::string& name, int width, int height, int channel_count, unsigned char* data_in)
+		-> Image* override
 	{
 		GLuint texture;
 		glGenTextures(1, &texture);
@@ -166,15 +170,7 @@ public:
 		// const float tex_border_color[] = {1.0f, 1.0f, 0.0f, 1.0f};
 		// glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
 		glTexImage2D(
-			GL_TEXTURE_2D,
-			0,
-			GL_RGBA,
-			width,
-			height,
-			0,
-			GL_RGBA,
-			GL_UNSIGNED_BYTE,
-			data_in);
+			GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data_in);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 		const auto image = new Image{texture};
@@ -257,36 +253,18 @@ public:
 		delete pso;
 	}
 
-	auto create_geometry(const std::vector<float>& vertices_in, const std::vector<float>& vertices_aux_in, const std::vector<unsigned int>& indices_in) -> Geometry* override
+	auto create_geometry(Buffer* vertex_buffer, Buffer* index_buffer) -> Geometry* override
 	{
 		std::cout << "Creating geometry" << std::endl;
 
 		GLuint vao;
 		webgl::genVertexArrays(1, &vao);
+
+		// Bind vao for the remainder of this function
 		webgl::bindVertexArray(vao);
 
-		const auto& vertices = vertices_in;
-		const auto& vertices_aux = vertices_aux_in;
-		const auto& indices = indices_in;
-
-		auto gpu_data = std::vector<float>{};
-		for (int i = 0; i < vertices.size() / 3; i++) {
-			const auto v = (i * 3);
-			gpu_data.push_back(vertices[v + 0]);
-			gpu_data.push_back(-vertices[v + 1]);
-			gpu_data.push_back(vertices[v + 2]);
-			const auto a = (i * 5);
-			gpu_data.push_back(vertices_aux[a + 0]);
-			gpu_data.push_back(vertices_aux[a + 1]);
-			gpu_data.push_back(vertices_aux[a + 2]);
-			gpu_data.push_back(vertices_aux[a + 3]);
-			gpu_data.push_back(vertices_aux[a + 4]);
-		}
-
-		auto vbo = create_buffer(
-			{BufferInfo::Usage::VERTEX, sizeof(float), gpu_data.size()}, gpu_data.data());
-		auto ebo = create_buffer(
-			{BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()}, indices.data());
+		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer->gl_buffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer->gl_buffer);
 
 		// TODO - see the definition of `Vertex` in gpu.vulkan.cpp
 		glVertexAttribPointer(
@@ -299,17 +277,22 @@ public:
 			2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 		glEnableVertexAttribArray(2);
 
-		const auto gpu_geometry = new Geometry{vao, std::move(vbo), std::move(ebo), indices.size()};
+		const auto index_count = index_buffer->info.element_count;
+		const auto gpu_geometry = new Geometry{
+			vao,
+			std::unique_ptr<Buffer>(vertex_buffer),
+			std::unique_ptr<Buffer>(index_buffer),
+			index_count};
 
-		cout << "GPU Geometry indices: " << indices.size() << " " << gpu_geometry << endl;
+		cout << "GPU Geometry indices: " << index_count << " " << gpu_geometry << endl;
 
 		return gpu_geometry;
 	}
 
 	auto destroy_geometry(const Geometry* geometry) -> void override
 	{
-		destroy_buffer(geometry->vbo);
-		destroy_buffer(geometry->ebo);
+		destroy_buffer(geometry->vbo.get());
+		destroy_buffer(geometry->ebo.get());
 		delete geometry;
 	}
 

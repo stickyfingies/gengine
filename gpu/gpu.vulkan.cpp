@@ -76,6 +76,7 @@ namespace gpu {
 struct Buffer {
 	vk::Buffer buffer;
 	vk::DeviceMemory mem;
+	size_t size;
 };
 
 struct Image {
@@ -99,8 +100,8 @@ struct Descriptors {
 };
 
 struct Geometry {
-	std::shared_ptr<Buffer> vbo;
-	std::shared_ptr<Buffer> ebo;
+	Buffer* vbo;
+	Buffer* ebo;
 	unsigned long index_count;
 };
 
@@ -449,7 +450,7 @@ public:
 		ImGui_ImplVulkan_Init(&init_info);
 	}
 
-	auto create_buffer(const BufferInfo& info, const void* data) -> std::unique_ptr<Buffer> override
+	auto create_buffer(const BufferInfo& info, const void* data) -> Buffer* override
 	{
 		// this assumes the user wants a device local buffer
 
@@ -484,17 +485,19 @@ public:
 
 		copy_buffer(staging, buffer, info.element_count * info.stride);
 
-		std::cout << "[info]\t ~ GpuBuffer" << std::endl;
+		std::cout << "~ GpuBuffer (staging)" << std::endl;
 		device.destroyBuffer(staging);
 		device.freeMemory(staging_mem);
 
-		return std::make_unique<Buffer>(buffer, buffer_mem);
+		return new Buffer{buffer, buffer_mem, info.element_count};
 	}
 
-	auto destroy_buffer(std::shared_ptr<Buffer> buffer) -> void override
+	auto destroy_buffer(Buffer* buffer) -> void override
 	{
+		std::cout << "~ GpuBuffer" << std::endl;
 		device.destroyBuffer(buffer->buffer);
 		device.freeMemory(buffer->mem);
+		delete buffer;
 	}
 
 	auto create_image(const std::string& name, int width, int height, int channel_count, unsigned char* data_in) -> Image* override
@@ -686,32 +689,9 @@ public:
 		device.destroySampler(image->sampler);
 	}
 
-	auto create_geometry(const std::vector<float>& vertices_in, const std::vector<float>& vertices_aux_in, const std::vector<unsigned int>& indices_in) -> Geometry* override
+	auto create_geometry(Buffer* vertex_buffer, Buffer* index_buffer) -> Geometry* override
 	{
-		const auto& vertices = vertices_in;
-		const auto& vertices_aux = vertices_aux_in;
-		const auto& indices = indices_in;
-
-		auto gpu_data = std::vector<float>{};
-		for (int i = 0; i < vertices.size() / 3; i++) {
-			const auto v = (i * 3);
-			gpu_data.push_back(vertices[v + 0]);
-			gpu_data.push_back(-vertices[v + 1]);
-			gpu_data.push_back(vertices[v + 2]);
-			const auto a = (i * 5);
-			gpu_data.push_back(vertices_aux[a + 0]);
-			gpu_data.push_back(vertices_aux[a + 1]);
-			gpu_data.push_back(vertices_aux[a + 2]);
-			gpu_data.push_back(vertices_aux[a + 3]);
-			gpu_data.push_back(vertices_aux[a + 4]);
-		}
-
-		auto vbo = create_buffer(
-			{BufferInfo::Usage::VERTEX, sizeof(float), gpu_data.size()}, gpu_data.data());
-		auto ebo = create_buffer(
-			{BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()}, indices.data());
-
-		return new Geometry{std::move(vbo), std::move(ebo), indices.size()};
+		return new Geometry{vertex_buffer, index_buffer, index_buffer->size};
 	}
 
 	auto destroy_geometry(const Geometry* geometry) -> void override
@@ -1004,7 +984,7 @@ public:
 				sizeof(PushConstantData),
 				&push_constant_data);
 
-			ctx->bind_geometry_buffers(renderables[i]->vbo.get(), renderables[i]->ebo.get());
+			ctx->bind_geometry_buffers(renderables[i]->vbo, renderables[i]->ebo);
 			ctx->draw(renderables[i]->index_count, 1);
 		}
 

@@ -73,8 +73,8 @@ public:
 	 * @param data is a region of RAM which is uploaded over PCI-e
 	 */
 	virtual auto
-	create_buffer(const BufferInfo& info, const void* data) -> std::unique_ptr<Buffer> = 0;
-	
+	create_buffer(const BufferInfo& info, const void* data) -> Buffer* = 0;
+
 	/// TODO 2024-09-18 - I still haven't done this?
 	/// TODO 2024-05-13 - This is undesirable.
 	/// TODO - destroy_buffer completely invalidates the usage of that buffer.
@@ -84,7 +84,7 @@ public:
 	 * Free a region of VRAM.
 	 * @param buffer VRAM to free
 	 */
-	virtual auto destroy_buffer(std::shared_ptr<Buffer> buffer) -> void = 0;
+	virtual auto destroy_buffer(Buffer* buffer) -> void = 0;
 
 	/**
 	 * @brief Allocate VRAM and instantiate it with a bitmap image.
@@ -105,9 +105,9 @@ public:
 
 	/**
 	 * Construct a raster pipeline which contains a shader program
-	 * @param vert_code 
-	 * @param frag_code 
-	 * @return ShaderPipeline* 
+	 * @param vert_code
+	 * @param frag_code
+	 * @return ShaderPipeline*
 	 */
 	virtual auto create_pipeline(const std::string_view vert_code, const std::string_view frag_code)
 		-> ShaderPipeline* = 0;
@@ -129,10 +129,8 @@ public:
 	 * @param vertices_aux see implementation
 	 * @param indices see implementation
 	 */
-	virtual auto create_geometry(
-		const std::vector<float>& vertices,
-		const std::vector<float>& vertices_aux,
-		const std::vector<unsigned int>& indices) -> Geometry* = 0;
+	virtual auto
+	create_geometry(Buffer* vertex_buffer, Buffer* index_buffer) -> Geometry* = 0;
 
 	virtual auto destroy_geometry(const Geometry* geometry) -> void = 0;
 
