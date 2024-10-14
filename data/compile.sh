@@ -1,2 +1,2 @@
-glslangValidator -V cube.vert.glsl -o cube.vert.spv
-glslangValidator -V cube.frag.glsl -o cube.frag.spv
+glslangValidator -V vk.vert.glsl -o vk.vert.spv
+glslangValidator -V vk.frag.glsl -o vk.frag.spv

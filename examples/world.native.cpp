@@ -37,10 +37,10 @@ public:
 		camera = Camera(glm::vec3(0.0f, 5.0f, 90.0f));
 
 		sceneBuilder.apply_model_settings(
-			"./data/spinny.obj", {.flip_uvs = false, .flip_triangle_winding = false});
+			"./data/spinny.obj", {.flip_uvs = false, .flip_triangle_winding = true});
 
 		sceneBuilder.apply_model_settings(
-			"./data/map.obj", {.flip_uvs = true, .flip_triangle_winding = false});
+			"./data/map.obj", {.flip_uvs = true, .flip_triangle_winding = true});
 
 		auto player_pos = glm::mat4(1.0f);
 		player_pos = glm::translate(player_pos, glm::vec3(20.0f, 100.0f, 20.0f));
@@ -71,8 +71,8 @@ public:
 		const auto frag = gengine::load_file("./data/gl.frag.glsl");
 		pipeline = gpu->create_pipeline(vert, frag, vertex_attributes);
 #else
-		const auto vert = gengine::load_file("./data/cube.vert.spv");
-		const auto frag = gengine::load_file("./data/cube.frag.spv");
+		const auto vert = gengine::load_file("./data/vk.vert.spv");
+		const auto frag = gengine::load_file("./data/vk.frag.spv");
 		pipeline = gpu->create_pipeline(vert, frag, vertex_attributes);
 #endif
 

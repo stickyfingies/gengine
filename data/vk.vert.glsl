@@ -22,9 +22,9 @@ layout (push_constant) uniform PushConstants
 
 void main()
 {
-	pos  = vec3(model * vec4(aPos, 1.0));
+	pos  = vec3(model * vec4(aPos.x, -aPos.y, aPos.z, 1.0));
 	norm = mat3(transpose(inverse(model))) * aNorm;
 	uv   = aUv;
 
-	gl_Position = proj * view * model * vec4(aPos, 1.0f);
+	gl_Position = proj * view * model * vec4(aPos.x, -aPos.y, aPos.z, 1.0f);
 }
