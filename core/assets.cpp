@@ -19,9 +19,6 @@
 #include <sstream>
 #include <unordered_map>
 
-/// State belongs to the compilation unit
-/// TODO make an AssetLoader class or something
-
 using namespace std;
 
 namespace gengine {
@@ -188,23 +185,22 @@ auto processGeometry(const aiScene* scene, size_t mesh_idx, size_t& material_idx
 
 	std::cout << "Mesh " << mesh_idx << " (" << mesh_size << " bytes)" << std::endl;
 
-	auto vertices = std::vector<float>(ai_mesh->mNumVertices * 3);
-	auto vertices_aux = std::vector<float>(ai_mesh->mNumVertices * 5);
+	auto vertices = std::vector<float>(ai_mesh->mNumVertices * 8);
 	auto indices = std::vector<unsigned int>(ai_mesh->mNumFaces * 3);
 
 	// accumulate vertices
 
 	for (auto j = 0; j < ai_mesh->mNumVertices; ++j) {
-		vertices[j * 3 + 0] = ai_mesh->mVertices[j].x;
-		vertices[j * 3 + 1] = ai_mesh->mVertices[j].y;
-		vertices[j * 3 + 2] = ai_mesh->mVertices[j].z;
+		vertices[j * 8 + 0] = ai_mesh->mVertices[j].x;
+		vertices[j * 8 + 1] = ai_mesh->mVertices[j].y;
+		vertices[j * 8 + 2] = ai_mesh->mVertices[j].z;
 
-		vertices_aux[j * 5 + 0] = ai_mesh->mNormals[j].x;
-		vertices_aux[j * 5 + 1] = ai_mesh->mNormals[j].y;
-		vertices_aux[j * 5 + 2] = ai_mesh->mNormals[j].z;
+		vertices[j * 8 + 3] = ai_mesh->mNormals[j].x;
+		vertices[j * 8 + 4] = ai_mesh->mNormals[j].y;
+		vertices[j * 8 + 5] = ai_mesh->mNormals[j].z;
 
-		vertices_aux[j * 5 + 3] = ai_mesh->mTextureCoords[0][j].x;
-		vertices_aux[j * 5 + 4] = ai_mesh->mTextureCoords[0][j].y;
+		vertices[j * 8 + 6] = ai_mesh->mTextureCoords[0][j].x;
+		vertices[j * 8 + 7] = ai_mesh->mTextureCoords[0][j].y;
 	}
 
 	// extract indices from faces
@@ -218,7 +214,7 @@ auto processGeometry(const aiScene* scene, size_t mesh_idx, size_t& material_idx
 
 	material_idx = ai_mesh->mMaterialIndex;
 
-	return {vertices, vertices_aux, indices};
+	return {vertices, indices};
 }
 
 auto extractTextures(

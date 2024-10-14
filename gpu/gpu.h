@@ -10,6 +10,7 @@
  *
  * @author Seth Traman <github.com/stickyfingies>
  * @copyright GPLv3 (https://www.gnu.org/licenses/gpl-3.0.en.html)
+ *
  */
 
 #pragma once
@@ -44,6 +45,11 @@ struct BufferInfo {
 };
 
 /**
+ * A "vertex" is a set of attributes, like position, texture coordinates, etc.
+ */
+enum class VertexAttribute { VEC3_FLOAT, VEC2_FLOAT };
+
+/**
  * NOTICE: This MUST run before `glfwCreateWindow` and after `glfwInit`.
  */
 auto configure_glfw() -> void;
@@ -72,19 +78,13 @@ public:
 	 * @param info describes the VRAM allocation shape and its usage
 	 * @param data is a region of RAM which is uploaded over PCI-e
 	 */
-	virtual auto
-	create_buffer(const BufferInfo& info, const void* data) -> std::unique_ptr<Buffer> = 0;
-	
-	/// TODO 2024-09-18 - I still haven't done this?
-	/// TODO 2024-05-13 - This is undesirable.
-	/// TODO - destroy_buffer completely invalidates the usage of that buffer.
-	/// TODO - shared_ptr indicates the buffer may still be in use.
-	/// TODO - These are conflicting goals.
+	virtual auto create_buffer(const BufferInfo& info, const void* data) -> Buffer* = 0;
+
 	/**
 	 * Free a region of VRAM.
 	 * @param buffer VRAM to free
 	 */
-	virtual auto destroy_buffer(std::shared_ptr<Buffer> buffer) -> void = 0;
+	virtual auto destroy_buffer(Buffer* buffer) -> void = 0;
 
 	/**
 	 * @brief Allocate VRAM and instantiate it with a bitmap image.
@@ -105,11 +105,12 @@ public:
 
 	/**
 	 * Construct a raster pipeline which contains a shader program
-	 * @param vert_code 
-	 * @param frag_code 
-	 * @return ShaderPipeline* 
+	 * @param vert_code vertex shader content
+	 * @param frag_code fragment shader content
+	 * @param vertex_attributes a list of attributes used in each vertex
+	 * @return ShaderPipeline*
 	 */
-	virtual auto create_pipeline(const std::string_view vert_code, const std::string_view frag_code)
+	virtual auto create_pipeline(std::string_view vert_code, std::string_view frag_code, const std::vector<VertexAttribute>& vertex_attributes)
 		-> ShaderPipeline* = 0;
 
 	/**
@@ -129,10 +130,7 @@ public:
 	 * @param vertices_aux see implementation
 	 * @param indices see implementation
 	 */
-	virtual auto create_geometry(
-		const std::vector<float>& vertices,
-		const std::vector<float>& vertices_aux,
-		const std::vector<unsigned int>& indices) -> Geometry* = 0;
+	virtual auto create_geometry(ShaderPipeline* pipeline, Buffer* vertex_buffer, Buffer* index_buffer) -> Geometry* = 0;
 
 	virtual auto destroy_geometry(const Geometry* geometry) -> void = 0;
 

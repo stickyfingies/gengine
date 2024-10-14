@@ -16,9 +16,12 @@ using namespace std;
 // A dictionary to cache GPU images that we've seen before
 using GpuImageIndex = std::unordered_map<std::string, gpu::Image*>;
 
-/// TODO this shouldn't be void, make it return some information about WHERE in the Scene* this
-/// model's GPU resources have been placed, so that future objects which use that model can simply
-/// copy those regions from the Scene* and append them back into its self.
+/**
+ * This creates GPU resources for a game object.
+ * @returns a collection of gpu resources used by this object.
+ * @param global_resources is populated with gpu resources used by this game object.
+ * @param gpu_image_index is a cache of gpu images associated with disk paths
+ */
 static ResourceContainer make_game_object(
 	ResourceContainer& global_resources,
 	gpu::ShaderPipeline* pipeline,
@@ -64,8 +67,17 @@ static ResourceContainer make_game_object(
 
 	/// Geometry --> Renderable
 	for (const auto& geometry : model.geometries) {
+
+		const auto& vertices = geometry.vertices;
+		const auto& indices = geometry.indices;
+
+		auto vbo = gpu->create_buffer(
+			{gpu::BufferInfo::Usage::VERTEX, sizeof(float), vertices.size()}, vertices.data());
+		auto ebo = gpu->create_buffer(
+			{gpu::BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()}, indices.data());
+
 		const auto gpu_geometry =
-			gpu->create_geometry(geometry.vertices, geometry.vertices_aux, geometry.indices);
+			gpu->create_geometry(pipeline, vbo, ebo);
 		global_resources.gpu_geometries.insert(gpu_geometry);
 		local_resources.gpu_geometries.insert(gpu_geometry);
 	}
