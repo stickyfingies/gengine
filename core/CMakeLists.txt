@@ -17,6 +17,7 @@ target_sources(core
     assets.cpp
     physics.cpp
     scene.cpp
+    fps_controller.cpp
     stb/stb_image.cpp
 )
 

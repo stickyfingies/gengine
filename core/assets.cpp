@@ -159,8 +159,7 @@ auto calculateWorldTransform(const aiNode* node) -> glm::mat4
 auto traverseNode(
 	AssetDecoding& decoding, SceneAsset& assets, const aiScene* scene, const aiNode* node) -> void
 {
-	const auto transform =
-		calculateWorldTransform(node); // glm::transpose(glm::make_mat4(&node->mTransformation.a1));
+	const auto transform = calculateWorldTransform(node);
 
 	for (auto i = 0; i < node->mNumMeshes; ++i) {
 		const auto mesh_idx = node->mMeshes[i];
@@ -178,40 +177,46 @@ auto traverseNode(
 
 auto processGeometry(const aiScene* scene, size_t mesh_idx, size_t& material_idx) -> GeometryAsset
 {
-	const auto mesh = scene->mMeshes[mesh_idx];
+	const auto ai_mesh = scene->mMeshes[mesh_idx];
 
-	std::cout << "Mesh " << mesh_idx << ": { vertices: " << mesh->mNumVertices
-			  << ", faces: " << mesh->mNumFaces << " }" << std::endl;
+	const size_t vertex_buffer_size = ai_mesh->mNumVertices * 3 * sizeof(float);
+	const size_t normal_buffer_size = ai_mesh->mNumVertices * 3 * sizeof(float);
+	const size_t uv_buffer_size = ai_mesh->mNumVertices * 2 * sizeof(float);
+	const size_t index_buffer_size = ai_mesh->mNumFaces * 3 * sizeof(unsigned int);
+	const size_t mesh_size =
+		vertex_buffer_size + normal_buffer_size + uv_buffer_size + index_buffer_size;
 
-	auto vertices = std::vector<float>{};
-	auto vertices_aux = std::vector<float>{};
-	auto indices = std::vector<unsigned int>{};
+	std::cout << "Mesh " << mesh_idx << " (" << mesh_size << " bytes)" << std::endl;
+
+	auto vertices = std::vector<float>(ai_mesh->mNumVertices * 3);
+	auto vertices_aux = std::vector<float>(ai_mesh->mNumVertices * 5);
+	auto indices = std::vector<unsigned int>(ai_mesh->mNumFaces * 3);
 
 	// accumulate vertices
 
-	for (auto j = 0; j < mesh->mNumVertices; ++j) {
-		vertices.push_back(mesh->mVertices[j].x);
-		vertices.push_back(mesh->mVertices[j].y);
-		vertices.push_back(mesh->mVertices[j].z);
+	for (auto j = 0; j < ai_mesh->mNumVertices; ++j) {
+		vertices[j * 3 + 0] = ai_mesh->mVertices[j].x;
+		vertices[j * 3 + 1] = ai_mesh->mVertices[j].y;
+		vertices[j * 3 + 2] = ai_mesh->mVertices[j].z;
 
-		vertices_aux.push_back(mesh->mNormals[j].x);
-		vertices_aux.push_back(mesh->mNormals[j].y);
-		vertices_aux.push_back(mesh->mNormals[j].z);
+		vertices_aux[j * 5 + 0] = ai_mesh->mNormals[j].x;
+		vertices_aux[j * 5 + 1] = ai_mesh->mNormals[j].y;
+		vertices_aux[j * 5 + 2] = ai_mesh->mNormals[j].z;
 
-		vertices_aux.push_back(mesh->mTextureCoords[0][j].x);
-		vertices_aux.push_back(mesh->mTextureCoords[0][j].y);
+		vertices_aux[j * 5 + 3] = ai_mesh->mTextureCoords[0][j].x;
+		vertices_aux[j * 5 + 4] = ai_mesh->mTextureCoords[0][j].y;
 	}
 
 	// extract indices from faces
 
-	for (auto j = 0; j < mesh->mNumFaces; ++j) {
-		const auto face = mesh->mFaces[j];
+	for (auto j = 0; j < ai_mesh->mNumFaces; ++j) {
+		const auto face = ai_mesh->mFaces[j];
 		for (auto k = 0; k < face.mNumIndices; ++k) {
-			indices.push_back(face.mIndices[k]);
+			indices[j * 3 + k] = face.mIndices[k];
 		}
 	}
 
-	material_idx = mesh->mMaterialIndex;
+	material_idx = ai_mesh->mMaterialIndex;
 
 	return {vertices, vertices_aux, indices};
 }
@@ -227,7 +232,7 @@ auto extractTextures(
 		// Get the path of this texture
 		aiString path;
 		material->GetTexture(type, i, &path);
-		const std::string path_string = string(path.C_Str());
+		const string path_string = string(path.C_Str());
 
 		// Embedded texture
 		if (auto texture = scene->GetEmbeddedTexture(path.C_Str())) {
@@ -277,25 +282,36 @@ auto load_model(
 	// cout << "Scene " << normalized_path.c_str() << " with size " << fileSize << endl;
 
 	// const auto scene = importer.ReadFileFromMemory(pBuffer, fileSize, importFlags, "GLFW2");
-	const auto scene = importer.ReadFile(normalized_path.c_str(), importFlags);
-	if ((!scene) || (scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE) || (!scene->mRootNode)) {
+	const auto ai_scene = importer.ReadFile(normalized_path.c_str(), importFlags);
+	if ((!ai_scene) || (ai_scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE) || (!ai_scene->mRootNode)) {
 		std::cerr << "Error: Scene cannot be located: " << normalized_path << std::endl;
 		// delete[] pBuffer;
 		// abort();
 		return {};
 	}
 
+	for (int ai_mesh_idx = 0; ai_mesh_idx < ai_scene->mNumMeshes; ai_mesh_idx++) {
+		const aiMesh* ai_mesh = ai_scene->mMeshes[ai_mesh_idx];
+		const size_t vertex_buffer_size = ai_mesh->mNumVertices * 3 * sizeof(float);
+		const size_t normal_buffer_size = ai_mesh->mNumVertices * 3 * sizeof(float);
+		const size_t uv_buffer_size = ai_mesh->mNumVertices * 2 * sizeof(float);
+		const size_t index_buffer_size = ai_mesh->mNumFaces * 3 * sizeof(unsigned int);
+		const size_t mesh_size =
+			vertex_buffer_size + normal_buffer_size + uv_buffer_size + index_buffer_size;
+	}
+
 	// delete[] pBuffer;
 
 	auto decoding = AssetDecoding{};
 	auto assets = SceneAsset{};
+	assets.path = normalized_path;
 
-	traverseNode(decoding, assets, scene, scene->mRootNode);
+	traverseNode(decoding, assets, ai_scene, ai_scene->mRootNode);
 
 	// Load meshes
 	for (const auto& [mesh_idx, object_indices] : decoding.mesh_to_objects) {
 		size_t material_idx;
-		const auto geometry = processGeometry(scene, mesh_idx, material_idx);
+		const auto geometry = processGeometry(ai_scene, mesh_idx, material_idx);
 
 		for (const auto object_idx : object_indices) {
 			assets.objects[object_idx].geometry = assets.geometries.size();
@@ -310,13 +326,13 @@ auto load_model(
 
 	// Load materials
 	for (const auto& [material_idx, object_indices] : decoding.material_to_objects) {
-		const auto* material = scene->mMaterials[material_idx];
+		const auto* material = ai_scene->mMaterials[material_idx];
 
 		aiColor3D material_color(1.f, 1.f, 1.f);
 		material->Get(AI_MATKEY_COLOR_DIFFUSE, material_color);
 		const auto color = glm::vec3{material_color.r, material_color.g, material_color.b};
 
-		extractTextures(scene, decoding, material, material_idx, aiTextureType_DIFFUSE);
+		extractTextures(ai_scene, decoding, material, material_idx, aiTextureType_DIFFUSE);
 
 		for (const auto object_idx : object_indices) {
 			assets.objects[object_idx].material = assets.materials.size();
@@ -338,11 +354,14 @@ auto load_model(
 				assets.materials[material_idx].textures.push_back(*imageAsset);
 			}
 		}
+		else {
+			std::cout << "Error: " << imageAsset.error() << std::endl;
+		}
 	}
 
 	// Load textures from memory
 	for (const auto& [embed_idx, material_indices] : decoding.embeds_to_materials) {
-		const auto embed = scene->mTextures[embed_idx];
+		const auto embed = ai_scene->mTextures[embed_idx];
 		const auto texture_name = std::to_string(embed_idx);
 
 		// Load from memory
@@ -355,12 +374,14 @@ auto load_model(
 		}
 	}
 
+	importer.FreeScene();
+
 	return assets;
 }
 
 auto load_file(std::string_view path) -> std::string // TODO? return std::optional<std::string>
 {
-#ifdef FALSE
+#if 0
 	cout << "Loading " << path.data() << endl;
 	emscripten_fetch_attr_t attr;
 	emscripten_fetch_attr_init(&attr);
@@ -368,8 +389,8 @@ auto load_file(std::string_view path) -> std::string // TODO? return std::option
 	strcpy(attr.requestMethod, "GET");
 	attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_SYNCHRONOUS;
 	cout << "Before fetch" << endl;
-	emscripten_fetch_t* fetch =
-		emscripten_fetch(&attr, "./data/compile.sh"); // Blocks here until the operation is complete.
+	emscripten_fetch_t* fetch = emscripten_fetch(
+		&attr, "./data/compile.sh"); // Blocks here until the operation is complete.
 	if (fetch->status == 200) {
 		printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
 		// The data is now available at fetch->data[0] through fetch->data[fetch->numBytes-1];

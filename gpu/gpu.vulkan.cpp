@@ -34,31 +34,51 @@ auto instance = vk::Instance{};
 const auto FRAMES_IN_FLIGHT = 2;
 const auto SWAPCHAIN_SIZE = 3;
 
-struct Vertex {
-	glm::vec3 pos;
-	glm::vec3 norm;
-	glm::vec2 uv;
+/**
+ * Utility function to convert a list of gpu::VertexAttribtute into Vulkan attribute descriptions
+ */
+void transcode_vertex_attributes(
+	const std::vector<gpu::VertexAttribute>& attributes_in,
+	std::vector<vk::VertexInputAttributeDescription>& vk_attributes_out,
+	vk::VertexInputBindingDescription& binding_out)
+{
 
-	static auto get_binding_desc() -> vk::VertexInputBindingDescription
-	{
-		const auto binding_desc =
-			vk::VertexInputBindingDescription(0, sizeof(Vertex), vk::VertexInputRate::eVertex);
+	// There's only one vertex buffer, so hard-code the binding to 0.
+	const int VERTEX_BUFFER_BINDING = 0;
 
-		return binding_desc;
+	const size_t attribute_count = attributes_in.size();
+	vk_attributes_out.clear();
+	vk_attributes_out.reserve(attribute_count);
+
+	// Convert each attribute to its vulkan counterpart
+	size_t vertex_size = 0;
+	for (size_t attribute_idx = 0; attribute_idx < attribute_count; attribute_idx++) {
+		const auto attribute_in = attributes_in.at(attribute_idx);
+		// [float, float, float]
+		if (attribute_in == gpu::VertexAttribute::VEC3_FLOAT) {
+			const vk::VertexInputAttributeDescription vk_attribute(
+				attribute_idx, VERTEX_BUFFER_BINDING, vk::Format::eR32G32B32Sfloat, vertex_size);
+			vk_attributes_out.push_back(vk_attribute);
+			vertex_size += 3 * sizeof(float);
+		}
+		// [float, float]
+		else if (attribute_in == gpu::VertexAttribute::VEC2_FLOAT) {
+			const vk::VertexInputAttributeDescription vk_attribute(
+				attribute_idx, VERTEX_BUFFER_BINDING, vk::Format::eR32G32Sfloat, vertex_size);
+			vk_attributes_out.push_back(vk_attribute);
+			vertex_size += 2 * sizeof(float);
+		}
+		// unknown
+		else {
+			std::cerr << "Error while processing vertex attributes: unknown attribute "
+					  << static_cast<int>(attribute_in) << std::endl;
+		}
 	}
 
-	static auto get_attribute_descs() -> std::array<vk::VertexInputAttributeDescription, 3>
-	{
-		const auto pos_attr = vk::VertexInputAttributeDescription(
-			0, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, pos));
-		const auto norm_attr = vk::VertexInputAttributeDescription(
-			1, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, norm));
-		const auto uv_attr = vk::VertexInputAttributeDescription(
-			2, 0, vk::Format::eR32G32Sfloat, offsetof(Vertex, uv));
-
-		return {pos_attr, norm_attr, uv_attr};
-	}
-};
+	// Generate the Vulkan vertex binding
+	binding_out = vk::VertexInputBindingDescription(
+		VERTEX_BUFFER_BINDING, vertex_size, vk::VertexInputRate::eVertex);
+}
 
 struct PushConstantData {
 	glm::mat4 model;
@@ -76,6 +96,7 @@ namespace gpu {
 struct Buffer {
 	vk::Buffer buffer;
 	vk::DeviceMemory mem;
+	size_t size;
 };
 
 struct Image {
@@ -99,8 +120,8 @@ struct Descriptors {
 };
 
 struct Geometry {
-	std::shared_ptr<Buffer> vbo;
-	std::shared_ptr<Buffer> ebo;
+	Buffer* vbo;
+	Buffer* ebo;
 	unsigned long index_count;
 };
 
@@ -178,7 +199,7 @@ class RenderDeviceVk final : public RenderDevice {
 public:
 	RenderDeviceVk(GLFWwindow* window) : window{window}
 	{
-		static const auto debug = false;
+		static const auto debug = true;
 
 		std::cout << "[info]\t Vulkan renderer initializing >:)" << std::endl;
 
@@ -449,7 +470,7 @@ public:
 		ImGui_ImplVulkan_Init(&init_info);
 	}
 
-	auto create_buffer(const BufferInfo& info, const void* data) -> std::unique_ptr<Buffer> override
+	auto create_buffer(const BufferInfo& info, const void* data) -> Buffer* override
 	{
 		// this assumes the user wants a device local buffer
 
@@ -484,20 +505,24 @@ public:
 
 		copy_buffer(staging, buffer, info.element_count * info.stride);
 
-		std::cout << "[info]\t ~ GpuBuffer" << std::endl;
+		std::cout << "~ GpuBuffer (staging)" << std::endl;
 		device.destroyBuffer(staging);
 		device.freeMemory(staging_mem);
 
-		return std::make_unique<Buffer>(buffer, buffer_mem);
+		return new Buffer{buffer, buffer_mem, info.element_count};
 	}
 
-	auto destroy_buffer(std::shared_ptr<Buffer> buffer) -> void override
+	auto destroy_buffer(Buffer* buffer) -> void override
 	{
+		std::cout << "~ GpuBuffer" << std::endl;
 		device.destroyBuffer(buffer->buffer);
 		device.freeMemory(buffer->mem);
+		delete buffer;
 	}
 
-	auto create_image(const std::string& name, int width, int height, int channel_count, unsigned char* data_in) -> Image* override
+	auto create_image(
+		const std::string& name, int width, int height, int channel_count, unsigned char* data_in)
+		-> Image* override
 	{
 		if (image_cache.find(name) != image_cache.end()) {
 			return &image_cache.at(name);
@@ -686,32 +711,10 @@ public:
 		device.destroySampler(image->sampler);
 	}
 
-	auto create_geometry(const std::vector<float>& vertices_in, const std::vector<float>& vertices_aux_in, const std::vector<unsigned int>& indices_in) -> Geometry* override
+	auto create_geometry(ShaderPipeline* pipeline, Buffer* vertex_buffer, Buffer* index_buffer)
+		-> Geometry* override
 	{
-		const auto& vertices = vertices_in;
-		const auto& vertices_aux = vertices_aux_in;
-		const auto& indices = indices_in;
-
-		auto gpu_data = std::vector<float>{};
-		for (int i = 0; i < vertices.size() / 3; i++) {
-			const auto v = (i * 3);
-			gpu_data.push_back(vertices[v + 0]);
-			gpu_data.push_back(-vertices[v + 1]);
-			gpu_data.push_back(vertices[v + 2]);
-			const auto a = (i * 5);
-			gpu_data.push_back(vertices_aux[a + 0]);
-			gpu_data.push_back(vertices_aux[a + 1]);
-			gpu_data.push_back(vertices_aux[a + 2]);
-			gpu_data.push_back(vertices_aux[a + 3]);
-			gpu_data.push_back(vertices_aux[a + 4]);
-		}
-
-		auto vbo = create_buffer(
-			{BufferInfo::Usage::VERTEX, sizeof(float), gpu_data.size()}, gpu_data.data());
-		auto ebo = create_buffer(
-			{BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()}, indices.data());
-
-		return new Geometry{std::move(vbo), std::move(ebo), indices.size()};
+		return new Geometry{vertex_buffer, index_buffer, index_buffer->size};
 	}
 
 	auto destroy_geometry(const Geometry* geometry) -> void override
@@ -783,8 +786,10 @@ public:
 		return new Descriptors{descset, color};
 	}
 
-	auto create_pipeline(std::string_view vert_code, std::string_view frag_code)
-		-> ShaderPipeline* override
+	auto create_pipeline(
+		std::string_view vert_code,
+		std::string_view frag_code,
+		const std::vector<VertexAttribute>& vertex_attributes) -> ShaderPipeline* override
 	{
 		// Create uniform buffer
 
@@ -844,12 +849,12 @@ public:
 
 		// general graphics pipeline info
 
-		const auto binding_desc = Vertex::get_binding_desc();
-
-		const auto attribute_descs = Vertex::get_attribute_descs();
+		std::vector<vk::VertexInputAttributeDescription> vk_vertex_attributes;
+		vk::VertexInputBindingDescription vk_vertex_binding;
+		transcode_vertex_attributes(vertex_attributes, vk_vertex_attributes, vk_vertex_binding);
 
 		const auto vertex_input_info = vk::PipelineVertexInputStateCreateInfo(
-			{}, 1, &binding_desc, attribute_descs.size(), attribute_descs.data());
+			{}, 1, &vk_vertex_binding, vk_vertex_attributes.size(), vk_vertex_attributes.data());
 
 		const auto input_assembly = vk::PipelineInputAssemblyStateCreateInfo(
 			{}, vk::PrimitiveTopology::eTriangleList, false);
@@ -1004,7 +1009,7 @@ public:
 				sizeof(PushConstantData),
 				&push_constant_data);
 
-			ctx->bind_geometry_buffers(renderables[i]->vbo.get(), renderables[i]->ebo.get());
+			ctx->bind_geometry_buffers(renderables[i]->vbo, renderables[i]->ebo);
 			ctx->draw(renderables[i]->index_count, 1);
 		}
 

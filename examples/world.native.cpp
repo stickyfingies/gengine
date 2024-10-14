@@ -1,9 +1,10 @@
 #include "world.h"
 #include "camera.hpp"
+#include "fps_controller.h"
 #include "gpu.h"
 #include "physics.h"
-#include "window.h"
 #include "scene.h"
+#include "window.h"
 #ifndef __EMSCRIPTEN__
 #include <imgui.h>
 #endif
@@ -19,9 +20,11 @@ class NativeWorld : public World {
 	unique_ptr<Scene> scene;
 	shared_ptr<gpu::RenderDevice> gpu;
 	gengine::TextureFactory texture_factory{};
+	ResourceContainer resources;
 
 	// Game data
 	Camera camera;
+	unique_ptr<FirstPersonController> fps_controller;
 	gpu::ShaderPipeline* pipeline;
 
 public:
@@ -29,50 +32,60 @@ public:
 	{
 		physics_engine = make_unique<gengine::PhysicsEngine>();
 
+		SceneBuilder sceneBuilder{};
+
 		camera = Camera(glm::vec3(0.0f, 5.0f, 90.0f));
 
-		// create game resources
+		sceneBuilder.apply_model_settings(
+			"./data/spinny.obj", {.flip_uvs = false, .flip_triangle_winding = true});
 
-// TODO: this is incorrect because GL rendering on Desktop Linux will break
+		sceneBuilder.apply_model_settings(
+			"./data/map.obj", {.flip_uvs = true, .flip_triangle_winding = true});
+
+		auto player_pos = glm::mat4(1.0f);
+		player_pos = glm::translate(player_pos, glm::vec3(20.0f, 100.0f, 20.0f));
+		
+		sceneBuilder.add_game_object(
+			player_pos, TactileCapsule{.mass = 70.0f}, VisualModel{.path = "./data/spinny.obj"});
+
+		auto ball_pos = glm::mat4(1.0f);
+		ball_pos = glm::translate(ball_pos, glm::vec3(10.0f, 100.0f, 0.0f));
+		ball_pos = glm::scale(ball_pos, glm::vec3(6.0f, 6.0f, 6.0f));
+		
+		sceneBuilder.add_game_object(
+			ball_pos,
+			TactileSphere{.mass = 62.0f, .radius = 1.0f},
+			VisualModel{.path = "./data/spinny.obj"});
+
+		sceneBuilder.add_game_object(glm::mat4{}, VisualModel{.path = "./data/map.obj"});
+
+		// Describe the "shape" of our geometry data
+		std::vector<gpu::VertexAttribute> vertex_attributes;
+		vertex_attributes.push_back(gpu::VertexAttribute::VEC3_FLOAT); // position
+		vertex_attributes.push_back(gpu::VertexAttribute::VEC3_FLOAT); // normal
+		vertex_attributes.push_back(gpu::VertexAttribute::VEC2_FLOAT); // uv
+
+		// TODO: this is incorrect because GL rendering on Desktop Linux will break
 #ifdef __EMSCRIPTEN__
 		const auto vert = gengine::load_file("./data/gl.vert.glsl");
 		const auto frag = gengine::load_file("./data/gl.frag.glsl");
-		pipeline = gpu->create_pipeline(vert, frag);
+		pipeline = gpu->create_pipeline(vert, frag, vertex_attributes);
 #else
 		const auto vert = gengine::load_file("./data/cube.vert.spv");
 		const auto frag = gengine::load_file("./data/cube.frag.spv");
-		pipeline = gpu->create_pipeline(vert, frag);
+		pipeline = gpu->create_pipeline(vert, frag, vertex_attributes);
 #endif
 
-		SceneBuilder sceneBuilder(gpu.get(), physics_engine.get(), &texture_factory);
-
-		// Create physics bodies
-		{ // player
-			const auto mass = 70.0f;
-			auto transform = glm::mat4(1.0f);
-			transform = glm::translate(transform, glm::vec3(20.0f, 100.0f, 20.0f));
-			const auto body = physics_engine->create_capsule(mass, transform);
-			sceneBuilder.add_game_object(pipeline, transform, body, "./data/spinny.obj", false, true);
-		}
-		{
-			const auto mass = 62.0f;
-			auto transform = glm::mat4(1.0f);
-			transform = glm::translate(transform, glm::vec3(10.0f, 100.0f, 0.0f));
-			transform = glm::scale(transform, glm::vec3(6.0f, 6.0f, 6.0f));
-			const auto body = physics_engine->create_sphere(1.0f, mass, transform);
-			sceneBuilder.add_game_object(pipeline, transform, body, "./data/spinny.obj", false, true);
-		}
-
-		sceneBuilder.add_game_object(
-			pipeline, glm::mat4{}, nullptr, "./data/map.obj", true, true);
+		scene = sceneBuilder.build(resources, pipeline, gpu.get(), physics_engine.get(), &texture_factory);
 
 		// Assumes all images are uploaded to the GPU and are useless in system memory.
 		texture_factory.unload_all_images();
 
-		scene = sceneBuilder.finish();
-
 		cout << "[info]\t SUCCESS!! Created scene with " << scene->transforms.size() << " objects"
 			 << endl;
+
+		fps_controller =
+			make_unique<FirstPersonController>(physics_engine.get(), camera, scene->collidables[0]);
 
 		// start getting things going
 		update_physics(0.16f);
@@ -82,30 +95,22 @@ public:
 	{
 		cout << "~ NativeWorld" << endl;
 
-		for (const auto& collidable : scene->collidables) {
-			physics_engine->destroy_collidable(collidable);
+		for (const auto& rigidbody : resources.rigidbodies) {
+			physics_engine->destroy_collidable(rigidbody);
 		}
-
-		// TODO: automate cleanup
 
 		gpu->destroy_pipeline(pipeline);
 
-		// gpu->destroy_image(albedo);
-
-		for (auto renderComponent : scene->render_components) {
-			gpu->destroy_geometry(renderComponent);
+		for (auto gpu_geometry : resources.gpu_geometries) {
+			gpu->destroy_geometry(gpu_geometry);
 		}
 	}
 
 	void update(double elapsed_time) override
 	{
-		// TODO get this from main.cpp
-		const bool editor_enabled = false;
 
-		if (!editor_enabled) {
-			update_input(elapsed_time, scene->collidables[0]);
-			update_physics(elapsed_time);
-		}
+		update_input(elapsed_time, scene->collidables[0]);
+		update_physics(elapsed_time);
 
 		camera.Position = glm::vec3(scene->transforms[0][3]);
 
@@ -163,49 +168,14 @@ public:
 
 	auto update_input(float delta, gengine::Collidable* player) -> void
 	{
-		auto sprinting = false;
-
 		auto window_data = static_cast<gengine::WindowData*>(glfwGetWindowUserPointer(window));
 
 		camera.process_mouse_movement(window_data->delta_mouse_x, window_data->delta_mouse_y);
 
+		fps_controller->update(window, delta);
+
 		window_data->delta_mouse_x = 0;
 		window_data->delta_mouse_y = 0;
-
-		if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
-			glfwSetWindowShouldClose(window, true);
-		}
-		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
-			sprinting = true;
-		}
-		if (glfwGetKey(window, GLFW_KEY_SPACE)) {
-			const auto on_ground = physics_engine->raycast(
-				camera.Position,
-				glm::vec3(camera.Position.x, camera.Position.y - 5, camera.Position.z));
-
-			if (on_ground) {
-				physics_engine->apply_force(player, glm::vec3(0.0f, 15.0f, 0.0f) * (delta * 1000));
-			}
-		}
-
-		if (glfwGetKey(window, GLFW_KEY_W)) {
-			physics_engine->apply_force(
-				player,
-				glm::vec3(camera.Front.x, 0.0f, camera.Front.z) * (delta * 1000) *
-					(1.0f + sprinting * 5.0f));
-		}
-		else if (glfwGetKey(window, GLFW_KEY_S)) {
-			physics_engine->apply_force(
-				player, glm::vec3(-camera.Front.x, 0.0f, -camera.Front.z) * (delta * 1000));
-		}
-		if (glfwGetKey(window, GLFW_KEY_A)) {
-			physics_engine->apply_force(
-				player, glm::vec3(-camera.Right.x, 0.0f, -camera.Right.z) * (delta * 1000));
-		}
-		else if (glfwGetKey(window, GLFW_KEY_D)) {
-			physics_engine->apply_force(
-				player, glm::vec3(camera.Right.x, 0.0f, camera.Right.z) * (delta * 1000));
-		}
 	}
 
 	auto update_physics(float delta) -> void
