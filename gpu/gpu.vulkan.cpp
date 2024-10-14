@@ -28,9 +28,6 @@
 
 namespace {
 
-// TODO: get rid of this global!!!
-auto instance = vk::Instance{};
-
 const auto FRAMES_IN_FLIGHT = 2;
 const auto SWAPCHAIN_SIZE = 3;
 
@@ -39,45 +36,46 @@ const auto SWAPCHAIN_SIZE = 3;
  */
 void transcode_vertex_attributes(
 	const std::vector<gpu::VertexAttribute>& attributes_in,
-	std::vector<vk::VertexInputAttributeDescription>& vk_attributes_out,
-	vk::VertexInputBindingDescription& binding_out)
+	std::vector<vk::VertexInputAttributeDescription>& vk_attributes,
+	vk::VertexInputBindingDescription& vk_binding)
 {
 
 	// There's only one vertex buffer, so hard-code the binding to 0.
-	const int VERTEX_BUFFER_BINDING = 0;
+	const int BINDING_IDX = 0;
 
+	// How many attributes we're putting in a vertex
 	const size_t attribute_count = attributes_in.size();
-	vk_attributes_out.clear();
-	vk_attributes_out.reserve(attribute_count);
 
-	// Convert each attribute to its vulkan counterpart
+	// Prepare the output container
+	vk_attributes.clear();
+	vk_attributes.reserve(attribute_count);
+
+	// Convert each provided attribute to its vulkan counterpart
+	// Grow the vertex_size as we keep adding attributes
 	size_t vertex_size = 0;
 	for (size_t attribute_idx = 0; attribute_idx < attribute_count; attribute_idx++) {
 		const auto attribute_in = attributes_in.at(attribute_idx);
-		// [float, float, float]
-		if (attribute_in == gpu::VertexAttribute::VEC3_FLOAT) {
-			const vk::VertexInputAttributeDescription vk_attribute(
-				attribute_idx, VERTEX_BUFFER_BINDING, vk::Format::eR32G32B32Sfloat, vertex_size);
-			vk_attributes_out.push_back(vk_attribute);
-			vertex_size += 3 * sizeof(float);
-		}
-		// [float, float]
-		else if (attribute_in == gpu::VertexAttribute::VEC2_FLOAT) {
-			const vk::VertexInputAttributeDescription vk_attribute(
-				attribute_idx, VERTEX_BUFFER_BINDING, vk::Format::eR32G32Sfloat, vertex_size);
-			vk_attributes_out.push_back(vk_attribute);
+		switch (attribute_in) {
+		case gpu::VertexAttribute::VEC2_FLOAT: // 2D Floating-Point Vector
+			vk_attributes.push_back(
+				{attribute_idx, BINDING_IDX, vk::Format::eR32G32Sfloat, vertex_size});
 			vertex_size += 2 * sizeof(float);
-		}
-		// unknown
-		else {
+			break;
+		case gpu::VertexAttribute::VEC3_FLOAT: // 3D Floating-Point Vector
+			vk_attributes.push_back(
+				{attribute_idx, BINDING_IDX, vk::Format::eR32G32B32Sfloat, vertex_size});
+			vertex_size += 3 * sizeof(float);
+			break;
+		default: // Unknown Attribute Type
 			std::cerr << "Error while processing vertex attributes: unknown attribute "
 					  << static_cast<int>(attribute_in) << std::endl;
+			break;
 		}
 	}
 
 	// Generate the Vulkan vertex binding
-	binding_out = vk::VertexInputBindingDescription(
-		VERTEX_BUFFER_BINDING, vertex_size, vk::VertexInputRate::eVertex);
+	vk_binding =
+		vk::VertexInputBindingDescription(BINDING_IDX, vertex_size, vk::VertexInputRate::eVertex);
 }
 
 struct PushConstantData {
@@ -384,12 +382,10 @@ public:
 
 		// Create semaphores
 
-		for (auto i = 0; i < FRAMES_IN_FLIGHT; ++i) {
-			image_available_semaphores.push_back(device.createSemaphore({}));
-			render_finished_semaphores.push_back(device.createSemaphore({}));
-
-			swapchain_fences.push_back(
-				device.createFence(vk::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled)));
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i) {
+			image_available_semaphores[i] = device.createSemaphore({});
+			render_finished_semaphores[i] = device.createSemaphore({});
+			swapchain_fences[i] = device.createFence({vk::FenceCreateFlagBits::eSignaled});
 		}
 
 		descset_layout = create_descriptor_set_layout();
@@ -862,12 +858,12 @@ public:
 		const auto viewport = vk::Viewport(
 			0.0f,
 			0.0f,
-			static_cast<float>(extent.width),
-			static_cast<float>(extent.height),
+			static_cast<float>(viewport_extent.width),
+			static_cast<float>(viewport_extent.height),
 			0.0f,
 			1.0f);
 
-		const auto scissor = vk::Rect2D(vk::Offset2D(), extent);
+		const auto scissor = vk::Rect2D(vk::Offset2D(), viewport_extent);
 
 		const auto viewport_state = vk::PipelineViewportStateCreateInfo(
 			{},
@@ -1047,7 +1043,7 @@ public:
 			cmdbuf.reset({});
 
 			return std::make_unique<RenderContextVk>(
-				cmdbuf, backbuffer_pass, backbuffers[image_idx], extent);
+				cmdbuf, backbuffer_pass, backbuffers[image_idx], viewport_extent);
 		}
 		catch (vk::OutOfDateKHRError) {
 			re_create_swapchain();
@@ -1298,17 +1294,17 @@ private:
 		const auto surface_caps = physical_device.getSurfaceCapabilitiesKHR(surface);
 
 		if (surface_caps.currentExtent.width == std::numeric_limits<uint32_t>::max()) {
-			extent.width = std::clamp(
+			viewport_extent.width = std::clamp(
 				static_cast<uint32_t>(width),
 				surface_caps.minImageExtent.width,
 				surface_caps.maxImageExtent.width);
-			extent.height = std::clamp(
+			viewport_extent.height = std::clamp(
 				static_cast<uint32_t>(height),
 				surface_caps.minImageExtent.height,
 				surface_caps.maxImageExtent.height);
 		}
 		else {
-			extent = surface_caps.currentExtent;
+			viewport_extent = surface_caps.currentExtent;
 		}
 
 		const auto present_mode = [&] {
@@ -1352,7 +1348,7 @@ private:
 			surface_caps.minImageCount,
 			surface_fmt,
 			vk::ColorSpaceKHR::eSrgbNonlinear,
-			extent,
+			viewport_extent,
 			1,
 			vk::ImageUsageFlagBits::eColorAttachment,
 			vk::SharingMode::eExclusive,
@@ -1383,8 +1379,8 @@ private:
 				 nullptr});
 		}
 
-		std::cout << "[info]\t Swapchain (" << extent.width << "x" << extent.height << ") "
-				  << to_string(surface_fmt) << std::endl;
+		std::cout << "[info]\t Swapchain (" << viewport_extent.width << "x"
+				  << viewport_extent.height << ") " << to_string(surface_fmt) << std::endl;
 	}
 
 	auto destroy_swapchain() -> void
@@ -1392,7 +1388,7 @@ private:
 		// TODO - Not really a fan
 		std::cout << "[info]\t ~ GpuImage DepthBuffer" << std::endl;
 		device.destroyImageView(depth_view);
-		device.destroyImage(depth_buffer);
+		device.destroyImage(depth_image);
 		device.freeMemory(depth_mem);
 
 		for (const auto& backbuffer : backbuffers) {
@@ -1413,18 +1409,18 @@ private:
 		auto mipLevels = 1u;
 		create_image_vk(
 			"DepthBuffer",
-			extent.width,
-			extent.height,
+			viewport_extent.width,
+			viewport_extent.height,
 			vk::Format::eD24UnormS8Uint,
 			vk::ImageTiling::eOptimal,
 			vk::ImageUsageFlagBits::eDepthStencilAttachment,
 			vk::MemoryPropertyFlagBits::eDeviceLocal,
-			depth_buffer,
+			depth_image,
 			depth_mem,
 			mipLevels);
 
 		depth_view = create_image_view(
-			depth_buffer, vk::Format::eD24UnormS8Uint, vk::ImageAspectFlagBits::eDepth, mipLevels);
+			depth_image, vk::Format::eD24UnormS8Uint, vk::ImageAspectFlagBits::eDepth, mipLevels);
 	}
 
 	auto create_backbuffers() -> void
@@ -1437,8 +1433,8 @@ private:
 				backbuffer_pass,
 				attachments.size(),
 				attachments.data(),
-				extent.width,
-				extent.height,
+				viewport_extent.width,
+				viewport_extent.height,
 				1);
 
 			backbuffers.push_back(device.createFramebuffer(framebuffer_info));
@@ -1458,11 +1454,13 @@ private:
 
 	VkSurfaceKHR surface;
 
+	vk::Instance instance;
+
 	vk::SwapchainKHR swapchain;
 
 	vk::Format surface_fmt;
 
-	vk::Extent2D extent;
+	vk::Extent2D viewport_extent;
 
 	vk::PhysicalDevice physical_device;
 
@@ -1470,7 +1468,7 @@ private:
 
 	vk::RenderPass backbuffer_pass;
 
-	vk::Image depth_buffer;
+	vk::Image depth_image;
 	vk::ImageView depth_view;
 	vk::DeviceMemory depth_mem;
 
@@ -1483,13 +1481,11 @@ private:
 
 	vk::DescriptorPool imgui_pool;
 
-	std::vector<vk::Semaphore> image_available_semaphores;
-	std::vector<vk::Semaphore> render_finished_semaphores;
-	std::vector<vk::Fence> swapchain_fences;
+	std::array<vk::Semaphore, FRAMES_IN_FLIGHT> image_available_semaphores;
+	std::array<vk::Semaphore, FRAMES_IN_FLIGHT> render_finished_semaphores;
+	std::array<vk::Fence, FRAMES_IN_FLIGHT> swapchain_fences;
 	std::vector<vk::Framebuffer> backbuffers;
 	std::vector<vk::CommandBuffer> cmd_buffers;
-
-	std::vector<Buffer> buffers;
 
 	std::vector<Image> swapchain_images;
 

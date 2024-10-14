@@ -37,10 +37,10 @@ public:
 		camera = Camera(glm::vec3(0.0f, 5.0f, 90.0f));
 
 		sceneBuilder.apply_model_settings(
-			"./data/spinny.obj", {.flip_uvs = false, .flip_triangle_winding = true});
+			"./data/spinny.obj", {.flip_uvs = false, .flip_triangle_winding = false});
 
 		sceneBuilder.apply_model_settings(
-			"./data/map.obj", {.flip_uvs = true, .flip_triangle_winding = true});
+			"./data/map.obj", {.flip_uvs = true, .flip_triangle_winding = false});
 
 		auto player_pos = glm::mat4(1.0f);
 		player_pos = glm::translate(player_pos, glm::vec3(20.0f, 100.0f, 20.0f));

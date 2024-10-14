@@ -11,9 +11,12 @@ using namespace std;
 // Cache GPU images that we've seen before
 using GpuImageIndex = std::unordered_map<std::string, gpu::Image*>;
 
-/// TODO this shouldn't be void, make it return some information about WHERE in the Scene* this
-/// model's GPU resources have been placed, so that future objects which use that model can simply
-/// copy those regions from the Scene* and append them back into its self.
+/**
+ * This creates GPU resources for a game object.
+ * @returns a collection of gpu resources used by this object.
+ * @param global_resources is populated with gpu resources used by this game object.
+ * @param gpu_image_index is a cache of gpu images associated with disk paths
+ */
 static ResourceContainer make_game_object(
 	ResourceContainer& global_resources,
 	gpu::ShaderPipeline* pipeline,
@@ -60,25 +63,11 @@ static ResourceContainer make_game_object(
 	/// Geometry --> Renderable
 	for (const auto& geometry : model.geometries) {
 
-		auto gpu_data = std::vector<float>{};
 		const auto& vertices = geometry.vertices;
-		const auto& vertices_aux = geometry.vertices_aux;
 		const auto& indices = geometry.indices;
-		for (int i = 0; i < vertices.size() / 3; i++) {
-			const auto v = (i * 3);
-			gpu_data.push_back(vertices[v + 0]);
-			gpu_data.push_back(-vertices[v + 1]);
-			gpu_data.push_back(vertices[v + 2]);
-			const auto a = (i * 5);
-			gpu_data.push_back(vertices_aux[a + 0]);
-			gpu_data.push_back(vertices_aux[a + 1]);
-			gpu_data.push_back(vertices_aux[a + 2]);
-			gpu_data.push_back(vertices_aux[a + 3]);
-			gpu_data.push_back(vertices_aux[a + 4]);
-		}
 
 		auto vbo = gpu->create_buffer(
-			{gpu::BufferInfo::Usage::VERTEX, sizeof(float), gpu_data.size()}, gpu_data.data());
+			{gpu::BufferInfo::Usage::VERTEX, sizeof(float), vertices.size()}, vertices.data());
 		auto ebo = gpu->create_buffer(
 			{gpu::BufferInfo::Usage::INDEX, sizeof(unsigned int), indices.size()}, indices.data());
 

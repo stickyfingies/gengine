@@ -50,8 +50,7 @@ private:
 };
 
 struct GeometryAsset {
-	std::vector<float> vertices;	 // raw positions
-	std::vector<float> vertices_aux; // normals, uvs
+	std::vector<float> vertices;	 // positions, normals, uvs
 	std::vector<unsigned int> indices;
 };
 

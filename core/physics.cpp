@@ -169,9 +169,9 @@ auto PhysicsEngine::create_mesh(
 	auto nonIndexedVertices = std::vector<float>();
 	for (int i = 0; i < indices.size(); i++) {
 		const auto idx = indices[i];
-		nonIndexedVertices.push_back(-vertices[idx * 3 + 0]);
-		nonIndexedVertices.push_back(vertices[idx * 3 + 1]);
-		nonIndexedVertices.push_back(vertices[idx * 3 + 2]);
+		nonIndexedVertices.push_back(-vertices[idx * 8 + 0]);
+		nonIndexedVertices.push_back(vertices[idx * 8 + 1]);
+		nonIndexedVertices.push_back(vertices[idx * 8 + 2]);
 	}
 
 	std::cout << "[info]\t Collidable (" << vertices.size() << " vertices, "
