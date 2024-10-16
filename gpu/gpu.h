@@ -35,14 +35,9 @@ struct RenderImage;
 struct Geometry;
 
 /**
- * Describes the shape and usage of a VRAM allocation
+ * Describes the usage of a VRAM allocation
  */
-struct BufferInfo {
-	enum class Usage { VERTEX, INDEX };
-	Usage usage;
-	std::size_t stride;
-	std::size_t element_count;
-};
+enum class BufferUsage { VERTEX, INDEX };
 
 /**
  * A "vertex" is a set of attributes, like position, texture coordinates, etc.
@@ -78,7 +73,7 @@ public:
 	 * @param info describes the VRAM allocation shape and its usage
 	 * @param data is a region of RAM which is uploaded over PCI-e
 	 */
-	virtual auto create_buffer(const BufferInfo& info, const void* data) -> Buffer* = 0;
+	virtual auto create_buffer(BufferUsage usage, size_t size, const void* data) -> Buffer* = 0;
 
 	/**
 	 * Free a region of VRAM.
@@ -98,6 +93,8 @@ public:
 		const std::string& name, int width, int height, int channel_count, unsigned char* data)
 		-> Image* = 0;
 
+	virtual auto destroy_image(Image*) -> void = 0;
+
 	/**
 	 * @deprecated may be removed in the future
 	 */
@@ -110,8 +107,10 @@ public:
 	 * @param vertex_attributes a list of attributes used in each vertex
 	 * @return ShaderPipeline*
 	 */
-	virtual auto create_pipeline(std::string_view vert_code, std::string_view frag_code, const std::vector<VertexAttribute>& vertex_attributes)
-		-> ShaderPipeline* = 0;
+	virtual auto create_pipeline(
+		std::string_view vert_code,
+		std::string_view frag_code,
+		const std::vector<VertexAttribute>& vertex_attributes) -> ShaderPipeline* = 0;
 
 	/**
 	 * "Descriptors" bind GPU resources to slots in shaders.
@@ -130,7 +129,11 @@ public:
 	 * @param vertices_aux see implementation
 	 * @param indices see implementation
 	 */
-	virtual auto create_geometry(ShaderPipeline* pipeline, Buffer* vertex_buffer, Buffer* index_buffer) -> Geometry* = 0;
+	virtual auto create_geometry(
+		ShaderPipeline* pipeline,
+		Buffer* vertex_buffer,
+		Buffer* index_buffer,
+		size_t index_count) -> Geometry* = 0;
 
 	virtual auto destroy_geometry(const Geometry* geometry) -> void = 0;
 

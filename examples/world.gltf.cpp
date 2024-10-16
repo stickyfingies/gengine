@@ -41,15 +41,20 @@ public:
 
 		sceneBuilder.add_game_object(glm::mat4{}, VisualModel{.path = "./data/skjarisles.glb"});
 
+		vector<gpu::VertexAttribute> vertex_attributes;
+		vertex_attributes.push_back(gpu::VertexAttribute::VEC3_FLOAT); // position
+		vertex_attributes.push_back(gpu::VertexAttribute::VEC3_FLOAT); // normal
+		vertex_attributes.push_back(gpu::VertexAttribute::VEC2_FLOAT); // uv
+
 		// TODO: this is incorrect because GL rendering on Desktop Linux will break
 #ifdef __EMSCRIPTEN__
 		const auto vert = gengine::load_file("./data/gl.vert.glsl");
 		const auto frag = gengine::load_file("./data/gl.frag.glsl");
-		pipeline = gpu->create_pipeline(vert, frag);
+		pipeline = gpu->create_pipeline(vert, frag, vertex_attributes);
 #else
-		const auto vert = gengine::load_file("./data/cube.vert.spv");
-		const auto frag = gengine::load_file("./data/cube.frag.spv");
-		pipeline = gpu->create_pipeline(vert, frag);
+		const auto vert = gengine::load_file("./data/vk.vert.spv");
+		const auto frag = gengine::load_file("./data/vk.frag.spv");
+		pipeline = gpu->create_pipeline(vert, frag, vertex_attributes);
 #endif
 
 		scene = sceneBuilder.build(resources, pipeline, gpu.get(), physics_engine.get(), &texture_factory);

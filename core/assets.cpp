@@ -257,7 +257,7 @@ auto load_model(
 
 	cout << "Scene path: " << normalized_path << endl;
 
-	uint32_t importFlags = aiProcess_Triangulate | aiProcess_GenNormals;
+	uint32_t importFlags = aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_OptimizeMeshes;
 	if (flipUVs) {
 		importFlags |= aiProcess_FlipUVs;
 	}

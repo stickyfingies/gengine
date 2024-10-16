@@ -199,9 +199,9 @@ public:
 	{
 		static const auto debug = true;
 
-		std::cout << "[info]\t Vulkan renderer initializing >:)" << std::endl;
+		std::cout << "Vulkan renderer initializing >:)" << std::endl;
 
-		std::cout << "[info]\t * Debug: " << debug << std::endl;
+		std::cout << "* Debug: " << debug << std::endl;
 
 		const auto app_info = vk::ApplicationInfo(
 			"App Name",
@@ -220,7 +220,7 @@ public:
 			VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
 
 		for (const auto& ext : extension_names) {
-			std::cout << "[info]\t * Extension: " << ext << std::endl;
+			std::cout << "* Extension: " << ext << std::endl;
 		}
 
 		const auto layer_names = std::array{"VK_LAYER_KHRONOS_validation"};
@@ -246,10 +246,10 @@ public:
 
 			const auto properties = physical_device.getProperties();
 
-			std::cout << "[info]\t * " << properties.deviceName << std::endl;
-			std::cout << "[info]\t\t * Max push constants: "
+			std::cout << "* " << properties.deviceName << std::endl;
+			std::cout << "\t * Max push constants: "
 					  << properties.limits.maxPushConstantsSize << " bytes" << std::endl;
-			std::cout << "[info]\t\t * Max memory allocations: "
+			std::cout << "\t * Max memory allocations: "
 					  << properties.limits.maxMemoryAllocationCount << std::endl;
 		}
 
@@ -466,7 +466,7 @@ public:
 		ImGui_ImplVulkan_Init(&init_info);
 	}
 
-	auto create_buffer(const BufferInfo& info, const void* data) -> Buffer* override
+	auto create_buffer(BufferUsage usage, size_t size, const void* data) -> Buffer* override
 	{
 		// this assumes the user wants a device local buffer
 
@@ -476,7 +476,7 @@ public:
 		createBufferVk(
 			device,
 			physical_device,
-			info.element_count * info.stride,
+			size,
 			vk::BufferUsageFlagBits::eTransferSrc,
 			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
 			staging,
@@ -488,24 +488,24 @@ public:
 		createBufferVk(
 			device,
 			physical_device,
-			info.element_count * info.stride,
-			BUFFER_USAGE_TABLE[static_cast<unsigned int>(info.usage)] |
+			size,
+			BUFFER_USAGE_TABLE[static_cast<unsigned int>(usage)] |
 				vk::BufferUsageFlagBits::eTransferDst,
 			vk::MemoryPropertyFlagBits::eDeviceLocal,
 			buffer,
 			buffer_mem);
 
-		auto data_dst = device.mapMemory(staging_mem, 0, info.element_count * info.stride);
-		memcpy(data_dst, data, info.element_count * info.stride);
+		auto data_dst = device.mapMemory(staging_mem, 0, size);
+		memcpy(data_dst, data, size);
 		device.unmapMemory(staging_mem);
 
-		copy_buffer(staging, buffer, info.element_count * info.stride);
+		copy_buffer(staging, buffer, size);
 
 		std::cout << "~ GpuBuffer (staging)" << std::endl;
 		device.destroyBuffer(staging);
 		device.freeMemory(staging_mem);
 
-		return new Buffer{buffer, buffer_mem, info.element_count};
+		return new Buffer{buffer, buffer_mem, size};
 	}
 
 	auto destroy_buffer(Buffer* buffer) -> void override
@@ -572,7 +572,7 @@ public:
 		// This also handles the final image layout transition
 		generate_mipmaps(image, width, height, mipLevels);
 
-		std::cout << "[info]\t ~ GpuBuffer" << std::endl;
+		std::cout << "~ GpuBuffer" << std::endl;
 		device.destroyBuffer(staging_buffer);
 		device.freeMemory(staging_mem);
 
@@ -699,7 +699,7 @@ public:
 
 	auto destroy_image(Image* image) -> void
 	{
-		std::cout << "[info]\t ~ GpuImage " << image->name << std::endl;
+		std::cout << "~ GpuImage " << image->name << std::endl;
 
 		device.destroyImageView(image->view);
 		device.destroyImage(image->image);
@@ -707,10 +707,10 @@ public:
 		device.destroySampler(image->sampler);
 	}
 
-	auto create_geometry(ShaderPipeline* pipeline, Buffer* vertex_buffer, Buffer* index_buffer)
+	auto create_geometry(ShaderPipeline* pipeline, Buffer* vertex_buffer, Buffer* index_buffer, size_t index_count)
 		-> Geometry* override
 	{
-		return new Geometry{vertex_buffer, index_buffer, index_buffer->size};
+		return new Geometry{vertex_buffer, index_buffer, index_count};
 	}
 
 	auto destroy_geometry(const Geometry* geometry) -> void override
@@ -755,7 +755,7 @@ public:
 	auto create_descriptors(ShaderPipeline* pipeline, Image* albedo, const glm::vec3& color)
 		-> Descriptors* override
 	{
-		std::cout << "[info]\t Descriptor " << albedo->name << " rgb(" << color.r << ", " << color.g
+		std::cout << "Descriptor " << albedo->name << " rgb(" << color.r << ", " << color.g
 				  << ", " << color.b << ")" << std::endl;
 
 		// Allocate sets
@@ -1147,7 +1147,7 @@ private:
 
 		image = device.createImage(image_info);
 
-		std::cout << "[info]\t GpuImage " << debugName << " (" << width << "x" << height
+		std::cout << "GpuImage " << debugName << " (" << width << "x" << height
 				  << ") mips:" << mipLevels << " " << to_string(format) << " " << to_string(usage)
 				  << std::endl;
 
@@ -1379,14 +1379,14 @@ private:
 				 nullptr});
 		}
 
-		std::cout << "[info]\t Swapchain (" << viewport_extent.width << "x"
+		std::cout << "Swapchain (" << viewport_extent.width << "x"
 				  << viewport_extent.height << ") " << to_string(surface_fmt) << std::endl;
 	}
 
 	auto destroy_swapchain() -> void
 	{
 		// TODO - Not really a fan
-		std::cout << "[info]\t ~ GpuImage DepthBuffer" << std::endl;
+		std::cout << "~ GpuImage DepthBuffer" << std::endl;
 		device.destroyImageView(depth_view);
 		device.destroyImage(depth_image);
 		device.freeMemory(depth_mem);

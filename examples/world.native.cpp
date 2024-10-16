@@ -37,7 +37,10 @@ public:
 		camera = Camera(glm::vec3(0.0f, 5.0f, 90.0f));
 
 		sceneBuilder.apply_model_settings(
-			"./data/spinny.obj", {.flip_uvs = false, .flip_triangle_winding = true});
+			"./data/sphere.glb", {.flip_uvs = false, .flip_triangle_winding = true});
+
+		sceneBuilder.apply_model_settings(
+			"./data/skjarisles.glb", {.flip_uvs = true, .flip_triangle_winding = true});
 
 		sceneBuilder.apply_model_settings(
 			"./data/map.obj", {.flip_uvs = true, .flip_triangle_winding = true});
@@ -46,7 +49,7 @@ public:
 		player_pos = glm::translate(player_pos, glm::vec3(20.0f, 100.0f, 20.0f));
 		
 		sceneBuilder.add_game_object(
-			player_pos, TactileCapsule{.mass = 70.0f}, VisualModel{.path = "./data/spinny.obj"});
+			player_pos, TactileCapsule{.mass = 70.0f}, VisualModel{.path = "./data/sphere.glb"});
 
 		auto ball_pos = glm::mat4(1.0f);
 		ball_pos = glm::translate(ball_pos, glm::vec3(10.0f, 100.0f, 0.0f));
@@ -55,9 +58,9 @@ public:
 		sceneBuilder.add_game_object(
 			ball_pos,
 			TactileSphere{.mass = 62.0f, .radius = 1.0f},
-			VisualModel{.path = "./data/spinny.obj"});
+			VisualModel{.path = "./data/sphere.glb"});
 
-		sceneBuilder.add_game_object(glm::mat4{}, VisualModel{.path = "./data/map.obj"});
+		sceneBuilder.add_game_object(glm::mat4{}, VisualModel{.path = "./data/skjarisles.glb"});
 
 		// Describe the "shape" of our geometry data
 		std::vector<gpu::VertexAttribute> vertex_attributes;
@@ -66,7 +69,7 @@ public:
 		vertex_attributes.push_back(gpu::VertexAttribute::VEC2_FLOAT); // uv
 
 		// TODO: this is incorrect because GL rendering on Desktop Linux will break
-#ifdef __EMSCRIPTEN__
+#if 1//def __EMSCRIPTEN__
 		const auto vert = gengine::load_file("./data/gl.vert.glsl");
 		const auto frag = gengine::load_file("./data/gl.frag.glsl");
 		pipeline = gpu->create_pipeline(vert, frag, vertex_attributes);
@@ -100,6 +103,10 @@ public:
 		}
 
 		gpu->destroy_pipeline(pipeline);
+
+		for (auto gpu_image : resources.gpu_images) {
+			gpu->destroy_image(gpu_image);
+		}
 
 		for (auto gpu_geometry : resources.gpu_geometries) {
 			gpu->destroy_geometry(gpu_geometry);

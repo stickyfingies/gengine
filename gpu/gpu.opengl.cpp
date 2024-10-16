@@ -20,7 +20,8 @@
 using namespace std;
 
 struct gpu::Buffer {
-	gpu::BufferInfo info;
+	gpu::BufferUsage usage;
+	size_t size;
 	GLuint gl_buffer;
 };
 
@@ -40,9 +41,9 @@ struct gpu::Descriptors {
 
 struct gpu::Geometry {
 	GLuint vao;
-	shared_ptr<gpu::Buffer> vbo;
-	shared_ptr<gpu::Buffer> ebo;
-	unsigned long index_count;
+	gpu::Buffer* vbo;
+	gpu::Buffer* ebo;
+	size_t index_count;
 };
 
 // This abstracts over OpenGL/glES differences
@@ -85,8 +86,6 @@ bool init_gl()
 		cout << "Error: Failed to initialize GLAD" << endl;
 		return false;
 	}
-	// glEnable(GL_DEBUG_OUTPUT);
-	// glDebugMessageCallback(webgl::messageCallback, 0);
 #endif
 	return true;
 }
@@ -136,19 +135,16 @@ public:
 
 	~RenderDeviceGL() { cout << "~ RenderDeviceGL" << endl; }
 
-	auto create_buffer(const BufferInfo& info, const void* data) -> Buffer* override
+	auto create_buffer(BufferUsage usage, size_t size, const void* data) -> Buffer* override
 	{
-		const auto size = info.element_count * info.stride;
+		const GLint gl_usage = BUFFER_USAGE_TABLE[static_cast<unsigned int>(usage)];
 
-		const auto buffer_type = BUFFER_USAGE_TABLE[static_cast<unsigned int>(info.usage)];
-
-		cout << "GPU Buffer size: " << size << " stride: " << info.stride << " type: 0x" << hex
-			 << buffer_type << dec << endl;
-		GLuint VBO;
-		glGenBuffers(1, &VBO);
-		glBindBuffer(buffer_type, VBO);
-		glBufferData(buffer_type, size, data, GL_STATIC_DRAW);
-		return new Buffer{info, VBO};
+		cout << "GPU Buffer size: " << size << " type: 0x" << hex << gl_usage << dec << endl;
+		GLuint gl_buffer;
+		glGenBuffers(1, &gl_buffer);
+		glBindBuffer(gl_usage, gl_buffer);
+		glBufferData(gl_usage, size, data, GL_STATIC_DRAW);
+		return new Buffer{.usage = usage, .size = size, .gl_buffer = gl_buffer};
 	}
 
 	auto destroy_buffer(Buffer* buffer) -> void override
@@ -175,11 +171,15 @@ public:
 			GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data_in);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		const auto image = new Image{texture};
+		const auto image = new Image{.gl_texture = texture};
 
 		cout << "GPU Image " << name << " " << image << endl;
 
 		return image;
+	}
+
+	auto destroy_image(Image* image) -> void override {
+		delete image;
 	}
 
 	auto destroy_all_images() -> void override { cout << "Destroying all images" << endl; }
@@ -244,9 +244,12 @@ public:
 				vertex_size += 2 * sizeof(float);
 		}
 
-		const auto pipeline = new ShaderPipeline{shader_program, vertex_size, vertex_attributes};
+		const auto pipeline = new ShaderPipeline{
+			.gl_program = shader_program,
+			.vertex_size = vertex_size,
+			.vertex_attributes = vertex_attributes};
 
-		cout << "Pipeline " << pipeline << endl;
+		cout << "Pipeline " << pipeline << " vertex_size=" << vertex_size << endl;
 
 		return pipeline;
 	}
@@ -254,7 +257,7 @@ public:
 	auto create_descriptors(ShaderPipeline* pipeline, Image* albedo, const glm::vec3& color)
 		-> Descriptors* override
 	{
-		const auto descriptor = new Descriptors{albedo};
+		const auto descriptor = new Descriptors{.albedo = albedo};
 
 		cout << "GPU Descriptor " << descriptor << endl;
 
@@ -268,17 +271,19 @@ public:
 		delete pso;
 	}
 
-	auto create_geometry(ShaderPipeline* pipeline, Buffer* vertex_buffer, Buffer* index_buffer)
-		-> Geometry* override
+	auto create_geometry(
+		ShaderPipeline* pipeline,
+		Buffer* vertex_buffer,
+		Buffer* index_buffer,
+		size_t index_count) -> Geometry* override
 	{
-		std::cout << "Creating geometry" << std::endl;
-
 		GLuint vao;
 		webgl::genVertexArrays(1, &vao);
 
 		// Bind vao for the remainder of this function
 		webgl::bindVertexArray(vao);
 
+		// Attach geometry buffers to this vao
 		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer->gl_buffer);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer->gl_buffer);
 
@@ -289,24 +294,31 @@ public:
 			const auto attribute = pipeline->vertex_attributes.at(attribute_idx);
 			if (attribute == VertexAttribute::VEC3_FLOAT) {
 				glVertexAttribPointer(
-					attribute_idx, 3, GL_FLOAT, GL_FALSE, pipeline->vertex_size, (void*)(attribute_offset));
+					attribute_idx,
+					3,
+					GL_FLOAT,
+					GL_FALSE,
+					pipeline->vertex_size,
+					(void*)(attribute_offset));
 				glEnableVertexAttribArray(attribute_idx);
 				attribute_offset += 3 * sizeof(float);
 			}
 			else if (attribute == VertexAttribute::VEC2_FLOAT) {
 				glVertexAttribPointer(
-					attribute_idx, 2, GL_FLOAT, GL_FALSE, pipeline->vertex_size, (void*)(attribute_offset));
+					attribute_idx,
+					2,
+					GL_FLOAT,
+					GL_FALSE,
+					pipeline->vertex_size,
+					(void*)(attribute_offset));
 				glEnableVertexAttribArray(attribute_idx);
 				attribute_offset += 2 * sizeof(float);
 			}
 		}
+		assert(attribute_offset == pipeline->vertex_size);
 
-		const auto index_count = index_buffer->info.element_count;
 		const auto gpu_geometry = new Geometry{
-			vao,
-			std::unique_ptr<Buffer>(vertex_buffer),
-			std::unique_ptr<Buffer>(index_buffer),
-			index_count};
+			.vao = vao, .vbo = vertex_buffer, .ebo = index_buffer, .index_count = index_count};
 
 		cout << "GPU Geometry indices: " << index_count << " " << gpu_geometry << endl;
 
@@ -315,8 +327,8 @@ public:
 
 	auto destroy_geometry(const Geometry* geometry) -> void override
 	{
-		destroy_buffer(geometry->vbo.get());
-		destroy_buffer(geometry->ebo.get());
+		destroy_buffer(geometry->vbo);
+		destroy_buffer(geometry->ebo);
 		delete geometry;
 	}
 
@@ -330,11 +342,6 @@ public:
 	{
 		assert(transforms.size() == geometries.size());
 		assert(transforms.size() == descriptors.size());
-
-		GLenum err;
-		while ((err = glGetError()) != GL_NO_ERROR) {
-			cout << "GL Error: " << err << endl;
-		}
 
 		glClearColor(0.4, 0.3, 0.8, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -356,11 +363,19 @@ public:
 
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, descriptor->albedo->gl_texture);
-			const auto location = glGetUniformLocation(pipeline->gl_program, "tDiffuse");
-			glUniform1i(location, 0);
+			const GLint u_diffuse = glGetUniformLocation(pipeline->gl_program, "tDiffuse");
+			glUniform1i(u_diffuse, 0);
 
 			webgl::bindVertexArray(geometry->vao);
 			glDrawElements(GL_TRIANGLES, geometry->index_count, GL_UNSIGNED_INT, 0);
+			GLenum err;
+			bool did_error = false;
+			while ((err = glGetError()) != GL_NO_ERROR) {
+				did_error = true;
+				cout << geometry->index_count << endl;
+				cout << geometry->ebo->size << endl;
+				cout << "GL Error: " << err << endl;
+			}
 		}
 	}
 };
@@ -370,11 +385,12 @@ auto RenderDevice::create(GLFWwindow* window) -> std::unique_ptr<RenderDevice>
 	return std::make_unique<RenderDeviceGL>(window);
 }
 
-auto gpu::configure_glfw() -> void
+void configure_glfw()
 {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 	cout << "Configured GLFW" << endl;
 }
 

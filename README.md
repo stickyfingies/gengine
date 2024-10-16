@@ -23,6 +23,8 @@ Play or Download
 2. Extract (`unzip linux-vk-app.zip`).
 3. Run (`./bin/world.native.bin`) to play.
 
+Prefix the executable with `ENABLE_VULKAN_RENDERDOC_CAPTURE=1 ` for GPU debugging via RenderDoc.
+
 Other platforms aren't supported yet.
 
 Let's Get Coding

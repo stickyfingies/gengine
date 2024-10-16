@@ -8,6 +8,9 @@ project(gengine LANGUAGES CXX)
 
 set(CXX_STANDARD_REQUIRED ON)
 
+add_compile_options(-fsanitize=address)
+add_link_options(-fsanitize=address)
+
 include(GNUInstallDirs)
 
 if(EMSCRIPTEN)

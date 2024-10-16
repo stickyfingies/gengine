@@ -10,6 +10,8 @@
 struct btDefaultCollisionConfiguration;
 struct btBroadphaseInterface;
 struct btDiscreteDynamicsWorld;
+struct btCollisionDispatcher;
+struct btSequentialImpulseConstraintSolver;
 
 namespace gengine {
 
@@ -36,8 +38,10 @@ public:
 	auto step(float dt, int max_steps) -> void;
 
 private:
-	std::unique_ptr<btDefaultCollisionConfiguration> collision_cfg;
-	std::unique_ptr<btBroadphaseInterface> broadphase;
-	std::unique_ptr<btDiscreteDynamicsWorld> dynamics_world;
+	btDefaultCollisionConfiguration* collision_cfg;
+	btBroadphaseInterface* broadphase;
+	btDiscreteDynamicsWorld* dynamics_world;
+	btCollisionDispatcher* dispatcher;
+	btSequentialImpulseConstraintSolver* constraint_solver;
 };
 } // namespace gengine
