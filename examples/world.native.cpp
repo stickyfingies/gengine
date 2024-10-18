@@ -47,20 +47,20 @@ public:
 
 		auto player_pos = glm::mat4(1.0f);
 		player_pos = glm::translate(player_pos, glm::vec3(20.0f, 100.0f, 20.0f));
-		
+
 		sceneBuilder.add_game_object(
 			player_pos, TactileCapsule{.mass = 70.0f}, VisualModel{.path = "./data/sphere.glb"});
 
 		auto ball_pos = glm::mat4(1.0f);
 		ball_pos = glm::translate(ball_pos, glm::vec3(10.0f, 100.0f, 0.0f));
 		ball_pos = glm::scale(ball_pos, glm::vec3(6.0f, 6.0f, 6.0f));
-		
+
 		sceneBuilder.add_game_object(
 			ball_pos,
 			TactileSphere{.mass = 62.0f, .radius = 1.0f},
 			VisualModel{.path = "./data/sphere.glb"});
 
-		sceneBuilder.add_game_object(glm::mat4{}, VisualModel{.path = "./data/skjarisles.glb"});
+		sceneBuilder.add_game_object(glm::mat4{}, VisualModel{.path = "./data/map.obj"});
 
 		// Describe the "shape" of our geometry data
 		std::vector<gpu::VertexAttribute> vertex_attributes;
@@ -69,7 +69,7 @@ public:
 		vertex_attributes.push_back(gpu::VertexAttribute::VEC2_FLOAT); // uv
 
 		// TODO: this is incorrect because GL rendering on Desktop Linux will break
-#if 1//def __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
 		const auto vert = gengine::load_file("./data/gl.vert.glsl");
 		const auto frag = gengine::load_file("./data/gl.frag.glsl");
 		pipeline = gpu->create_pipeline(vert, frag, vertex_attributes);
@@ -79,13 +79,13 @@ public:
 		pipeline = gpu->create_pipeline(vert, frag, vertex_attributes);
 #endif
 
-		scene = sceneBuilder.build(resources, pipeline, gpu.get(), physics_engine.get(), &texture_factory);
+		scene = sceneBuilder.build(
+			resources, pipeline, gpu.get(), physics_engine.get(), &texture_factory);
 
 		// Assumes all images are uploaded to the GPU and are useless in system memory.
 		texture_factory.unload_all_images();
 
-		cout << "[info]\t SUCCESS!! Created scene with " << scene->transforms.size() << " objects"
-			 << endl;
+		cout << "Scene built with " << scene->transforms.size() << " objects" << endl;
 
 		fps_controller =
 			make_unique<FirstPersonController>(physics_engine.get(), camera, scene->collidables[0]);
@@ -121,7 +121,8 @@ public:
 
 		camera.Position = glm::vec3(scene->transforms[0][3]);
 
-#ifndef __EMSCRIPTEN__
+#if 0
+//#ifndef __EMSCRIPTEN__
 		const auto gui_func = [&]() {
 			using namespace ImGui;
 			// Debug
@@ -161,7 +162,7 @@ public:
 			}
 		};
 #else
-		const auto gui_func = []() {};
+		const auto gui_func = [](){};
 #endif
 
 		gpu->render(

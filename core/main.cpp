@@ -146,8 +146,6 @@ auto main(int argc, char** argv) -> int
 
 	world.reset();
 
-	renderer->destroy_all_images();
-
 	renderer.reset();
 
 	glfwDestroyWindow(window);

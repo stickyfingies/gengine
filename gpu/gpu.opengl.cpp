@@ -179,10 +179,9 @@ public:
 	}
 
 	auto destroy_image(Image* image) -> void override {
+		cout << "~GpuImage " << image << endl;
 		delete image;
 	}
-
-	auto destroy_all_images() -> void override { cout << "Destroying all images" << endl; }
 
 	auto create_pipeline(
 		string_view vert_code,

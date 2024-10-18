@@ -8,9 +8,6 @@ project(gengine LANGUAGES CXX)
 
 set(CXX_STANDARD_REQUIRED ON)
 
-add_compile_options(-fsanitize=address)
-add_link_options(-fsanitize=address)
-
 include(GNUInstallDirs)
 
 if(EMSCRIPTEN)
@@ -22,6 +19,11 @@ message(STATUS "CMAKE_TOOLCHAIN_FILE is ${CMAKE_TOOLCHAIN_FILE}")
 message(STATUS "CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}")
 message(STATUS "CMAKE_CXX_FLAGS_DEBUG is ${CMAKE_CXX_FLAGS_DEBUG}")
 message(STATUS "CMAKE_CXX_FLAGS_RELEASE is ${CMAKE_CXX_FLAGS_RELEASE}")
+
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+    add_compile_options(-fsanitize=address)
+    add_link_options(-fsanitize=address)
+endif()
 
 # << Config
 

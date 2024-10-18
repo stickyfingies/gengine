@@ -52,7 +52,7 @@ void transcode_vertex_attributes(
 
 	// Convert each provided attribute to its vulkan counterpart
 	// Grow the vertex_size as we keep adding attributes
-	size_t vertex_size = 0;
+	uint32_t vertex_size = 0;
 	for (size_t attribute_idx = 0; attribute_idx < attribute_count; attribute_idx++) {
 		const auto attribute_in = attributes_in.at(attribute_idx);
 		switch (attribute_in) {
@@ -687,14 +687,6 @@ public:
 			{barrier});
 
 		end_one_time_cmdbuf(cmdbuf);
-	}
-
-	auto destroy_all_images() -> void override
-	{
-		for (auto it = image_cache.begin(); it != image_cache.end();) {
-			destroy_image(&(it->second));
-			image_cache.erase(it++);
-		}
 	}
 
 	auto destroy_image(Image* image) -> void

@@ -96,11 +96,6 @@ public:
 	virtual auto destroy_image(Image*) -> void = 0;
 
 	/**
-	 * @deprecated may be removed in the future
-	 */
-	virtual auto destroy_all_images() -> void = 0;
-
-	/**
 	 * Construct a raster pipeline which contains a shader program
 	 * @param vert_code vertex shader content
 	 * @param frag_code fragment shader content

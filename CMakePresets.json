@@ -111,27 +111,33 @@
   "buildPresets": [
     {
       "name": "linux-vk-dev",
-      "configurePreset": "linux-vk-dev"
+      "configurePreset": "linux-vk-dev",
+      "jobs": 12
     },
     {
       "name": "linux-vk-app",
-      "configurePreset": "linux-vk-app"
+      "configurePreset": "linux-vk-app",
+      "jobs": 12
     },
     {
       "name": "linux-gl-dev",
-      "configurePreset": "linux-gl-dev"
+      "configurePreset": "linux-gl-dev",
+      "jobs": 12
     },
     {
       "name": "linux-gl-app",
-      "configurePreset": "linux-gl-app"
+      "configurePreset": "linux-gl-app",
+      "jobs": 12
     },
     {
       "name": "web-gl-dev",
-      "configurePreset": "web-gl-dev"
+      "configurePreset": "web-gl-dev",
+      "jobs": 12
     },
     {
       "name": "web-gl-app",
-      "configurePreset": "web-gl-app"
+      "configurePreset": "web-gl-app",
+      "jobs": 12
     }
   ],
   "testPresets": [],
@@ -177,6 +183,19 @@
         {
           "type": "package",
           "name": "linux-vk-app"
+        }
+      ]
+    },
+    {
+      "name": "linux-vk-dev",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "linux-vk-dev"
+        },
+        {
+          "type": "build",
+          "name": "linux-vk-dev"
         }
       ]
     },
