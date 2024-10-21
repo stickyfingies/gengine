@@ -69,9 +69,9 @@ public:
 		vertex_attributes.push_back(gpu::VertexAttribute::VEC2_FLOAT); // uv
 
 		// TODO: this is incorrect because GL rendering on Desktop Linux will break
-#ifdef __EMSCRIPTEN__
-		const auto vert = gengine::load_file("./data/gl.vert.glsl");
-		const auto frag = gengine::load_file("./data/gl.frag.glsl");
+#if 1//def __EMSCRIPTEN__
+		const auto vert = gengine::load_file("./data/vk.vert.gles.glsl");
+		const auto frag = gengine::load_file("./data/vk.frag.gles.glsl");
 		pipeline = gpu->create_pipeline(vert, frag, vertex_attributes);
 #else
 		const auto vert = gengine::load_file("./data/vk.vert.spv");
@@ -103,6 +103,10 @@ public:
 		}
 
 		gpu->destroy_pipeline(pipeline);
+
+		for (auto gpu_descriptor : resources.gpu_descriptors) {
+			gpu->destroy_descriptors(gpu_descriptor);
+		}
 
 		for (auto gpu_image : resources.gpu_images) {
 			gpu->destroy_image(gpu_image);

@@ -178,7 +178,8 @@ public:
 		return image;
 	}
 
-	auto destroy_image(Image* image) -> void override {
+	auto destroy_image(Image* image) -> void override
+	{
 		cout << "~GpuImage " << image << endl;
 		delete image;
 	}
@@ -262,6 +263,8 @@ public:
 
 		return descriptor;
 	}
+
+	auto destroy_descriptors(Descriptors* descriptors) -> void override { delete descriptors; }
 
 	auto destroy_pipeline(ShaderPipeline* pso) -> void override
 	{

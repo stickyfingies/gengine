@@ -53,7 +53,7 @@ void transcode_vertex_attributes(
 	// Convert each provided attribute to its vulkan counterpart
 	// Grow the vertex_size as we keep adding attributes
 	uint32_t vertex_size = 0;
-	for (size_t attribute_idx = 0; attribute_idx < attribute_count; attribute_idx++) {
+	for (uint32_t attribute_idx = 0; attribute_idx < attribute_count; attribute_idx++) {
 		const auto attribute_in = attributes_in.at(attribute_idx);
 		switch (attribute_in) {
 		case gpu::VertexAttribute::VEC2_FLOAT: // 2D Floating-Point Vector
@@ -108,11 +108,11 @@ struct Image {
 struct ShaderPipeline {
 	vk::PipelineLayout pipeline_layout;
 	vk::Pipeline pipeline;
-	vk::Buffer ubo;
-	vk::DeviceMemory ubo_mem;
 };
 
 struct Descriptors {
+	vk::Buffer ubo;
+	vk::DeviceMemory ubo_mem;
 	vk::DescriptorSet descset;
 	glm::vec3 color;
 };
@@ -247,8 +247,8 @@ public:
 			const auto properties = physical_device.getProperties();
 
 			std::cout << "* " << properties.deviceName << std::endl;
-			std::cout << "\t * Max push constants: "
-					  << properties.limits.maxPushConstantsSize << " bytes" << std::endl;
+			std::cout << "\t * Max push constants: " << properties.limits.maxPushConstantsSize
+					  << " bytes" << std::endl;
 			std::cout << "\t * Max memory allocations: "
 					  << properties.limits.maxMemoryAllocationCount << std::endl;
 		}
@@ -699,8 +699,11 @@ public:
 		device.destroySampler(image->sampler);
 	}
 
-	auto create_geometry(ShaderPipeline* pipeline, Buffer* vertex_buffer, Buffer* index_buffer, size_t index_count)
-		-> Geometry* override
+	auto create_geometry(
+		ShaderPipeline* pipeline,
+		Buffer* vertex_buffer,
+		Buffer* index_buffer,
+		size_t index_count) -> Geometry* override
 	{
 		return new Geometry{vertex_buffer, index_buffer, index_count};
 	}
@@ -747,8 +750,8 @@ public:
 	auto create_descriptors(ShaderPipeline* pipeline, Image* albedo, const glm::vec3& color)
 		-> Descriptors* override
 	{
-		std::cout << "Descriptor " << albedo->name << " rgb(" << color.r << ", " << color.g
-				  << ", " << color.b << ")" << std::endl;
+		std::cout << "Descriptor " << albedo->name << " rgb(" << color.r << ", " << color.g << ", "
+				  << color.b << ")" << std::endl;
 
 		// Allocate sets
 
@@ -756,29 +759,6 @@ public:
 
 		const auto descset = device.allocateDescriptorSets(descset_info).at(0);
 
-		// update descriptors
-
-		const auto desc_ubo_info = vk::DescriptorBufferInfo(pipeline->ubo, 0, sizeof(glm::mat4));
-		const auto ubo_write = vk::WriteDescriptorSet(
-			descset, 0, 0, 1, vk::DescriptorType::eUniformBuffer, nullptr, &desc_ubo_info);
-
-		const auto desc_image_info = vk::DescriptorImageInfo(
-			albedo->sampler, albedo->view, vk::ImageLayout::eShaderReadOnlyOptimal);
-		const auto albedo_write = vk::WriteDescriptorSet(
-			descset, 1, 0, 1, vk::DescriptorType::eCombinedImageSampler, &desc_image_info);
-
-		const auto descset_writes = std::array{ubo_write, albedo_write};
-
-		device.updateDescriptorSets(descset_writes, {});
-
-		return new Descriptors{descset, color};
-	}
-
-	auto create_pipeline(
-		std::string_view vert_code,
-		std::string_view frag_code,
-		const std::vector<VertexAttribute>& vertex_attributes) -> ShaderPipeline* override
-	{
 		// Create uniform buffer
 
 		auto ubo = vk::Buffer{};
@@ -802,6 +782,40 @@ public:
 			device.unmapMemory(ubo_mem);
 		}
 
+		// update descriptors
+
+		const auto desc_ubo_info = vk::DescriptorBufferInfo(ubo, 0, sizeof(glm::mat4));
+		const auto ubo_write = vk::WriteDescriptorSet(
+			descset, 0, 0, 1, vk::DescriptorType::eUniformBuffer, nullptr, &desc_ubo_info);
+
+		const auto desc_image_info = vk::DescriptorImageInfo(
+			albedo->sampler, albedo->view, vk::ImageLayout::eShaderReadOnlyOptimal);
+		const auto albedo_write = vk::WriteDescriptorSet(
+			descset, 1, 0, 1, vk::DescriptorType::eCombinedImageSampler, &desc_image_info);
+
+		const auto descset_writes = std::array{ubo_write, albedo_write};
+
+		device.updateDescriptorSets(descset_writes, {});
+
+		return new Descriptors{
+			.ubo = ubo,
+			.ubo_mem = ubo_mem,
+			.descset = descset,
+			.color = color,
+		};
+	}
+
+	auto destroy_descriptors(Descriptors* descriptors) -> void override {
+		device.destroyBuffer(descriptors->ubo);
+		device.freeMemory(descriptors->ubo_mem);
+		delete descriptors;
+	}
+
+	auto create_pipeline(
+		std::string_view vert_code,
+		std::string_view frag_code,
+		const std::vector<VertexAttribute>& vertex_attributes) -> ShaderPipeline* override
+	{
 		// push constant info
 
 		const auto push_const_range = vk::PushConstantRange(
@@ -937,8 +951,6 @@ public:
 		return new ShaderPipeline{
 			pipeline_layout,
 			pipeline,
-			ubo,
-			ubo_mem,
 		};
 	}
 
@@ -948,8 +960,6 @@ public:
 
 		device.destroyPipeline(pso->pipeline);
 		device.destroyPipelineLayout(pso->pipeline_layout);
-		device.destroyBuffer(pso->ubo);
-		device.freeMemory(pso->ubo_mem);
 		device.destroyDescriptorPool(descpool);
 		device.destroyDescriptorSetLayout(descset_layout);
 
@@ -1371,8 +1381,8 @@ private:
 				 nullptr});
 		}
 
-		std::cout << "Swapchain (" << viewport_extent.width << "x"
-				  << viewport_extent.height << ") " << to_string(surface_fmt) << std::endl;
+		std::cout << "Swapchain (" << viewport_extent.width << "x" << viewport_extent.height << ") "
+				  << to_string(surface_fmt) << std::endl;
 	}
 
 	auto destroy_swapchain() -> void

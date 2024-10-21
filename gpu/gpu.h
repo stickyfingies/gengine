@@ -116,6 +116,8 @@ public:
 	virtual auto create_descriptors(ShaderPipeline* pipeline, Image* albedo, const glm::vec3& color)
 		-> Descriptors* = 0;
 
+	virtual auto destroy_descriptors(Descriptors*) -> void = 0;
+
 	virtual auto destroy_pipeline(ShaderPipeline* pso) -> void = 0;
 
 	/**
