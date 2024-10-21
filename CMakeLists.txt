@@ -2,6 +2,7 @@
 # - https://emscripten.org/docs/tools_reference/settings_reference.html
 
 cmake_minimum_required(VERSION 3.30)
+set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake")
 project(gengine LANGUAGES CXX)
 
 # >> Config
@@ -14,11 +15,14 @@ if(EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
 endif()
 
+message(STATUS "CMAKE_SYSTEM is ${CMAKE_SYSTEM}")
 message(STATUS "CMAKE_SYSTEM_NAME is ${CMAKE_SYSTEM_NAME}")
 message(STATUS "CMAKE_TOOLCHAIN_FILE is ${CMAKE_TOOLCHAIN_FILE}")
 message(STATUS "CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}")
 message(STATUS "CMAKE_CXX_FLAGS_DEBUG is ${CMAKE_CXX_FLAGS_DEBUG}")
 message(STATUS "CMAKE_CXX_FLAGS_RELEASE is ${CMAKE_CXX_FLAGS_RELEASE}")
+message(STATUS "CMAKE_PREFIX_PATH is ${CMAKE_PREFIX_PATH}")
+message(STATUS "CMAKE_MODULE_PATH is ${CMAKE_MODULE_PATH}")
 
 # << Config
 
@@ -49,6 +53,10 @@ endif()
 # << Dependencies
 
 # >> Components
+
+if (CMAKE_JS_VERSION)
+    add_subdirectory(node)
+endif()
 
 add_subdirectory(gpu)
 

@@ -38,6 +38,7 @@ external/
 artifacts/*
 !artifacts/.gitkeep
 dependencies/vcpkg-ports/assimp/assimp
+node_modules
 
 # IDE
 .vs/
