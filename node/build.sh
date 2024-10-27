@@ -1,10 +1,12 @@
-# Configuration
+# WIP MVP
+# This script compiles 'main.cpp' into a .node native binding for Node.JS
 
 APP_NAME="linux-vk-app"
 GPU_BACKEND="Vulkan"
 
-BUILD_DIR="$(pwd)/artifacts/node-vk-app"
-VCPKG_DIR="$(pwd)/dependencies/vcpkg"
+ROOT_DIR="$(pwd)/.."
+BUILD_DIR="$ROOT_DIR/artifacts/node-vk-app"
+VCPKG_DIR="$ROOT_DIR/dependencies/vcpkg"
 
 CMAKE_TOOLCHAIN_FILE="$VCPKG_DIR/scripts/buildsystems/vcpkg.cmake"
 CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH};$VCPKG_DIR/installed/x64-linux;$VCPKG_DIR/installed/x64-linux/debug"

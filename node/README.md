@@ -6,3 +6,7 @@ Information about this directory
 **main.cpp** is a simple C++ binding between Node.js and GLFW3.
 
 **index.ts** is an example TypeScript file that depends on main.cpp
+
+Resources
+---
+- https://github.com/cmake-js/cmake-js

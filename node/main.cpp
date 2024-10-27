@@ -1,3 +1,10 @@
+/**
+ * This file uses the C++ API for NodeJS native bindings.
+ * 
+ * It wraps some basic engine functions, and exposes them to Node.
+ * Then, you can import the package from node, and call the functions.
+ */
+
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <napi.h>
