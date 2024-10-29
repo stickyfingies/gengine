@@ -97,7 +97,7 @@ foreach(FILE ${FILES})
     )
 
     # Today, worlds are limited to one source file
-    target_sources(${APP_NAME} PRIVATE ${FILE})
+    target_sources(${APP_NAME} PRIVATE ${FILE} "core/main.cpp")
 
     if(EMSCRIPTEN)
         # This instructs Emscripten how to name [index.data, index.html, index.js, index.wasm]
