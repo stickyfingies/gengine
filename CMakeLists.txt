@@ -54,9 +54,11 @@ endif()
 
 # >> Components
 
-if (CMAKE_JS_VERSION)
+if(CMAKE_JS_VERSION)
     add_subdirectory(node)
 endif()
+
+add_subdirectory(typescript)
 
 add_subdirectory(gpu)
 

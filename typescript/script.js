@@ -1,0 +1,1 @@
+print("Hello, " + adder(1, 2) + " JavaScript!");
