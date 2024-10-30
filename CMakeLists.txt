@@ -69,7 +69,7 @@ add_subdirectory(core)
 # >> Apps
 
 # For every world.cpp file in examples/
-file(GLOB FILES "examples/world.*.cpp")
+file(GLOB FILES "examples/*.cpp")
 foreach(FILE ${FILES})
 
     # Strip the directory prefix and file extension
@@ -98,6 +98,27 @@ foreach(FILE ${FILES})
 
     # Today, worlds are limited to one source file
     target_sources(${APP_NAME} PRIVATE ${FILE} "core/main.cpp")
+
+    if(NOT EMSCRIPTEN)
+        # vcpkg/DukTape
+        find_package(
+            unofficial-duktape
+            CONFIG
+            REQUIRED
+        )
+        target_link_libraries(
+            ${APP_NAME}
+            PRIVATE
+            unofficial::duktape::duktape
+        )
+
+        # vcpkg/DukGlue
+        find_path(DUKGLUE_INCLUDE_DIRS "dukglue/detail_class_proto.h")
+        target_include_directories(
+            ${APP_NAME} PRIVATE
+            ${DUKGLUE_INCLUDE_DIRS}
+        )
+    endif()
 
     if(EMSCRIPTEN)
         # This instructs Emscripten how to name [index.data, index.html, index.js, index.wasm]

@@ -1,15 +1,5 @@
-// Create a new window
-const window = new Window();
+print("Hello, JavaScript!");
 
-// Core game loop
-while (!window.shouldClose()) {
-
-    window.update();
-
-    if (window.getEsc()) {
-        window.setShouldClose(true);
-    }
+function update() {
+    //
 }
-
-// Adios!
-print("Goodbye, JS!");

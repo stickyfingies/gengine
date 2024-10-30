@@ -6,7 +6,7 @@ add_executable(api-ts)
 
 target_include_directories(api-ts PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(api-ts PRIVATE core)
+target_link_libraries(api-ts PRIVATE core gpu)
 
 set_target_properties(
     api-ts
