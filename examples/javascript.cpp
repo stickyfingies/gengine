@@ -170,7 +170,7 @@ public:
 		vertex_attributes.push_back(gpu::VertexAttribute::VEC2_FLOAT); // uv
 
 		// TODO: this is incorrect because GL rendering on Desktop Linux will break
-#if 1 // def __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
 		const auto vert = gengine::load_file("./data/gl.vert.glsl");
 		const auto frag = gengine::load_file("./data/gl.frag.glsl");
 		pipeline = gpu->create_pipeline(vert, frag, vertex_attributes);
