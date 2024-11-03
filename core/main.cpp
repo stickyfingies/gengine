@@ -16,6 +16,8 @@
 #include "physics.h"
 
 #endif
+
+#include "kernel.h"
 #include "gpu.h"
 #include "window.h"
 #include "world.h"
@@ -26,6 +28,10 @@
 
 using namespace gengine;
 using namespace std;
+
+extern "C" {
+void gengine_print(int i) { cout << "Gengine says " << i << endl; }
+}
 
 namespace {
 
@@ -63,96 +69,16 @@ auto main(int argc, char** argv) -> int
 		std::cout << "[info]\t EDITOR ENABLED" << std::endl;
 	}
 
-	// << Argument processing
+	EngineKernel* kernel = kernel_create(editor_enabled);
 
-	// >> Window startup
-
-	glfwInit();
-
-	gpu::configure_glfw();
-
-	const auto window = glfwCreateWindow(1280, 720, "Gengine", nullptr, nullptr);
-
-	WindowData window_data{};
-	glfwSetWindowUserPointer(window, &window_data);
-
-	if (!editor_enabled) {
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-		glfwSetCursorPosCallback(window, mouse_callback);
-	}
-
-	// << Window startup
-
-	// >> System startup
-
-	shared_ptr<gpu::RenderDevice> renderer = gpu::RenderDevice::create(window);
-
-	auto world = World::create(window, renderer);
-
-	// << System startup
-
-	// >> Main loop
-
-	auto last_displayed_fps = glfwGetTime();
-	auto frame_count = 0u;
-
-	auto last_time = glfwGetTime();
-
-	float ms_per_frame = 0.0f;
-
-	loop = [&]() {
-		++frame_count;
-
-		const auto current_time = glfwGetTime();
-		const auto elapsed_time = current_time - last_time;
-
-		// ms/frame
-		if (glfwGetTime() - last_displayed_fps >= 1.0) {
-			ms_per_frame = 1000.0 / frame_count;
-			last_displayed_fps = glfwGetTime();
-			frame_count = 0;
-		}
-
-		glfwPollEvents();
-
-		if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
-			cout << "Esc" << endl;
-			glfwSetWindowShouldClose(window, true);
-#ifdef __EMSCRIPTEN__
-			emscripten_cancel_main_loop();
-#endif
-			return;
-		}
-
-		world->update(elapsed_time);
-
-		glfwSwapBuffers(window);
-
-		last_time = current_time;
-	};
+	loop = [&]() -> void { kernel_update(kernel); };
 
 #ifdef __EMSCRIPTEN__
 	emscripten_set_main_loop(main_loop, 0, true);
 #else
-	while (!glfwWindowShouldClose(window))
+	while (kernel_running(kernel))
 		main_loop();
 #endif
 
-	// << Main loop
-
-	// >> Shutdown and cleanup
-
-	cout << "System shutting down..." << endl;
-
-	world.reset();
-
-	renderer->destroy_all_images();
-
-	renderer.reset();
-
-	glfwDestroyWindow(window);
-
-	glfwTerminate();
-
-	// << Shutdown and cleanup
+	kernel_destroy(kernel);
 }

@@ -12,7 +12,7 @@ set(CXX_STANDARD_REQUIRED ON)
 include(GNUInstallDirs)
 
 if(EMSCRIPTEN)
-    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+    # set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
 endif()
 
 message(STATUS "CMAKE_SYSTEM is ${CMAKE_SYSTEM}")
@@ -23,6 +23,11 @@ message(STATUS "CMAKE_CXX_FLAGS_DEBUG is ${CMAKE_CXX_FLAGS_DEBUG}")
 message(STATUS "CMAKE_CXX_FLAGS_RELEASE is ${CMAKE_CXX_FLAGS_RELEASE}")
 message(STATUS "CMAKE_PREFIX_PATH is ${CMAKE_PREFIX_PATH}")
 message(STATUS "CMAKE_MODULE_PATH is ${CMAKE_MODULE_PATH}")
+
+# if(CMAKE_BUILD_TYPE MATCHES Debug)
+add_compile_options(-fsanitize=address)
+add_link_options(-fsanitize=address)
+# endif()
 
 # << Config
 
@@ -58,21 +63,13 @@ if(CMAKE_JS_VERSION)
     add_subdirectory(node)
 endif()
 
-if(NOT EMSCRIPTEN)
-    add_subdirectory(typescript)
-endif()
-
 add_subdirectory(gpu)
 
 add_subdirectory(core)
 
-# << Components
-
-# >> Apps
-
 add_subdirectory(examples)
 
-# << Apps
+# << Components
 
 # >> Build system
 

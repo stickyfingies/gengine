@@ -1,6 +1,14 @@
 /**
- * This file is a C++ game script which provides Duktape bindings for JavaScript
+ * This file is a C++ game script which uses Embind to call JS scripts.
+ * 
+ * It is used on WEB platforms with JS scripts.
  */
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/bind.h>
+#include <emscripten/val.h>
+#endif
 
 #include "camera.hpp"
 #include "fps_controller.h"
@@ -15,9 +23,6 @@
 #include <functional>
 #include <iostream>
 #include <sstream>
-
-#include "dukglue/dukglue.h"
-#include "duktape.h"
 
 using namespace std;
 
@@ -93,62 +98,26 @@ class NativeWorld : public World {
 	unique_ptr<FirstPersonController> fps_controller;
 	gpu::ShaderPipeline* pipeline;
 
-	duk_context* ctx;
-
 public:
 	NativeWorld(GLFWwindow* window, shared_ptr<gpu::RenderDevice> gpu) : window{window}, gpu{gpu}
 	{
+
 		physics_engine = make_unique<gengine::PhysicsEngine>();
-
-		// Load the JS file
-		const char* script_path = "./examples/javascript.js";
-		ifstream script_file(script_path);
-		if (!script_file.is_open()) {
-			cerr << "Failed to open " << script_path << endl;
-		}
-		stringstream script_data;
-		script_data << script_file.rdbuf();
-		string script_str = script_data.str();
-
-		// Set up the JS runtime
-		ctx = duk_create_heap_default();
-		dukglue_register_function(ctx, js_print, "print");
-		dukglue_register_constructor<VisualModelSettings, bool, bool, bool>(
-			ctx, "VisualModelSettings");
-
-		dukglue_register_constructor<JSTransform>(ctx, "Transform");
-		dukglue_register_method(ctx, &JSTransform::translate, "translate");
-		dukglue_register_method(ctx, &JSTransform::scale, "scale");
-
-		dukglue_register_function(ctx, js_load_model, "loadModel");
-		dukglue_register_function(ctx, js_create_capsule, "createCapsule");
-		dukglue_register_function(ctx, js_create_sphere, "createSphere");
-
-		duk_push_string(ctx, script_str.data());
-		int failed = duk_peval(ctx);
-		if (failed) {
-			const char* err = duk_safe_to_string(ctx, -1);
-			cerr << err << endl;
-		}
-		if (failed) {
-			const char* err = duk_safe_to_string(ctx, -1);
-			cerr << err << endl;
-		}
 
 		SceneBuilder sceneBuilder{};
 
-		if (!failed) {
-			//
+// TODO: do cool stuff here!
+#ifdef __EMSCRIPTEN__
+		using namespace emscripten;
+		uintptr_t sceneBuilderPtr = reinterpret_cast<uintptr_t>(&sceneBuilder);
+		val js_create = val::global("create");
+		if (js_create.as<bool>()) {
+			js_create(sceneBuilderPtr);
 		}
-
-		// Call the function create() from the JS script
-		duk_get_global_string(ctx, "create");
-		dukglue_push(ctx, &sceneBuilder);
-		failed = duk_pcall(ctx, 1);
-		if (failed) {
-			const char* err = duk_safe_to_string(ctx, -1);
-			cerr << err << endl;
+		else {
+			cerr << "This app uses JS scripts, but the 'create' function was not defined." << endl;
 		}
+#endif
 
 		camera = Camera(glm::vec3(0.0f, 5.0f, 90.0f));
 
@@ -199,8 +168,6 @@ public:
 	~NativeWorld()
 	{
 		cout << "~ NativeWorld" << endl;
-
-		duk_destroy_heap(ctx);
 
 		for (const auto& rigidbody : resources.rigidbodies) {
 			physics_engine->destroy_collidable(rigidbody);

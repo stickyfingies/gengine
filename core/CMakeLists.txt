@@ -15,6 +15,8 @@ target_sources(core
     PRIVATE
     # Exclude main.cpp so that 'core' can be used in other libraries
     # main.cpp
+    core.cpp
+    kernel.cpp
     assets.cpp
     physics.cpp
     scene.cpp
