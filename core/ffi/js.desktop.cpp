@@ -1,6 +1,6 @@
 /**
  * This file is a C++ game script which provides Duktape bindings for JavaScript.
- * 
+ *
  * It is used on DESKTOP platforms with JS scripts.
  */
 
@@ -78,6 +78,32 @@ void js_create_sphere(
 		VisualModel{.path = path});
 }
 
+class JsSceneBuilder {
+private:
+	SceneBuilder* sb;
+
+public:
+	JsSceneBuilder(SceneBuilder* sb) : sb{sb} {}
+
+	JsSceneBuilder() : sb{nullptr} {}
+
+	void applyModelSettings(string path, VisualModelSettings& s)
+	{
+		sb->apply_model_settings(path, std::move(s));
+	}
+
+	void createCapsule(JSTransform& t, float mass, string path)
+	{
+		sb->add_game_object(t.matrix, TactileCapsule{.mass = mass}, VisualModel{.path = path});
+	}
+
+	void createSphere(JSTransform& t, float mass, float radius, string path)
+	{
+		sb->add_game_object(
+			t.matrix, TactileSphere{.mass = mass, .radius = radius}, VisualModel{.path = path});
+	}
+};
+
 /**
  * The actual C++ script which binds to JS
  */
@@ -122,6 +148,10 @@ public:
 		dukglue_register_method(ctx, &JSTransform::translate, "translate");
 		dukglue_register_method(ctx, &JSTransform::scale, "scale");
 
+		dukglue_register_constructor<JsSceneBuilder>(ctx, "SceneBuilder");
+		dukglue_register_method(ctx, &JsSceneBuilder::applyModelSettings, "applyModelSettings");
+		dukglue_register_method(ctx, &JsSceneBuilder::createCapsule, "createCapsule");
+
 		dukglue_register_function(ctx, js_load_model, "loadModel");
 		dukglue_register_function(ctx, js_create_capsule, "createCapsule");
 		dukglue_register_function(ctx, js_create_sphere, "createSphere");
@@ -138,10 +168,6 @@ public:
 		}
 
 		SceneBuilder sceneBuilder{};
-
-		if (!failed) {
-			//
-		}
 
 		// Call the function create() from the JS script
 		duk_get_global_string(ctx, "create");

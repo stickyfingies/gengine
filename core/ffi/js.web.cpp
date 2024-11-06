@@ -1,16 +1,19 @@
 /**
  * This file is a C++ game script which uses Embind to call JS scripts.
- * 
+ *
  * It is used on WEB platforms with JS scripts.
  */
 
-#ifdef __EMSCRIPTEN__
+#ifndef __EMSCRIPTEN__
+#error The FFI source file js.web.cpp is required to be used with Emscripten.
+#endif
+
 #include <emscripten.h>
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
-#endif
 
 #include "camera.hpp"
+#include "core.h"
 #include "fps_controller.h"
 #include "gpu.h"
 #include "physics.h"
@@ -24,6 +27,7 @@
 #include <iostream>
 #include <sstream>
 
+namespace em = emscripten;
 using namespace std;
 
 /**
@@ -56,7 +60,7 @@ void js_print(const char* text) { cout << "[JS]: " << text << endl; }
 /**
  * JS wrapper around SceneBuilder
  */
-void js_load_model(SceneBuilder* sb, const char* path, VisualModelSettings* settings)
+void js_load_model(SceneBuilder* sb, std::string path, VisualModelSettings* settings)
 {
 	sb->apply_model_settings(path, std::move(*settings));
 }
@@ -79,6 +83,45 @@ void js_create_sphere(
 		transform->matrix,
 		TactileSphere{.mass = mass, .radius = radius},
 		VisualModel{.path = path});
+}
+
+class JsSceneBuilder {
+private:
+	SceneBuilder* sb;
+
+public:
+	JsSceneBuilder(SceneBuilder* sb) : sb{sb} {}
+
+	void applyModelSettings(string path, VisualModelSettings s)
+	{
+		sb->apply_model_settings(path, std::move(s));
+	}
+
+	void createCapsule(JSTransform& t, float mass, string path)
+	{
+		sb->add_game_object(t.matrix, TactileCapsule{.mass = mass}, VisualModel{.path = path});
+	}
+
+	void createSphere(JSTransform& t, float mass, float radius, string path)
+	{
+		sb->add_game_object(
+			t.matrix, TactileSphere{.mass = mass, .radius = radius}, VisualModel{.path = path});
+	}
+};
+
+EMSCRIPTEN_BINDINGS(core)
+{
+	em::class_<JsSceneBuilder>("SceneBuilder")
+		.function("applyModelSettings", &JsSceneBuilder::applyModelSettings)
+		.function("createCapsule", &JsSceneBuilder::createCapsule)
+		.function("createSphere", &JsSceneBuilder::createSphere);
+
+	em::class_<JSTransform>("Transform")
+		.constructor<>()
+		.function("translate", &JSTransform::translate, em::return_value_policy::reference())
+		.function("scale", &JSTransform::scale, em::return_value_policy::reference());
+
+	em::class_<VisualModelSettings>("VisualModelSettings").constructor<bool, bool, bool>();
 }
 
 /**
@@ -106,18 +149,15 @@ public:
 
 		SceneBuilder sceneBuilder{};
 
-// TODO: do cool stuff here!
-#ifdef __EMSCRIPTEN__
-		using namespace emscripten;
+		JsSceneBuilder jsSceneBuilder(&sceneBuilder);
 		uintptr_t sceneBuilderPtr = reinterpret_cast<uintptr_t>(&sceneBuilder);
-		val js_create = val::global("create");
+		em::val js_create = em::val::global("create");
 		if (js_create.as<bool>()) {
-			js_create(sceneBuilderPtr);
+			js_create(jsSceneBuilder);
 		}
 		else {
 			cerr << "This app uses JS scripts, but the 'create' function was not defined." << endl;
 		}
-#endif
 
 		camera = Camera(glm::vec3(0.0f, 5.0f, 90.0f));
 
