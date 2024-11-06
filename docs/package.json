@@ -1,0 +1,19 @@
+{
+  "name": "gengine-docs",
+  "version": "1.0.0",
+  "description": "Documentation website for gengine",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docs:dev": "vitepress dev",
+    "docs:build": "vitepress build",
+    "docs:preview": "vitepress preview"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "vite": "^5.4.10",
+    "vitepress": "^1.5.0"
+  }
+}

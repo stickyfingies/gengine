@@ -11,6 +11,9 @@ print("Hello, JS!");
  */
 function create(scene) {
 
+    // Error: not callable
+    // scene.applyModelSettings(1);
+
     const models = [
         { path: "./data/spinny.obj", flip_uvs: false, flip_tris: true },
         { path: "./data/map.obj", flip_uvs: true, flip_tris: true }
