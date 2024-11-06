@@ -7,7 +7,7 @@ hero:
   text: "Build for any platform."
   tagline: By Seth Traman
   image:
-    src: ../cpp_logo.png
+    src: ./cpp_logo.png
     alt: Cover Image
   actions:
     - theme: brand
