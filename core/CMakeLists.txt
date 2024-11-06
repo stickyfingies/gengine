@@ -13,7 +13,10 @@ set_target_properties(core
 
 target_sources(core
     PRIVATE
-    main.cpp
+    # Exclude main.cpp so that 'core' can be used in other libraries
+    # main.cpp
+    core.cpp
+    kernel.cpp
     assets.cpp
     physics.cpp
     scene.cpp

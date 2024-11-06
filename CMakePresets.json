@@ -181,6 +181,19 @@
       ]
     },
     {
+      "name": "linux-vk-dev",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "linux-vk-dev"
+        },
+        {
+          "type": "build",
+          "name": "linux-vk-dev"
+        }
+      ]
+    },
+    {
       "name": "web-gl-app",
       "steps": [
         {
