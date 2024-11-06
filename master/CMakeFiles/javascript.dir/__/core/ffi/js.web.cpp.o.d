@@ -776,6 +776,8 @@ examples/CMakeFiles/javascript.dir/__/core/ffi/js.web.cpp.o: \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/gtc/../geometric.hpp \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/gtc/../trigonometric.hpp \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/gtc/../matrix.hpp \
+  /home/runner/work/gengine/gengine/core/core.h \
+  /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/ext/matrix_transform.hpp \
   /home/runner/work/gengine/gengine/core/fps_controller.h \
   /home/runner/work/gengine/gengine/core/physics.h \
   /home/runner/work/gengine/gengine/core/assets.h \

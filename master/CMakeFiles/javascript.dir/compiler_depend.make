@@ -4,6 +4,7 @@
 examples/CMakeFiles/javascript.dir/__/core/ffi/js.web.cpp.o: /home/runner/work/gengine/gengine/core/ffi/js.web.cpp \
   /home/runner/work/gengine/gengine/core/assets.h \
   /home/runner/work/gengine/gengine/core/camera.hpp \
+  /home/runner/work/gengine/gengine/core/core.h \
   /home/runner/work/gengine/gengine/core/fps_controller.h \
   /home/runner/work/gengine/gengine/core/physics.h \
   /home/runner/work/gengine/gengine/core/scene.h \
@@ -815,6 +816,7 @@ examples/CMakeFiles/javascript.dir/__/core/ffi/js.web.cpp.o: /home/runner/work/g
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/detail/type_half.hpp \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/detail/type_half.inl \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/exponential.hpp \
+  /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/ext/matrix_transform.hpp \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/fwd.hpp \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/geometric.hpp \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/glm.hpp \
@@ -1681,8 +1683,6 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
 
 /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/gtc/matrix_transform.hpp:
 
-/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/ext/matrix_transform.hpp:
-
 /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/ext/matrix_projection.inl:
 
 /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/ext/matrix_projection.hpp:
@@ -1696,6 +1696,8 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
 /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/glm.hpp:
 
 /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/fwd.hpp:
+
+/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/ext/matrix_transform.hpp:
 
 /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/detail/type_half.inl:
 
@@ -1796,6 +1798,8 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
 /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vector_relational.hpp:
 
 /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/detail/setup.hpp:
+
+/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/common.hpp:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__ranges/data.h:
 
@@ -2125,6 +2129,8 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/replace_copy.h:
 
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__concepts/predicate.h:
+
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/comp.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/min_element.h:
@@ -2157,9 +2163,13 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__fwd/hash.h:
 
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/find_segment_if.h:
+/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/detail/compute_vector_relational.hpp:
 
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__utility/exchange.h:
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__locale_dir/locale_base_api/bsd_locale_fallbacks.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/ranges_for_each.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/half_positive.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/bits/alltypes.h:
 
@@ -2177,14 +2187,6 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__concepts/class_or_enum.h:
 
-/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/detail/compute_vector_relational.hpp:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__locale_dir/locale_base_api/bsd_locale_fallbacks.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/ranges_for_each.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/half_positive.h:
-
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/GLFW/glfw3.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/assert.h:
@@ -2196,10 +2198,6 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/version:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__compare/compare_weak_order_fallback.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__fwd/sstream.h:
-
-/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/detail/type_mat2x4.inl:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__math/inverse_hyperbolic_functions.h:
 
@@ -2216,62 +2214,6 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__format/concepts.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/GL/gl.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/GL/glext.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__memory/shared_ptr.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/ranges_fill_n.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__type_traits/is_function.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__utility/pair.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/alloca.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__concepts/convertible_to.h:
-
-/home/runner/work/gengine/gengine/core/assets.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__system_error/error_code.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__charconv/to_chars_base_10.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__compare/compare_partial_order_fallback.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__format/formatter_tuple.h:
-
-/home/runner/work/gengine/gengine/core/camera.hpp:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__config_site:
-
-/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/ext/vector_int3_sized.hpp:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/pop_heap.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__iterator/ostreambuf_iterator.h:
-
-/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/detail/type_mat2x2.hpp:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__functional/pointer_to_binary_function.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__fwd/ios.h:
-
-/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/mat2x4.hpp:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__format/formatter_integer.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/move.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/search.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__functional/binary_negate.h:
-
-/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/ext/matrix_float3x2_precision.hpp:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__compare/three_way_comparable.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/emscripten/em_js.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__functional/perfect_forward.h:
 
@@ -2301,6 +2243,30 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__chrono/statically_widen.h:
 
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/ranges_fill_n.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__type_traits/is_function.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__utility/pair.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/alloca.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__concepts/convertible_to.h:
+
+/home/runner/work/gengine/gengine/core/assets.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__system_error/error_code.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__charconv/to_chars_base_10.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__compare/compare_partial_order_fallback.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__format/formatter_tuple.h:
+
+/home/runner/work/gengine/gengine/core/camera.hpp:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__config_site:
+
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/clamp.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/make_heap.h:
@@ -2311,39 +2277,51 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/fill.h:
 
+/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/ext/vector_int3_sized.hpp:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/pop_heap.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__iterator/ostreambuf_iterator.h:
+
+/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/detail/type_mat2x2.hpp:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__functional/pointer_to_binary_function.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__fwd/ios.h:
+
+/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/mat2x4.hpp:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__format/formatter_integer.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/move.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/search.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__functional/binary_negate.h:
+
+/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/ext/matrix_float3x2_precision.hpp:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__compare/three_way_comparable.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/emscripten/em_js.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__fwd/sstream.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__memory/shared_ptr.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/GL/glext.h:
+
+/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/detail/type_mat2x4.inl:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/find_segment_if.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__utility/exchange.h:
+
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__memory/uninitialized_algorithms.h:
 
 /home/runner/work/gengine/gengine/core/fps_controller.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__split_buffer:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__mutex/once_flag.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__format/format_arg_store.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__string/char_traits.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/move_backward.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__type_traits/is_char_like_type.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/new:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__fwd/bit_reference.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__concepts/copyable.h:
-
-/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec4.hpp:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__math/rounding_functions.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__math/hyperbolic_functions.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__type_traits/has_unique_object_representation.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__concepts/different_from.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__type_traits/add_const.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/bits/stdint.h:
 
@@ -2401,6 +2379,36 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/find_first_of.h:
 
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__mutex/once_flag.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__format/format_arg_store.h:
+
+/home/runner/work/gengine/gengine/core/core.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__string/char_traits.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/move_backward.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__type_traits/is_char_like_type.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/new:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__fwd/bit_reference.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__concepts/copyable.h:
+
+/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec4.hpp:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__math/rounding_functions.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__math/hyperbolic_functions.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__type_traits/has_unique_object_representation.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__concepts/different_from.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__type_traits/add_const.h:
+
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/equal.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__type_traits/negation.h:
@@ -2434,8 +2442,6 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__availability:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__type_traits/is_nothrow_move_constructible.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__ranges/empty.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__functional/reference_wrapper.h:
 
@@ -2512,8 +2518,6 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/bits/limits.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__compare/synth_three_way.h:
-
-/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__concepts/predicate.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/unistd.h:
 
@@ -2626,6 +2630,8 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__filesystem/path.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__filesystem/perm_options.h:
+
+/home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__ranges/empty.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__charconv/tables.h:
 
@@ -3036,8 +3042,6 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__type_traits/add_rvalue_reference.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/limits:
-
-/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/common.hpp:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__tuple/sfinae_helpers.h:
 

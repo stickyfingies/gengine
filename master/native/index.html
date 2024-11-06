@@ -266,6 +266,8 @@
          * This block uses JS bindings to create a game scene.
          */
         {
+            const { Transform, VisualModelSettings } = Module;
+
             /**
              * This function is called after javascript.cpp starts the core engine systems.
              * @param {*} scene a wrapper around the C++ SceneBuilder API
@@ -279,7 +281,7 @@
                 ];
 
                 for (var i = 0; i < models.length; i++) {
-                    model_load(scene, models[i].path, models[i].flip_uvs, models[i].flip_tris, false);
+                    scene.applyModelSettings(models[i].path, new VisualModelSettings(models[i].flip_uvs, models[i].flip_tris, false));
                 }
 
                 // const player = { location: [20, 100, 20], shape: CAPSULE, mass: 70, vanity: "./data/spinny.obj" };
@@ -290,15 +292,12 @@
                 //     .has(new Model3D("./data/spinny.obj"));
 
                 // player
-                const playerTransform = matrix_create()
-                matrix_translate(playerTransform, 20, 100, 20);
-                entity_create_capsule(scene, playerTransform, /* mass */ 70.0, "./data/spinny.obj");
+                const playerTransform = new Transform().translate(20, 100, 20);
+                scene.createCapsule(playerTransform, /* mass */ 70.0, "./data/spinny.obj");
 
                 // ball
-                const ballTransform = matrix_create()
-                matrix_translate(ballTransform, 10, 100, 0);
-                matrix_scale(ballTransform, 6, 6, 6);
-                entity_create_sphere(scene, ballTransform, /* mass */ 62, /* radius */ 1, "./data/spinny.obj");
+                const ballTransform = new Transform().translate(10, 100, 0).scale(6, 6, 6);
+                scene.createSphere(ballTransform, /* mass */ 62, /* radius */ 1, "./data/spinny.obj");
             }
             window.create = create;
         }
