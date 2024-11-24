@@ -5,7 +5,7 @@ layout: home
 hero:
   name: "Game Engine"
   text: "Build for any platform."
-  tagline: By Seth Traman
+  tagline: Pre-Release until May 2025
   image:
     src: ./cpp_logo.png
     alt: Cover Image

@@ -3,10 +3,11 @@ import { defineConfig } from 'vitepress'
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "Game Engine",
-  description: "A VitePress Site",
+  description: "Build cross-platform games with C++",
+
+  // This website is served at https://domain.com/gengine/
   base: '/gengine/',
-  // srcDir: "../",
-  // srcExclude: ['**/dependencies/**', '**/node_modules/**', '**/README.md'],
+
   themeConfig: {
 
     logo: './cpp_logo.png',
@@ -19,11 +20,18 @@ export default defineConfig({
 
     sidebar: [
       {
-        text: 'Engine Guide',
+        text: 'Guide',
         items: [
           { text: 'Setup', link: '/setup' },
-          { text: 'Examples', link: '/examples/' }
+          { text: 'Examples', link: '/examples/' },
         ]
+      },
+      {
+        text: 'API',
+        items: [
+          { text: 'Core', link: '/core/' },
+          { text: 'GPU', link: '/gpu/' },
+        ],
       }
     ],
 
