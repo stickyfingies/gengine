@@ -28,7 +28,7 @@ git submodule update
 
 ### Running Examples
 
-The `examples/` directory contains C++ and JavaScript game scripts.  Each example script can be built into an entire executable game using VSCode.  To understand how to build the examples without VSCode, see the [build guide](/building).
+The `examples/` directory contains C++ and JavaScript game scripts.  Each example script can be built into an entire executable game using VSCode.  To understand how to build the examples without VSCode, see the [build guide](/build).
 
 Open the `examples/` directory and find a C++ file.  With the C++ file open, locate the debugger panel on VSCode.
 
