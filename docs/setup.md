@@ -26,15 +26,16 @@ git submodule init
 git submodule update
 ```
 
-### 10 minute break
+### Running Examples
 
-To guarantee consistent results across platforms, the engine builds its dependencies from source.  The amount of time this takes may vary, depending on your computer specs and internet speed.
+The `examples/` directory contains C++ and JavaScript game scripts.  Each example script can be built into an entire executable game using VSCode.  To understand how to build the examples without VSCode, see the [build guide](/building).
 
-Run `setup.sh` and grab a coffee while it builds :)
+Open the `examples/` directory and find a C++ file.  With the C++ file open, locate the debugger panel on VSCode.
 
-```sh
-chmod +x setup.sh
-./setup.sh
-```
+![Screenshot of VSCode's debugger panel](/vscode-debug-examples.png)
 
-And you're done!
+:::info
+The "run" button is meant for examples, and **will fail** if your currently open file is not in the `examples/` directory.
+:::
+
+Click "run" and happy gaming!
