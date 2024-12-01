@@ -1,4 +1,15 @@
-# Running Examples
+# Building from Source
+
+#
+
+To guarantee consistent results across platforms, the engine builds its dependencies from source.  The amount of time this takes may vary, depending on your computer specs and internet speed.
+
+Run `setup.sh` and grab a coffee while it builds :)
+
+```sh
+chmod +x setup.sh
+./setup.sh
+```
 
 ---
 

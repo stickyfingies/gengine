@@ -22,7 +22,7 @@ export default defineConfig({
         text: 'Engine Guide',
         items: [
           { text: 'Setup', link: '/setup' },
-          { text: 'Examples', link: '/examples/' }
+          { text: 'Building', link: '/build' }
         ]
       }
     ],
