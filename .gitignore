@@ -41,8 +41,8 @@ dependencies/vcpkg-ports/assimp/assimp
 node_modules
 
 # IDE
+.vscode/settings.json
 .vs/
-.vscode/
 .clangd/
 .cache/
 CMakeSettings.json
