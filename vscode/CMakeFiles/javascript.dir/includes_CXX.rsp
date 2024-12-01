@@ -1,0 +1,1 @@
+-I/home/runner/work/gengine/gengine/core -I/home/runner/work/gengine/gengine/gpu -isystem "/home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include"
