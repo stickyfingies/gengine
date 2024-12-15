@@ -50,6 +50,13 @@
         "group": "build",
         "label": "Build Linux OpenGL for Prod",
         "dependsOn": ["SDK Setup"]
+      },
+      {
+        "command": "cd artifacts/web-gl-dev/examples && python3 -m http.server",
+        "type": "shell",
+        "group": "build",
+        "label": "Web Launch",
+        "dependsOn": ["SDK Setup", "Build Web GL for Dev"]
       }
     ]
   }

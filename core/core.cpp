@@ -25,18 +25,26 @@ void matrix_scale(glm::mat4* matrix, float x, float y, float z)
 	*matrix = glm::scale(*matrix, amount);
 }
 
-void model_load(SceneBuilder* sb, char* path, bool flip_uvs, bool flip_tris, bool create_model)
+SceneBuilder* scene_create() {
+	return new SceneBuilder{};
+}
+
+void scene_destroy(SceneBuilder* sb) {
+	delete sb;
+}
+
+void scene_load_model(SceneBuilder* sb, char* path, bool flip_uvs, bool flip_tris, bool create_model)
 {
 	VisualModelSettings settings{flip_uvs, flip_tris, create_model};
 	sb->apply_model_settings(path, std::move(settings));
 }
 
-void entity_create_capsule(SceneBuilder* sb, glm::mat4* matrix, float mass, const char* path)
+void scene_create_capsule(SceneBuilder* sb, glm::mat4* matrix, float mass, const char* path)
 {
 	sb->add_game_object(*matrix, TactileCapsule{.mass = mass}, VisualModel{.path = path});
 }
 
-void entity_create_sphere(
+void scene_create_sphere(
 	SceneBuilder* sb, glm::mat4* matrix, float mass, float radius, const char* path)
 {
 	sb->add_game_object(

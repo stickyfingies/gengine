@@ -13,7 +13,7 @@ if(EMSCRIPTEN)
         "-sDEFAULT_TO_CXX"
         "-sAUTO_JS_LIBRARIES"
         "-sAUTO_NATIVE_LIBRARIES"
-        "-sEXPORTED_FUNCTIONS=_main,_kernel_create,_kernel_running,_kernel_update,_kernel_destroy,_matrix_create,_matrix_destroy,_matrix_translate,_matrix_scale,_model_load,_entity_create_capsule,_entity_create_sphere"
+        "-sEXPORTED_FUNCTIONS=_main,_kernel_create,_kernel_running,_kernel_update,_kernel_destroy,_matrix_create,_matrix_destroy,_matrix_translate,_matrix_scale,_scene_create,_scene_destroy,_scene_load_model,_scene_create_capsule,_scene_create_sphere"
         "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap"
         "-sINVOKE_RUN=0"
         # "-sINCOMING_MODULE_JS_API=preRun,canvas,monitorRunDependencies,print,setStatus"
