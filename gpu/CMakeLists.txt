@@ -1,15 +1,21 @@
+cmake_minimum_required(VERSION 3.20)
+
 # The target 'gpu' is our cross-platform rendering library.
+# The interface gpu.h is common across implementations, but
+# the .cpp implementations depend on what platform we're
+# compiling the library for.
+project(gpu
+    VERSION 1.0.0
+    DESCRIPTION "Cross-platform GPU library"
+    LANGUAGES CXX
+)
 
-# The interface gpu.h is common across implementations,
-# but the .cpp implementations depend on what platform we're
-# comipling the library for.
-
+# Create library target
 add_library(gpu STATIC)
+add_library(gpu::gpu ALIAS gpu)
 
-target_link_libraries(gpu PRIVATE dep_common)
-
-target_include_directories(gpu PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
+# Configure compiler settings
+target_compile_features(gpu PUBLIC cxx_std_23)
 set_target_properties(gpu
     PROPERTIES
     CXX_EXTENSIONS OFF
@@ -17,27 +23,79 @@ set_target_properties(gpu
     CMAKE_CXX_STANDARD_REQUIRED ON
 )
 
-if(GPU_BACKEND MATCHES Vulkan)
-    # Begin Vulkan implementation
-    target_sources(gpu
-        PRIVATE
-        gpu.vulkan.cpp
-    )
-    find_package(Vulkan REQUIRED)
-    target_link_libraries(gpu PRIVATE ${Vulkan_LIBRARIES})
-    target_include_directories(gpu PRIVATE ${Vulkan_INCLUDE_DIRS})
-    # End Vulkan implementation
-elseif(GPU_BACKEND MATCHES GL)
-    # Begin OpenGL ES / WebGL implementation
-    target_sources(gpu
-        PRIVATE
-        gpu.opengl.cpp
-    )
+# Where to find C++ headers and other include files
+target_include_directories(gpu PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 
+# Supported GPU backends
+set(SUPPORTED_BACKENDS "Vulkan" "GL")
+
+# Verify GPU backend configuration
+if(NOT DEFINED GPU_BACKEND OR NOT GPU_BACKEND IN_LIST SUPPORTED_BACKENDS)
+    message(FATAL_ERROR "GPU_BACKEND must be one of: ${SUPPORTED_BACKENDS}")
+endif()
+
+# Logic for compiling specific GPU backend
+if(GPU_BACKEND MATCHES "Vulkan")
+    target_sources(gpu PRIVATE gpu.vulkan.cpp)
+    find_package(Vulkan REQUIRED)
+    target_link_libraries(gpu PRIVATE Vulkan::Vulkan)
+elseif(GPU_BACKEND MATCHES "GL")
+    target_sources(gpu PRIVATE gpu.opengl.cpp)
     # Glad is used for OpenGL ES, but is not needed for WebGL.
-    if(CMAKE_SYSTEM_NAME MATCHES Linux)
+    if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         find_package(glad CONFIG REQUIRED)
         target_link_libraries(gpu PRIVATE glad::glad)
     endif()
-    # End OpenGL ES / WebGL implementation
 endif()
+
+# Required dependencies for all platforms
+find_package(glm CONFIG REQUIRED)
+target_link_libraries(gpu INTERFACE glm::glm)
+
+# Platform-specific dependencies
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    find_package(glfw3 CONFIG REQUIRED)
+    find_package(imgui CONFIG REQUIRED)
+    target_link_libraries(gpu PUBLIC glfw imgui::imgui)
+endif()
+
+# Install targets
+install(TARGETS gpu
+    EXPORT gpu-targets
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+# Install headers
+install(FILES gpu.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+# Create export set for find_package
+export(TARGETS gpu
+    FILE ${CMAKE_CURRENT_BINARY_DIR}/gpu-targets.cmake
+)
+
+# Generate the gpu-version.cmake file
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/gpu-version.cmake"
+    VERSION ${CMAKE_PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+# Configure the package
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/gpu-config.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/gpu-config.cmake"
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/gpu" # Corrected install path
+)
+
+# Install the config files
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake/gpu-config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/gpu-version.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/gpu" # Corrected install path
+)

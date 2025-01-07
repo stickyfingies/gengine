@@ -43,20 +43,7 @@ void main_loop() { loop(); }
 
 auto main(int argc, char** argv) -> int
 {
-	// >> Argument processing
-
-	cout << "Arguments:";
-	for (char* arg = *argv; arg < (*argv + argc); arg++) {
-		cout << " " << arg;
-	}
-	cout << endl;
-
-	bool editor_enabled = false;
-
-	if (argc >= 2 && strcmp(argv[1], "editor") == 0) {
-		editor_enabled = true;
-		std::cout << "[info]\t EDITOR ENABLED" << std::endl;
-	}
+	const bool editor_enabled = true;
 
 	EngineKernel* kernel = kernel_create(editor_enabled);
 

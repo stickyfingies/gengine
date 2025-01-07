@@ -12,8 +12,10 @@ foreach(FILE ${FILES})
     # Create an executable for this app
     add_executable(${APP_NAME})
 
+    find_package(gpu REQUIRED)
+
     # Combine engine components
-    target_link_libraries(${APP_NAME} PRIVATE dep_common core gpu)
+    target_link_libraries(${APP_NAME} PRIVATE dep_common core gpu::gpu)
 
     # Adjust compiler settings
     set_target_properties(${APP_NAME}
@@ -51,7 +53,7 @@ foreach(FILE ${FILES})
     endif()
 endforeach()
 
-
+# For every JavaScript game script in examples/
 file(GLOB FILES "*.js")
 foreach(FILE ${FILES})
 
@@ -68,8 +70,10 @@ foreach(FILE ${FILES})
     # Create an executable for this app
     add_executable(${APP_NAME})
 
+    find_package(gpu REQUIRED)
+
     # Combine engine components
-    target_link_libraries(${APP_NAME} PRIVATE dep_common core gpu)
+    target_link_libraries(${APP_NAME} PRIVATE dep_common core gpu::gpu)
 
     # Adjust compiler settings
     set_target_properties(${APP_NAME}

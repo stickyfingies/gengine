@@ -1,15 +1,29 @@
+cmake_minimum_required(VERSION 3.20)
+
+project(core
+    VERSION 1.0.0
+    DESCRIPTION "Core game engine systems"
+    LANGUAGES CXX
+)
+
+# Create library target
 add_library(core STATIC)
+add_library(core::core ALIAS core)
 
-target_link_libraries(core PRIVATE dep_common gpu)
-
-target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
+# Configure compiler settings
+target_compile_features(core PUBLIC cxx_std_23)
 set_target_properties(core
     PROPERTIES
     CXX_EXTENSIONS OFF
     CXX_STANDARD 23
     CMAKE_CXX_STANDARD_REQUIRED ON
 )
+
+find_package(gpu REQUIRED)
+
+target_link_libraries(core PRIVATE dep_common gpu::gpu)
+
+target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_sources(core
     PRIVATE

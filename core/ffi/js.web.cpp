@@ -5,7 +5,7 @@
  */
 
 #ifndef __EMSCRIPTEN__
-#error The FFI source file js.web.cpp is required to be used with Emscripten.
+#error Emscripten is required to build (js.web.cpp).
 #endif
 
 #include <emscripten.h>
