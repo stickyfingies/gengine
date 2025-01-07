@@ -23,7 +23,7 @@ set_target_properties(gpu
     CMAKE_CXX_STANDARD_REQUIRED ON
 )
 
-# Where to find C++ headers and other include files
+# Where to find C++ headers and includes
 target_include_directories(gpu PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
@@ -37,7 +37,7 @@ if(NOT DEFINED GPU_BACKEND OR NOT GPU_BACKEND IN_LIST SUPPORTED_BACKENDS)
     message(FATAL_ERROR "GPU_BACKEND must be one of: ${SUPPORTED_BACKENDS}")
 endif()
 
-# Logic for compiling specific GPU backend
+# Backend-specific compilation options
 if(GPU_BACKEND MATCHES "Vulkan")
     target_sources(gpu PRIVATE gpu.vulkan.cpp)
     find_package(Vulkan REQUIRED)
@@ -62,7 +62,10 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(gpu PUBLIC glfw imgui::imgui)
 endif()
 
-# Install targets
+# Install header file
+install(FILES gpu.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+# Install target
 install(TARGETS gpu
     EXPORT gpu-targets
     ARCHIVE DESTINATION lib
@@ -70,15 +73,12 @@ install(TARGETS gpu
     RUNTIME DESTINATION bin
 )
 
-# Install headers
-install(FILES gpu.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
-# Create export set for find_package
+# Export target
 export(TARGETS gpu
     FILE ${CMAKE_CURRENT_BINARY_DIR}/gpu-targets.cmake
 )
 
-# Generate the gpu-version.cmake file
+# Generate the cmake version file
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/gpu-version.cmake"
@@ -86,14 +86,14 @@ write_basic_package_version_file(
     COMPATIBILITY SameMajorVersion
 )
 
-# Configure the package
+# Configure the cmake config file
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/gpu-config.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/gpu-config.cmake"
     INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/gpu" # Corrected install path
 )
 
-# Install the config files
+# Install the version and config file
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/cmake/gpu-config.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/gpu-version.cmake"

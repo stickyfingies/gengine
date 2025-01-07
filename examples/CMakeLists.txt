@@ -13,9 +13,10 @@ foreach(FILE ${FILES})
     add_executable(${APP_NAME})
 
     find_package(gpu REQUIRED)
+    find_package(core REQUIRED)
 
     # Combine engine components
-    target_link_libraries(${APP_NAME} PRIVATE dep_common core gpu::gpu)
+    target_link_libraries(${APP_NAME} PRIVATE core::core gpu::gpu)
 
     # Adjust compiler settings
     set_target_properties(${APP_NAME}
@@ -71,9 +72,10 @@ foreach(FILE ${FILES})
     add_executable(${APP_NAME})
 
     find_package(gpu REQUIRED)
+    find_package(core REQUIRED)
 
     # Combine engine components
-    target_link_libraries(${APP_NAME} PRIVATE dep_common core gpu::gpu)
+    target_link_libraries(${APP_NAME} PRIVATE core::core gpu::gpu)
 
     # Adjust compiler settings
     set_target_properties(${APP_NAME}
