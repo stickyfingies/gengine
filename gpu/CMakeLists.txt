@@ -10,6 +10,13 @@ project(gpu
     LANGUAGES CXX
 )
 
+include(GNUInstallDirs)
+
+message(STATUS "${CMAKE_TOOLCHAIN_FILE}")
+message(STATUS "${VCPKG_TARGET_TRIPLET}")
+message(STATUS "${CMAKE_PREFIX_PATH}")
+message(STATUS "$ENV{VCPKG_ROOT}")
+
 # Create library target
 add_library(gpu STATIC)
 add_library(gpu::gpu ALIAS gpu)
@@ -25,7 +32,7 @@ set_target_properties(gpu
 
 # Where to find C++ headers and includes
 target_include_directories(gpu PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
@@ -39,21 +46,23 @@ endif()
 
 # Backend-specific compilation options
 if(GPU_BACKEND MATCHES "Vulkan")
-    target_sources(gpu PRIVATE gpu.vulkan.cpp)
+    target_sources(gpu PRIVATE src/gpu.vulkan.cpp)
     find_package(Vulkan REQUIRED)
     target_link_libraries(gpu PRIVATE Vulkan::Vulkan)
+    set_target_properties(gpu PROPERTIES OUTPUT_NAME "gpu.vk")
 elseif(GPU_BACKEND MATCHES "GL")
-    target_sources(gpu PRIVATE gpu.opengl.cpp)
+    target_sources(gpu PRIVATE src/gpu.opengl.cpp)
     # Glad is used for OpenGL ES, but is not needed for WebGL.
     if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         find_package(glad CONFIG REQUIRED)
         target_link_libraries(gpu PRIVATE glad::glad)
     endif()
+    set_target_properties(gpu PROPERTIES OUTPUT_NAME "gpu.gl")
 endif()
 
 # Required dependencies for all platforms
 find_package(glm CONFIG REQUIRED)
-target_link_libraries(gpu INTERFACE glm::glm)
+target_link_libraries(gpu PUBLIC glm::glm)
 
 # Platform-specific dependencies
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
@@ -61,9 +70,6 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     find_package(imgui CONFIG REQUIRED)
     target_link_libraries(gpu PUBLIC glfw imgui::imgui)
 endif()
-
-# Install header file
-install(FILES gpu.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Install target
 install(TARGETS gpu
@@ -95,7 +101,7 @@ configure_package_config_file(
 
 # Install the version and config file
 install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/cmake/gpu-config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/gpu-config.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/gpu-version.cmake"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/gpu" # Corrected install path
 )

@@ -12,8 +12,8 @@ foreach(FILE ${FILES})
     # Create an executable for this app
     add_executable(${APP_NAME})
 
-    find_package(gpu REQUIRED)
-    find_package(core REQUIRED)
+    # find_package(gpu REQUIRED)
+    # find_package(core REQUIRED)
 
     # Combine engine components
     target_link_libraries(${APP_NAME} PRIVATE core::core gpu::gpu)
@@ -71,8 +71,8 @@ foreach(FILE ${FILES})
     # Create an executable for this app
     add_executable(${APP_NAME})
 
-    find_package(gpu REQUIRED)
-    find_package(core REQUIRED)
+    # find_package(gpu REQUIRED)
+    # find_package(core REQUIRED)
 
     # Combine engine components
     target_link_libraries(${APP_NAME} PRIVATE core::core gpu::gpu)

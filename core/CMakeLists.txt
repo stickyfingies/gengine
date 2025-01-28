@@ -23,7 +23,7 @@ set_target_properties(core
 )
 
 # Required dependency for all platforms
-find_package(gpu REQUIRED)
+# find_package(gpu REQUIRED)
 target_link_libraries(core PRIVATE gpu::gpu)
 
 # Required dependency for all platforms
