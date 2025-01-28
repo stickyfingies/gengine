@@ -6,7 +6,7 @@
     "configurations": [
         {
             // ONLY WORKS on files in the examples/ directory
-            "name": "Run Example (Vulkan)",
+            "name": "Desktop Vulkan",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/artifacts/linux-vk-dev/examples/${fileBasenameNoExtension}/${fileBasenameNoExtension}.bin",
@@ -14,7 +14,6 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Build Linux Vulkan for Dev",
-            
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
@@ -33,7 +32,7 @@
         },
         {
             // ONLY WORKS on files in the examples/ directory
-            "name": "Run Example (OpenGL)",
+            "name": "Desktop OpenGL",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/artifacts/linux-gl-dev/examples/${fileBasenameNoExtension}/${fileBasenameNoExtension}.bin",

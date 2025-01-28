@@ -7,3 +7,15 @@ Today, the FFI is defined in three places.
 3. examples/cmake/emscripen.cmake must explicitly label each funciton from core.h.
 
 TODO: add typescript declarations for the core.h functions.
+
+== January 2025 ==
+
+Okay so we have (A) an engine (B) a web-compile tool for engine + apps
+
+Apps depend on the engine.
+The engine must be built for emscripten, which has complicated build infrastructure requirements.
+The games must be built for emscripten, ditto.
+A tool compiles X/cpp into X/wasm where X is one of {engine, game}.
+
+REMOVE the CMakeLists.txt calling_into examples/CMakeLists.txt dependency.
+Instead, have examples/ call into (engine, web-compile).

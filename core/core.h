@@ -22,10 +22,13 @@ void matrix_translate(glm::mat4* matrix, float x, float y, float z);
 
 void matrix_scale(glm::mat4* matrix, float x, float y, float z);
 
-void model_load(SceneBuilder* sb, char* path, bool flip_uvs, bool flip_tris, bool create_model);
+SceneBuilder* scene_create();
 
-void entity_create_capsule(SceneBuilder* sb, glm::mat4* matrix, float mass, const char* path);
+void scene_destroy(SceneBuilder* sb);
 
-void entity_create_sphere(
-	SceneBuilder* sb, glm::mat4* matrix, float mass, float radius, const char* path);
+void scene_load_model(SceneBuilder* sb, char* path, bool flip_uvs, bool flip_tris, bool create_model);
+
+void scene_create_capsule(SceneBuilder* sb, glm::mat4* matrix, float mass, const char* path);
+
+void scene_create_sphere(SceneBuilder* sb, glm::mat4* matrix, float mass, float radius, const char* path);
 }

@@ -35,17 +35,6 @@ void gengine_print(int i) { cout << "Gengine says " << i << endl; }
 
 namespace {
 
-auto mouse_callback(GLFWwindow* window, double pos_x, double pos_y) -> void
-{
-	auto window_data = static_cast<WindowData*>(glfwGetWindowUserPointer(window));
-
-	window_data->delta_mouse_x = pos_x - window_data->mouse_x;
-	window_data->delta_mouse_y = window_data->mouse_y - pos_y;
-
-	window_data->mouse_x = pos_x;
-	window_data->mouse_y = pos_y;
-}
-
 // Bullshit because Emscripten needs a pointer to the main loop
 function<void()> loop;
 void main_loop() { loop(); }
@@ -54,20 +43,7 @@ void main_loop() { loop(); }
 
 auto main(int argc, char** argv) -> int
 {
-	// >> Argument processing
-
-	cout << "Arguments:";
-	for (char* arg = *argv; arg < (*argv + argc); arg++) {
-		cout << " " << arg;
-	}
-	cout << endl;
-
-	bool editor_enabled = false;
-
-	if (argc >= 2 && strcmp(argv[1], "editor") == 0) {
-		editor_enabled = true;
-		std::cout << "[info]\t EDITOR ENABLED" << std::endl;
-	}
+	const bool editor_enabled = true;
 
 	EngineKernel* kernel = kernel_create(editor_enabled);
 

@@ -31,32 +31,6 @@ add_link_options(-fsanitize=address)
 
 # << Config
 
-# >> Dependencies
-
-# The target 'dep_common' is a virtual library.
-# It does not contain source files.
-#
-# Instead, we locate all our project's dependencies,
-# and then link them with 'dep_common' so that later,
-# other engine components just link with 'dep_common'
-# and are transitively linked with our dependencies.
-add_library(dep_common INTERFACE)
-
-find_package(glm CONFIG REQUIRED)
-target_link_libraries(dep_common INTERFACE glm::glm)
-
-if(CMAKE_SYSTEM_NAME MATCHES Linux)
-
-    find_package(glfw3 CONFIG REQUIRED)
-    target_link_libraries(dep_common INTERFACE glfw)
-
-    find_package(imgui CONFIG REQUIRED)
-    target_link_libraries(dep_common INTERFACE imgui::imgui)
-
-endif()
-
-# << Dependencies
-
 # >> Components
 
 if(CMAKE_JS_VERSION)
