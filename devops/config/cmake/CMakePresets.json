@@ -1,0 +1,240 @@
+{
+  "version": 8,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 30,
+    "patch": 1
+  },
+  "include": [],
+  "configurePresets": [
+    {
+      "name": "debug",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/artifacts/${presetName}",
+      "installDir": "${sourceDir}/artifacts/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/artifacts/${presetName}",
+      "installDir": "${sourceDir}/artifacts/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "vcpkg",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake"
+      }
+    },
+    {
+      "name": "emscripten",
+      "hidden": true,
+      "inherits": [
+        "vcpkg"
+      ],
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/dependencies/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+        "CMAKE_CROSSCOMPILING_EMULATOR": "node",
+        "CMAKE_EXECUTABLE_SUFFIX": ".html"
+      }
+    },
+    {
+      "name": "vulkan",
+      "hidden": true,
+      "cacheVariables": {
+        "GPU_BACKEND": "Vulkan"
+      }
+    },
+    {
+      "name": "gl",
+      "hidden": true,
+      "cacheVariables": {
+        "GPU_BACKEND": "GL"
+      }
+    },
+    {
+      "name": "linux-vk-dev",
+      "inherits": [
+        "debug",
+        "vcpkg",
+        "vulkan"
+      ]
+    },
+    {
+      "name": "linux-vk-app",
+      "inherits": [
+        "release",
+        "vcpkg",
+        "vulkan"
+      ]
+    },
+    {
+      "name": "linux-gl-dev",
+      "inherits": [
+        "debug",
+        "vcpkg",
+        "gl"
+      ]
+    },
+    {
+      "name": "linux-gl-app",
+      "inherits": [
+        "release",
+        "vcpkg",
+        "gl"
+      ]
+    },
+    {
+      "name": "web-gl-dev",
+      "inherits": [
+        "debug",
+        "emscripten",
+        "gl"
+      ]
+    },
+    {
+      "name": "web-gl-app",
+      "inherits": [
+        "release",
+        "emscripten",
+        "gl"
+      ]
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "linux-vk-dev",
+      "configurePreset": "linux-vk-dev"
+    },
+    {
+      "name": "linux-vk-app",
+      "configurePreset": "linux-vk-app"
+    },
+    {
+      "name": "linux-gl-dev",
+      "configurePreset": "linux-gl-dev"
+    },
+    {
+      "name": "linux-gl-app",
+      "configurePreset": "linux-gl-app"
+    },
+    {
+      "name": "web-gl-dev",
+      "configurePreset": "web-gl-dev"
+    },
+    {
+      "name": "web-gl-app",
+      "configurePreset": "web-gl-app"
+    }
+  ],
+  "testPresets": [],
+  "packagePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "variables": {
+        "CPACK_PACKAGE_FILE_NAME": "${presetName}",
+        "CPACK_PACKAGE_DIRECTORY": "${sourceDir}/artifacts"
+      },
+      "generators": [
+        "ZIP"
+      ]
+    },
+    {
+      "name": "linux-vk-app",
+      "configurePreset": "linux-vk-app",
+      "inherits": [
+        "base"
+      ]
+    },
+    {
+      "name": "web-gl-app",
+      "configurePreset": "web-gl-app",
+      "inherits": [
+        "base"
+      ]
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "linux-vk-app",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "linux-vk-app"
+        },
+        {
+          "type": "build",
+          "name": "linux-vk-app"
+        },
+        {
+          "type": "package",
+          "name": "linux-vk-app"
+        }
+      ]
+    },
+    {
+      "name": "linux-vk-dev",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "linux-vk-dev"
+        },
+        {
+          "type": "build",
+          "name": "linux-vk-dev"
+        }
+      ]
+    },
+    {
+      "name": "web-gl-app",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "web-gl-app"
+        },
+        {
+          "type": "build",
+          "name": "web-gl-app"
+        },
+        {
+          "type": "package",
+          "name": "web-gl-app"
+        }
+      ]
+    },
+    {
+      "name": "web-gl-dev",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "web-gl-dev"
+        },
+        {
+          "type": "build",
+          "name": "web-gl-dev"
+        }
+      ]
+    },
+    {
+      "name": "linux-gl-dev",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "linux-gl-dev"
+        },
+        {
+          "type": "build",
+          "name": "linux-gl-dev"
+        }
+      ]
+    }
+  ]
+}
