@@ -1,8 +1,0 @@
-1. Develop a canonical C API in core/core.h
-2. Consume the C API inside:
-    - main.cpp
-    - web.js
-    - desktop.js
-
-I think for desktop.js, kernel_* will be NOOPs since the kernel has already started.
-    - Maybe platform_* is better than kernel_*?
