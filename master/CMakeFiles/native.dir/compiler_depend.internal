@@ -809,7 +809,7 @@ examples/CMakeFiles/native.dir/__/core/main.cpp.o
  /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec3.hpp
  /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec4.hpp
  /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vector_relational.hpp
- /home/runner/work/gengine/gengine/gpu/gpu.h
+ /home/runner/work/gengine/gengine/gpu/include/gpu.h
 
 examples/CMakeFiles/native.dir/native.cpp.o
  /home/runner/work/gengine/gengine/examples/native.cpp
@@ -1621,5 +1621,5 @@ examples/CMakeFiles/native.dir/native.cpp.o
  /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec3.hpp
  /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec4.hpp
  /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vector_relational.hpp
- /home/runner/work/gengine/gengine/gpu/gpu.h
+ /home/runner/work/gengine/gengine/gpu/include/gpu.h
 

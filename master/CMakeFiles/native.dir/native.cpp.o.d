@@ -744,7 +744,7 @@ examples/CMakeFiles/native.dir/native.cpp.o: \
   /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/GL/gl.h \
   /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/GL/glext.h \
   /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/KHR/khrplatform.h \
-  /home/runner/work/gengine/gengine/gpu/gpu.h \
+  /home/runner/work/gengine/gengine/gpu/include/gpu.h \
   /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/functional \
   /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__functional/binary_negate.h \
   /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__functional/bind.h \

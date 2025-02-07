@@ -808,7 +808,7 @@ examples/CMakeFiles/native.dir/__/core/main.cpp.o: /home/runner/work/gengine/gen
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec3.hpp \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec4.hpp \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vector_relational.hpp \
-  /home/runner/work/gengine/gengine/gpu/gpu.h
+  /home/runner/work/gengine/gengine/gpu/include/gpu.h
 
 examples/CMakeFiles/native.dir/native.cpp.o: /home/runner/work/gengine/gengine/examples/native.cpp \
   /home/runner/work/gengine/gengine/core/assets.h \
@@ -1619,7 +1619,7 @@ examples/CMakeFiles/native.dir/native.cpp.o: /home/runner/work/gengine/gengine/e
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec3.hpp \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec4.hpp \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vector_relational.hpp \
-  /home/runner/work/gengine/gengine/gpu/gpu.h
+  /home/runner/work/gengine/gengine/gpu/include/gpu.h
 
 
 /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/gtc/matrix_transform.inl:
@@ -1661,6 +1661,8 @@ examples/CMakeFiles/native.dir/native.cpp.o: /home/runner/work/gengine/gengine/e
 /home/runner/work/gengine/gengine/core/assets.h:
 
 /home/runner/work/gengine/gengine/examples/native.cpp:
+
+/home/runner/work/gengine/gengine/gpu/include/gpu.h:
 
 /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/packing.hpp:
 
@@ -2345,8 +2347,6 @@ examples/CMakeFiles/native.dir/native.cpp.o: /home/runner/work/gengine/gengine/e
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__algorithm/three_way_comp_ref_type.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__filesystem/u8path.h:
-
-/home/runner/work/gengine/gengine/gpu/gpu.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__type_traits/is_pointer.h:
 

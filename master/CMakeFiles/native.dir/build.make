@@ -114,7 +114,8 @@ examples/native/index.js: examples/CMakeFiles/native.dir/native.cpp.o
 examples/native/index.js: examples/CMakeFiles/native.dir/__/core/main.cpp.o
 examples/native/index.js: examples/CMakeFiles/native.dir/build.make
 examples/native/index.js: core/libcore.a
-examples/native/index.js: gpu/libgpu.a
+examples/native/index.js: gpu/libgpu.gl.a
+examples/native/index.js: /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/lib/libglm.a
 examples/native/index.js: /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/lib/libglm.a
 examples/native/index.js: /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/lib/libassimp.a
 examples/native/index.js: /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/lib/libpolyclipping.a

@@ -114,7 +114,8 @@ examples/javascript/index.js: examples/CMakeFiles/javascript.dir/__/core/main.cp
 examples/javascript/index.js: examples/CMakeFiles/javascript.dir/__/core/ffi/js.web.cpp.o
 examples/javascript/index.js: examples/CMakeFiles/javascript.dir/build.make
 examples/javascript/index.js: core/libcore.a
-examples/javascript/index.js: gpu/libgpu.a
+examples/javascript/index.js: gpu/libgpu.gl.a
+examples/javascript/index.js: /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/lib/libglm.a
 examples/javascript/index.js: /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/lib/libglm.a
 examples/javascript/index.js: /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/lib/libassimp.a
 examples/javascript/index.js: /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/lib/libpolyclipping.a

@@ -791,7 +791,7 @@ examples/CMakeFiles/javascript.dir/__/core/ffi/js.web.cpp.o: \
   /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/GL/gl.h \
   /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/GL/glext.h \
   /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/KHR/khrplatform.h \
-  /home/runner/work/gengine/gengine/gpu/gpu.h \
+  /home/runner/work/gengine/gengine/gpu/include/gpu.h \
   /home/runner/work/gengine/gengine/core/scene.h \
   /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/unordered_set \
   /home/runner/work/gengine/gengine/core/window.h \

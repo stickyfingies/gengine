@@ -861,7 +861,7 @@ examples/CMakeFiles/javascript.dir/__/core/ffi/js.web.cpp.o: /home/runner/work/g
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec3.hpp \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec4.hpp \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vector_relational.hpp \
-  /home/runner/work/gengine/gengine/gpu/gpu.h
+  /home/runner/work/gengine/gengine/gpu/include/gpu.h
 
 examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine/gengine/core/main.cpp \
   /home/runner/work/gengine/gengine/core/kernel.h \
@@ -1670,12 +1670,14 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec3.hpp \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec4.hpp \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vector_relational.hpp \
-  /home/runner/work/gengine/gengine/gpu/gpu.h
+  /home/runner/work/gengine/gengine/gpu/include/gpu.h
 
 
 /home/runner/work/gengine/gengine/core/kernel.h:
 
 /home/runner/work/gengine/gengine/core/main.cpp:
+
+/home/runner/work/gengine/gengine/gpu/include/gpu.h:
 
 /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/packing.hpp:
 
@@ -2218,8 +2220,6 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: /home/runner/work/gengine
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__functional/perfect_forward.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__filesystem/file_type.h:
-
-/home/runner/work/gengine/gengine/gpu/gpu.h:
 
 /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/__type_traits/is_pointer.h:
 

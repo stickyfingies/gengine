@@ -40,7 +40,7 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o: \
   /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/GL/glext.h \
   /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/KHR/khrplatform.h \
   /home/runner/work/gengine/gengine/core/kernel.h \
-  /home/runner/work/gengine/gengine/gpu/gpu.h \
+  /home/runner/work/gengine/gengine/gpu/include/gpu.h \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/glm.hpp \
   /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/detail/_fixes.hpp \
   /home/runner/work/gengine/gengine/dependencies/emsdk/upstream/emscripten/cache/sysroot/include/c++/v1/cmath \

@@ -862,7 +862,7 @@ examples/CMakeFiles/javascript.dir/__/core/ffi/js.web.cpp.o
  /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec3.hpp
  /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec4.hpp
  /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vector_relational.hpp
- /home/runner/work/gengine/gengine/gpu/gpu.h
+ /home/runner/work/gengine/gengine/gpu/include/gpu.h
 
 examples/CMakeFiles/javascript.dir/__/core/main.cpp.o
  /home/runner/work/gengine/gengine/core/main.cpp
@@ -1672,5 +1672,5 @@ examples/CMakeFiles/javascript.dir/__/core/main.cpp.o
  /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec3.hpp
  /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vec4.hpp
  /home/runner/work/gengine/gengine/dependencies/vcpkg/installed/wasm32-emscripten/include/glm/vector_relational.hpp
- /home/runner/work/gengine/gengine/gpu/gpu.h
+ /home/runner/work/gengine/gengine/gpu/include/gpu.h
 
