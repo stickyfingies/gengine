@@ -10,7 +10,7 @@ inline auto findMemoryType(
 	auto mem_properties = VkPhysicalDeviceMemoryProperties{};
 	vkGetPhysicalDeviceMemoryProperties(physical_device, &mem_properties);
 
-	for (auto i = 0; i < mem_properties.memoryTypeCount; ++i) {
+	for (uint32_t i = 0; i < mem_properties.memoryTypeCount; ++i) {
 		if ((type_filter & (1 << i)) &&
 			(mem_properties.memoryTypes[i].propertyFlags & properties) == properties) {
 			return i;

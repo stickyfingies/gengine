@@ -1,13 +1,15 @@
-#include "world.h"
 #include "camera.hpp"
 #include "fps_controller.h"
 #include "gpu.h"
 #include "physics.h"
 #include "scene.h"
 #include "window.h"
+#include "world.h"
+
 #ifndef __EMSCRIPTEN__
 #include <imgui.h>
 #endif
+
 #include <GLFW/glfw3.h>
 #include <iostream>
 
@@ -37,21 +39,23 @@ public:
 		camera = Camera(glm::vec3(0.0f, 5.0f, 90.0f));
 
 		sceneBuilder.apply_model_settings(
-			"./data/spinny.obj", {.flip_uvs = false, .flip_triangle_winding = true});
+			"./data/spinny.obj",
+			{.flip_uvs = false, .flip_triangle_winding = true, .make_rigidbody = false});
 
 		sceneBuilder.apply_model_settings(
-			"./data/map.obj", {.flip_uvs = true, .flip_triangle_winding = true});
+			"./data/map.obj",
+			{.flip_uvs = true, .flip_triangle_winding = true, .make_rigidbody = false});
 
 		auto player_pos = glm::mat4(1.0f);
 		player_pos = glm::translate(player_pos, glm::vec3(20.0f, 100.0f, 20.0f));
-		
+
 		sceneBuilder.add_game_object(
 			player_pos, TactileCapsule{.mass = 70.0f}, VisualModel{.path = "./data/spinny.obj"});
 
 		auto ball_pos = glm::mat4(1.0f);
 		ball_pos = glm::translate(ball_pos, glm::vec3(10.0f, 100.0f, 0.0f));
 		ball_pos = glm::scale(ball_pos, glm::vec3(6.0f, 6.0f, 6.0f));
-		
+
 		sceneBuilder.add_game_object(
 			ball_pos,
 			TactileSphere{.mass = 62.0f, .radius = 1.0f},
@@ -76,7 +80,8 @@ public:
 		pipeline = gpu->create_pipeline(vert, frag, vertex_attributes);
 #endif
 
-		scene = sceneBuilder.build(resources, pipeline, gpu.get(), physics_engine.get(), &texture_factory);
+		scene = sceneBuilder.build(
+			resources, pipeline, gpu.get(), physics_engine.get(), &texture_factory);
 
 		// Assumes all images are uploaded to the GPU and are useless in system memory.
 		texture_factory.unload_all_images();
@@ -122,7 +127,7 @@ public:
 			SetNextWindowSize({0.0f, 0.0f});
 			Begin("Debug Menu", nullptr, ImGuiWindowFlags_NoCollapse);
 			Text("ms / frame: %.2f", static_cast<float>(elapsed_time));
-			Text("Objects: %i", scene->transforms.size());
+			Text("Objects: %li", scene->transforms.size());
 			// Text("GPU Images: %i", images.size());
 			End();
 			// Matrices

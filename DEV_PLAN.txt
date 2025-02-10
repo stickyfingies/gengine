@@ -6,3 +6,5 @@
 
 I think for desktop.js, kernel_* will be NOOPs since the kernel has already started.
     - Maybe platform_* is better than kernel_*?
+
+main -> kernel_create -> World::create -> std::make_unique<NativeWorld> -> NativeWorld::()

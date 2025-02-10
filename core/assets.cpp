@@ -161,15 +161,15 @@ auto traverseNode(
 {
 	const auto transform = calculateWorldTransform(node);
 
-	for (auto i = 0; i < node->mNumMeshes; ++i) {
+	for (auto i = 0u; i < node->mNumMeshes; ++i) {
 		const auto mesh_idx = node->mMeshes[i];
-		const auto mesh = scene->mMeshes[mesh_idx];
+		// const auto mesh = scene->mMeshes[mesh_idx];
 		decoding.mesh_to_objects[mesh_idx].push_back(decoding.objectCount);
 		decoding.objectCount += 1;
 		assets.objects.push_back({transform, 0, 0});
 	}
 
-	for (auto i = 0; i < node->mNumChildren; ++i) {
+	for (auto i = 0u; i < node->mNumChildren; ++i) {
 		const auto child = node->mChildren[i];
 		traverseNode(decoding, assets, scene, child);
 	}
@@ -194,7 +194,7 @@ auto processGeometry(const aiScene* scene, size_t mesh_idx, size_t& material_idx
 
 	// accumulate vertices
 
-	for (auto j = 0; j < ai_mesh->mNumVertices; ++j) {
+	for (auto j = 0u; j < ai_mesh->mNumVertices; ++j) {
 		vertices[j * 3 + 0] = ai_mesh->mVertices[j].x;
 		vertices[j * 3 + 1] = ai_mesh->mVertices[j].y;
 		vertices[j * 3 + 2] = ai_mesh->mVertices[j].z;
@@ -209,9 +209,9 @@ auto processGeometry(const aiScene* scene, size_t mesh_idx, size_t& material_idx
 
 	// extract indices from faces
 
-	for (auto j = 0; j < ai_mesh->mNumFaces; ++j) {
+	for (auto j = 0u; j < ai_mesh->mNumFaces; ++j) {
 		const auto face = ai_mesh->mFaces[j];
-		for (auto k = 0; k < face.mNumIndices; ++k) {
+		for (auto k = 0u; k < face.mNumIndices; ++k) {
 			indices[j * 3 + k] = face.mIndices[k];
 		}
 	}
@@ -235,7 +235,7 @@ auto extractTextures(
 		const string path_string = string(path.C_Str());
 
 		// Embedded texture
-		if (auto texture = scene->GetEmbeddedTexture(path.C_Str())) {
+		if (scene->GetEmbeddedTexture(path.C_Str())) {
 			// Grab the embedded texture instance
 			const auto index = std::atoi(path_string.substr(1).c_str());
 
@@ -290,16 +290,6 @@ auto load_model(
 		return {};
 	}
 
-	for (int ai_mesh_idx = 0; ai_mesh_idx < ai_scene->mNumMeshes; ai_mesh_idx++) {
-		const aiMesh* ai_mesh = ai_scene->mMeshes[ai_mesh_idx];
-		const size_t vertex_buffer_size = ai_mesh->mNumVertices * 3 * sizeof(float);
-		const size_t normal_buffer_size = ai_mesh->mNumVertices * 3 * sizeof(float);
-		const size_t uv_buffer_size = ai_mesh->mNumVertices * 2 * sizeof(float);
-		const size_t index_buffer_size = ai_mesh->mNumFaces * 3 * sizeof(unsigned int);
-		const size_t mesh_size =
-			vertex_buffer_size + normal_buffer_size + uv_buffer_size + index_buffer_size;
-	}
-
 	// delete[] pBuffer;
 
 	auto decoding = AssetDecoding{};
@@ -316,6 +306,7 @@ auto load_model(
 		for (const auto object_idx : object_indices) {
 			assets.objects[object_idx].geometry = assets.geometries.size();
 
+			// TODO: why are we comparing an UN-SIGNED lhs gt 0?
 			if (material_idx >= 0) {
 				decoding.material_to_objects[material_idx].push_back(object_idx);
 			}

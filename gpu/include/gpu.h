@@ -1,9 +1,11 @@
 /**
  * @headerfile gpu.h
- * @brief An abstract GPU interface for cross-platform rendering.
+ * @brief A C++ interface for cross-platform GPU rendering.
  *
- * This file describes a low-level GPU interface that is designed to
- * abstract over platform-specifc details like:
+ * The GPU interface is designed to cover the broad use-cases of GPU accelerators,
+ * and then be implemented by one or more "gpu backends" for each platform.
+ * 
+ * The interface allows you to configure:
  * - the structure of the raster pipeline
  * - VRAM dynamic memory operations
  * - geometric encodings of 3D shapes

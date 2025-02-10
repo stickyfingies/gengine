@@ -276,7 +276,7 @@ public:
 	{
 		physics_engine->step(delta, 10);
 
-		for (auto i = 0; i < scene->collidables.size(); ++i) {
+		for (auto i = 0u; i < scene->collidables.size(); ++i) {
 			physics_engine->get_model_matrix(scene->collidables[i], scene->transforms[i]);
 		}
 	}

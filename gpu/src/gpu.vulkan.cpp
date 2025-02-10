@@ -271,7 +271,7 @@ public:
 									: queue_family_properties.size();
 
 			if (present_queue_idx == queue_family_properties.size()) {
-				for (auto i = 0; i < queue_family_properties.size(); ++i) {
+				for (long unsigned int i = 0; i < queue_family_properties.size(); ++i) {
 					if ((queue_family_properties[i].queueFlags & vk::QueueFlagBits::eGraphics) &&
 						physical_device.getSurfaceSupportKHR(static_cast<uint32_t>(i), surface)) {
 						graphics_queue_idx = i;
@@ -280,7 +280,7 @@ public:
 					}
 				}
 				if (present_queue_idx == queue_family_properties.size()) {
-					for (auto i = 0; i < queue_family_properties.size(); ++i) {
+					for (long unsigned int i = 0; i < queue_family_properties.size(); ++i) {
 						if (physical_device.getSurfaceSupportKHR(i, surface)) {
 							present_queue_idx = i;
 							break;
@@ -451,7 +451,7 @@ public:
 
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO();
+		// ImGuiIO& io = ImGui::GetIO();
 		ImGui::StyleColorsDark();
 
 		ImGui_ImplGlfw_InitForVulkan(window, true);
@@ -592,15 +592,15 @@ public:
 		return &image_cache[name];
 	}
 
-	auto
-	generate_mipmaps(vk::Image image, uint32_t width, uint32_t height, uint32_t mipLevels) -> void
+	auto generate_mipmaps(vk::Image image, uint32_t width, uint32_t height, uint32_t mipLevels)
+		-> void
 	{
 		auto cmdbuf = begin_one_time_cmdbuf();
 
 		int32_t mipWidth = width;
 		int32_t mipHeight = height;
 
-		for (auto i = 1; i < mipLevels; i++) {
+		for (uint32_t i = 1; i < mipLevels; i++) {
 			const auto subresource =
 				vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, i - 1, 1, 0, 1);
 			const auto barrier = vk::ImageMemoryBarrier(
@@ -711,7 +711,7 @@ public:
 		device.destroySampler(image->sampler);
 	}
 
-	auto create_geometry(ShaderPipeline* pipeline, Buffer* vertex_buffer, Buffer* index_buffer)
+	auto create_geometry(ShaderPipeline*, Buffer* vertex_buffer, Buffer* index_buffer)
 		-> Geometry* override
 	{
 		return new Geometry{vertex_buffer, index_buffer, index_buffer->size};
@@ -859,17 +859,7 @@ public:
 		const auto input_assembly = vk::PipelineInputAssemblyStateCreateInfo(
 			{}, vk::PrimitiveTopology::eTriangleList, false);
 
-		const auto viewport = vk::Viewport(
-			0.0f,
-			0.0f,
-			static_cast<float>(extent.width),
-			static_cast<float>(extent.height),
-			0.0f,
-			1.0f);
-
-		const auto scissor = vk::Rect2D(vk::Offset2D(), extent);
-
-		const auto viewport_state = vk::PipelineViewportStateCreateInfo(
+		const auto dynamic_viewport_state = vk::PipelineViewportStateCreateInfo(
 			{},
 			1,
 			/* dynamic */ nullptr,
@@ -927,7 +917,7 @@ public:
 			&vertex_input_info,
 			&input_assembly,
 			nullptr,
-			&viewport_state,
+			&dynamic_viewport_state,
 			&rasterizer,
 			&multisampling,
 			&depth_stencil,
@@ -990,7 +980,7 @@ public:
 
 		ctx->cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pso->pipeline);
 
-		for (auto i = 0; i < transforms.size(); ++i) {
+		for (long unsigned int i = 0; i < transforms.size(); ++i) {
 
 			ctx->cmdbuf.bindDescriptorSets(
 				vk::PipelineBindPoint::eGraphics,
@@ -1024,8 +1014,13 @@ public:
 
 	auto alloc_context() -> std::unique_ptr<RenderContextVk>
 	{
-		const auto ok = device.waitForFences(
-			swapchain_fences[current_frame], true, std::numeric_limits<uint64_t>::max());
+		// Wait for fence
+		const auto& fence = swapchain_fences[current_frame];
+		const auto ok = device.waitForFences(fence, true, std::numeric_limits<uint64_t>::max());
+		if (ok != vk::Result::eSuccess) {
+			std::cerr << "Failed to wait for device fences." << std::endl;
+			return nullptr;
+		}
 
 		try {
 			const auto next_image = device.acquireNextImageKHR(
@@ -1049,7 +1044,7 @@ public:
 			return std::make_unique<RenderContextVk>(
 				cmdbuf, backbuffer_pass, backbuffers[image_idx], extent);
 		}
-		catch (vk::OutOfDateKHRError) {
+		catch (vk::OutOfDateKHRError&) {
 			re_create_swapchain();
 			return nullptr;
 		}
@@ -1083,7 +1078,7 @@ public:
 				re_create_swapchain();
 			}
 		}
-		catch (vk::OutOfDateKHRError) {
+		catch (vk::OutOfDateKHRError&) {
 			re_create_swapchain();
 		}
 
@@ -1116,6 +1111,9 @@ private:
 
 		const auto ok =
 			device.waitForFences(wait_fence, true, std::numeric_limits<uint64_t>::max());
+		if (ok != vk::Result::eSuccess) {
+			std::cerr << "Failed to wait for device fence." << std::endl;
+		}
 
 		device.destroyFence(wait_fence);
 
@@ -1170,10 +1168,8 @@ private:
 	}
 
 	auto create_image_view(
-		vk::Image image,
-		vk::Format format,
-		vk::ImageAspectFlags aspect,
-		uint32_t mipLevels) -> vk::ImageView
+		vk::Image image, vk::Format format, vk::ImageAspectFlags aspect, uint32_t mipLevels)
+		-> vk::ImageView
 	{
 		const auto component_mapping = vk::ComponentMapping(
 			vk::ComponentSwizzle::eR,
@@ -1221,7 +1217,7 @@ private:
 
 	auto transition_image_layout(
 		vk::Image image,
-		vk::Format format,
+		vk::Format,
 		vk::ImageLayout old_layout,
 		vk::ImageLayout new_layout,
 		uint32_t mipCount) -> void

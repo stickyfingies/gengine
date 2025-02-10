@@ -24,10 +24,12 @@ message(STATUS "CMAKE_CXX_FLAGS_RELEASE is ${CMAKE_CXX_FLAGS_RELEASE}")
 message(STATUS "CMAKE_PREFIX_PATH is ${CMAKE_PREFIX_PATH}")
 message(STATUS "CMAKE_MODULE_PATH is ${CMAKE_MODULE_PATH}")
 
-# if(CMAKE_BUILD_TYPE MATCHES Debug)
-add_compile_options(-fsanitize=address)
-add_link_options(-fsanitize=address)
-# endif()
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    add_compile_options(-fsanitize=address)
+    add_link_options(-fsanitize=address)
+
+    add_compile_options(-Wall -Wextra -Wno-unused-parameter -pedantic-errors)
+endif()
 
 # << Config
 
