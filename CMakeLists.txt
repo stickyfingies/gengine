@@ -28,7 +28,7 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
     add_compile_options(-fsanitize=address)
     add_link_options(-fsanitize=address)
 
-    add_compile_options(-Wall -Wextra -Wno-unused-parameter -pedantic-errors)
+    add_compile_options(-pedantic-errors -Wall -Wextra -Wno-unused-parameter -Werror=redundant-decls)
 endif()
 
 # << Config

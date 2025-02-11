@@ -167,7 +167,7 @@ auto PhysicsEngine::create_mesh(
 	const auto& indices = geometry.indices;
 
 	auto nonIndexedVertices = std::vector<float>();
-	for (int i = 0; i < indices.size(); i++) {
+	for (auto i = 0ul; i < indices.size(); i++) {
 		const auto idx = indices[i];
 		nonIndexedVertices.push_back(-vertices[idx * 3 + 0]);
 		nonIndexedVertices.push_back(vertices[idx * 3 + 1]);
@@ -180,7 +180,7 @@ auto PhysicsEngine::create_mesh(
 	// Populate a triangle mesh using our non-optimized vertex buffer
 
 	collidable->mesh = std::make_unique<btTriangleMesh>();
-	for (int i = 0; i < nonIndexedVertices.size(); i += 9) {
+	for (auto i = 0ul; i < nonIndexedVertices.size(); i += 9) {
 		const auto v0 = btVector3(
 			nonIndexedVertices[i + 0], nonIndexedVertices[i + 1], nonIndexedVertices[i + 2]);
 		const auto v1 = btVector3(
