@@ -64,7 +64,7 @@ static ResourceContainer make_game_object(
 		const auto& vertices = geometry.vertices;
 		const auto& vertices_aux = geometry.vertices_aux;
 		const auto& indices = geometry.indices;
-		for (int i = 0; i < vertices.size() / 3; i++) {
+		for (auto i = 0ul; i < vertices.size() / 3; i++) {
 			const auto v = (i * 3);
 			gpu_data.push_back(vertices[v + 0]);
 			gpu_data.push_back(-vertices[v + 1]);
@@ -201,7 +201,6 @@ unique_ptr<Scene> SceneBuilder::build(
 		// Instantiate the Renderable Scene by creating GPU resources
 		asset_resource_lookup[model_path] =
 			make_game_object(resources, pipeline, gpu, texture_factory, gpu_image_index, model);
-		const ResourceContainer& asset_resources = asset_resource_lookup[model_path];
 	}
 
 	////
@@ -283,5 +282,5 @@ unique_ptr<Scene> SceneBuilder::build(
 		}
 	}
 
-	return std::move(scene);
+	return scene;
 }

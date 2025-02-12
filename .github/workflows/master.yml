@@ -1,13 +1,17 @@
+##
+# Reference: https://learn.microsoft.com/en-us/vcpkg/consume/binary-caching-github-actions-cache
+##
+
 name: GEngine CI/CD Pipeline
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 env:
-  BRANCH_NAME: ${{ github.head_ref || github.ref_name }} 
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
   BUILD_TYPE: Release
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
   CMAKE_C_COMPILER: "/usr/bin/gcc13"
@@ -17,61 +21,61 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/github-script@v7
-      with:
-        script: |
-          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-    
-    # Prepare OS packages
+      - uses: actions/checkout@v4
 
-    - run: |
+      - name: Export environment variables for vcpkg build cache
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      - name: Prepare OS packages
+        run: |
           sudo apt update
           sudo apt install chrpath gcc-13 g++-13 libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev libwayland-dev libxkbcommon-dev libgl1-mesa-dev libglu1-mesa-dev
 
-    # Cache or download dependencies
+      # Cache or download dependencies
 
-    - name: Cache Submodules
-      id: cache-submodule
-      uses: actions/cache@v3
-      with:
-        path: |
-          dependencies/emsdk
-          dependencies/vcpkg
-        key: ${{ runner.os }}-submodules
+      - name: Cache Submodules
+        id: cache-submodule
+        uses: actions/cache@v3
+        with:
+          path: |
+            dependencies/emsdk
+            dependencies/vcpkg
+          key: ${{ runner.os }}-submodules
 
-    - name: Update git submodules
-      if: steps.cache-submodule.outputs.cache-hit != 'true'
-      uses: actions/checkout@v3
-      with:
-        submodules: recursive
+      - name: Update git submodules
+        if: steps.cache-submodule.outputs.cache-hit != 'true'
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
-    # Build the project
-        
-    - run: chmod +x setup.sh && ./setup.sh
-    - run: cmake --workflow --preset linux-vk-app
-    - run: cmake --workflow --preset web-gl-app
-    - run: cmake --build --preset web-gl-app --target install
+      # Build the project
 
-    # Push packages to GitHub Releases
+      - run: chmod +x setup.sh && ./setup.sh
+      - run: cmake --workflow --preset linux-vk-app
+      - run: cmake --workflow --preset web-gl-app
+      - run: cmake --build --preset web-gl-app --target install
 
-    - name: Create release
-      uses: softprops/action-gh-release@v2
-      with:
-        body: |
-          Download a zip below and run the game engine.
-          Github Actions re-builds the zip when `${{ env.BRANCH_NAME }}` changes. 
-        tag_name: ${{ env.BRANCH_NAME }}
-        files: |
-          artifacts/linux-vk-app.zip
-          artifacts/web-gl-app.zip
+      # Push packages to GitHub Releases
 
-    - name: Deploy web app
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./artifacts/web-gl-app/examples
-        destination_dir: ${{ env.BRANCH_NAME }}
-        publish_branch: gh-pages
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          body: |
+            Download a zip below and run the game engine.
+            Github Actions re-builds the zip when `${{ env.BRANCH_NAME }}` changes.
+          tag_name: ${{ env.BRANCH_NAME }}
+          files: |
+            artifacts/linux-vk-app.zip
+            artifacts/web-gl-app.zip
 
+      # - name: Deploy web app
+      #   uses: peaceiris/actions-gh-pages@v3
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     publish_dir: ./artifacts/web-gl-app/examples
+      #     destination_dir: ${{ env.BRANCH_NAME }}
+      #     publish_branch: gh-pages

@@ -50,9 +50,9 @@ namespace webgl {
 void genVertexArrays(GLuint count, GLuint* vao)
 {
 #ifdef __EMSCRIPTEN__
-	glGenVertexArraysOES(1, vao);
+	glGenVertexArraysOES(count, vao);
 #else
-	glGenVertexArrays(1, vao);
+	glGenVertexArrays(count, vao);
 #endif
 }
 
@@ -66,10 +66,10 @@ void bindVertexArray(GLuint vao)
 }
 
 void GLAPIENTRY messageCallback(
-	GLenum source,
+	GLenum _source,
 	GLenum type,
-	GLuint id,
-	GLenum severity,
+	GLuint _id,
+	GLenum _severity,
 	GLsizei length,
 	const GLchar* message,
 	const void* userParam)
@@ -344,7 +344,7 @@ public:
 		const GLint u_view = glGetUniformLocation(pipeline->gl_program, "view");
 		glUniformMatrix4fv(u_view, 1, GL_FALSE, glm::value_ptr(view));
 
-		for (int i = 0; i < transforms.size(); i++) {
+		for (auto i = 0ul; i < transforms.size(); i++) {
 			const auto& matrix = transforms[i];
 			const auto& geometry = geometries[i];
 			const auto& descriptor = descriptors[i];
