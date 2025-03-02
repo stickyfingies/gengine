@@ -1,0 +1,34 @@
+# For how I might use docker-compose to setup and build my developer environments
+# https://stackoverflow.com/questions/40899236/how-to-prevent-docker-compose-building-the-same-image-multiple-times
+
+services:
+  setup:
+    image: gengine
+    build: .
+    command: /devops/scripts/setup.sh
+    volumes:
+      - ../dependencies:/dependencies
+      - ../devops:/devops
+      - ../source:/source
+
+  desktop:
+    image: gengine
+    command: /devops/scripts/build.sh linux-vk-dev
+    volumes:
+      - ../dependencies:/dependencies
+      - ../devops:/devops
+      - ../source:/source
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+
+  web:
+    image: gengine
+    command: /devops/scripts/build.sh web-gl-dev
+    volumes:
+      - ../dependencies:/dependencies
+      - ../devops:/devops
+      - ../source:/source
+    depends_on:
+      setup:
+        condition: service_completed_successfully

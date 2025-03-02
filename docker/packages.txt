@@ -1,0 +1,8 @@
+git
+curl
+ca-certificates
+zip
+unzip
+tar
+cmake
+python3
