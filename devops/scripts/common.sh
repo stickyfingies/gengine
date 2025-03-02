@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Git root directory
 GIT_ROOT=$(git rev-parse --show-toplevel)
 
 # ANSI escape codes for colors and formatting
@@ -12,7 +11,7 @@ BOLD='\033[1m'
 NC='\033[0m' # No Color
 
 # Logging directory
-DEV_OPS_LOGS_DIR="${GIT_ROOT}/devops/logs/"
+DEV_OPS_LOGS_DIR="${GIT_ROOT}/devops/logs"
 mkdir -p "${DEV_OPS_LOGS_DIR}"
 
 # Logging function
@@ -54,7 +53,7 @@ run_command() {
     local command=$2
 
     log "info" "$message"
-    eval "$command" || exit_with_error "Failed to execute: $command"
+    eval "$command" 1>> /devops/logs/command.log 2>> /devops/logs/command.log || exit_with_error "Failed to execute: $command"
 }
 
 # Function to handle SIGINT (Ctrl+C)

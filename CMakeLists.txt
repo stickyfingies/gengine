@@ -34,14 +34,14 @@ add_link_options(-fsanitize=address)
 # >> Components
 
 if(CMAKE_JS_VERSION)
-    add_subdirectory(node)
+    add_subdirectory(source/node)
 endif()
 
-add_subdirectory(gpu)
+add_subdirectory(source/gpu)
 
-add_subdirectory(core)
+add_subdirectory(source/core)
 
-add_subdirectory(examples)
+add_subdirectory(source/examples)
 
 # << Components
 

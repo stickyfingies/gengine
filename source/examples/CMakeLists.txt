@@ -34,7 +34,7 @@ foreach(FILE ${FILES})
     )
 
     # Today, worlds are limited to one source file
-    target_sources(${APP_NAME} PRIVATE ${FILE} "${CMAKE_SOURCE_DIR}/core/main.cpp")
+    target_sources(${APP_NAME} PRIVATE ${FILE} "${CMAKE_SOURCE_DIR}/source/core/main.cpp")
 
     include(cmake/emscripten.cmake)
 
@@ -93,12 +93,12 @@ foreach(FILE ${FILES})
     )
 
     # Today, worlds are limited to one source file
-    target_sources(${APP_NAME} PRIVATE ${FILE} "${CMAKE_SOURCE_DIR}/core/main.cpp")
+    target_sources(${APP_NAME} PRIVATE ${FILE} "${CMAKE_SOURCE_DIR}/source/core/main.cpp")
 
     if(EMSCRIPTEN)
-        target_sources(${APP_NAME} PRIVATE "${CMAKE_SOURCE_DIR}/core/ffi/js.web.cpp")
+        target_sources(${APP_NAME} PRIVATE "${CMAKE_SOURCE_DIR}/source/core/ffi/js.web.cpp")
     elseif(NOT EMSCRIPTEN)
-        target_sources(${APP_NAME} PRIVATE "${CMAKE_SOURCE_DIR}/core/ffi/js.desktop.cpp")
+        target_sources(${APP_NAME} PRIVATE "${CMAKE_SOURCE_DIR}/source/core/ffi/js.desktop.cpp")
     endif()
 
     if(NOT EMSCRIPTEN)

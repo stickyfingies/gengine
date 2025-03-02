@@ -1,3 +1,8 @@
+1) run cmake --workflow --preset linux-vk-dev from project root
+2) cd docker && docker compose up
+
+=====
+
 1. Develop a canonical C API in core/core.h
 2. Consume the C API inside:
     - main.cpp

@@ -50,6 +50,8 @@ fi
 # Configure, build, and package based on the preset
 log "info" "Building project with preset: ${PRESET}"
 
+cd "${GIT_ROOT}/source" || exit
+
 # Step 1: Configure
 log "info" "Configuring project..."
 cmake --preset="${PRESET}" || exit_with_error "Configuration failed."

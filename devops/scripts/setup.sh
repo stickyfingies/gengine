@@ -4,11 +4,15 @@
 source "$(dirname "$0")/common.sh"
 
 # Directory for dev tools (emsdk, vcpkg)
-DEV_TOOLS_DIR="${GIT_ROOT}/devops/tools"
+DEV_TOOLS_DIR="${GIT_ROOT}/dependencies"
+
+log "info" "$(pwd)"
 
 # Create the dev tools directory
 mkdir -p "${DEV_TOOLS_DIR}"
 cd "${DEV_TOOLS_DIR}"
+
+log "info" "$(ls)"
 
 # Clone and set up Emscripten (emsdk)
 log "info" "Setting up Emscripten (emsdk)..."
@@ -16,7 +20,6 @@ if [[ ! -d "${DEV_TOOLS_DIR}/emsdk" ]]; then
     run_command "Cloning emsdk repository..." "git clone https://github.com/emscripten-core/emsdk.git"
 fi
 cd "${DEV_TOOLS_DIR}/emsdk"
-run_command "Updating emsdk repository..." "git pull"
 run_command "Installing latest emsdk..." "./emsdk install latest"
 run_command "Activating latest emsdk..." "./emsdk activate latest"
 
@@ -34,7 +37,6 @@ if [[ ! -d "${DEV_TOOLS_DIR}/vcpkg" ]]; then
     run_command "Cloning vcpkg repository..." "git clone https://github.com/microsoft/vcpkg.git"
 fi
 cd "${DEV_TOOLS_DIR}/vcpkg"
-run_command "Updating vcpkg repository..." "git pull"
 run_command "Bootstrapping vcpkg..." "./bootstrap-vcpkg.sh"
 
 # Add vcpkg to the PATH
@@ -60,7 +62,7 @@ log "success" "Emscripten and vcpkg are ready to use."
 VCPKG_PORTS_DIR="${GIT_ROOT}/devops/config/vcpkg/ports"
 
 # Install dependencies with vcpkg
-cd "${GIT_ROOT}/devops/tools"
+cd "${DEV_TOOLS_DIR}"
 log "info" "Installing vcpkg dependencies..."
 ./vcpkg/vcpkg install assimp:x64-linux --overlay-ports=${VCPKG_PORTS_DIR}
 ./vcpkg/vcpkg install assimp:wasm32-emscripten --overlay-ports=${VCPKG_PORTS_DIR}
