@@ -15,6 +15,13 @@ if(EMSCRIPTEN)
     # set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
 endif()
 
+# Generate a diagram of the build process (build.png)
+add_custom_target(graphviz ALL
+    COMMAND ${CMAKE_COMMAND} "--graphviz=graphviz/build.dot" .
+    COMMAND dot -Tpng graphviz/build.dot -o build.png
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+
 message(STATUS "CMAKE_SYSTEM is ${CMAKE_SYSTEM}")
 message(STATUS "CMAKE_SYSTEM_NAME is ${CMAKE_SYSTEM_NAME}")
 message(STATUS "CMAKE_TOOLCHAIN_FILE is ${CMAKE_TOOLCHAIN_FILE}")
