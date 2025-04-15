@@ -8,12 +8,12 @@ Gengine is a software framework for making cross-platform video games in the C++
 
 
 This project is proud of the following features:
-- **Adaptive** GPU backend uses either Vulkan or WebGL/ES.
+- **Adaptive** GPU backend runs on Vulkan, OpenGL ES, and WebGL
 - **Automated** the software lifecycle using CI/CD pipelines
 - **Performant** virtual worlds powered by Bullet³ physics
 - **Supported** platforms are desktop Linux and the Web.
 
-Play or Download
+<!-- Play or Download
 ---
 
 [**Try it online**](https://stickyfingies.github.io/gengine/gengine.html) using a web browser.
@@ -21,50 +21,65 @@ Play or Download
 [**Download for x64 Linux**](https://github.com/stickyfingies/gengine/releases/download/master/linux-vk-app.zip) using the instructions below.
 1. Download the .zip
 2. Extract (`unzip linux-vk-app.zip`).
-3. Run (`./bin/world.native.bin`) to play.
+3. Run (`./bin/world.native.bin`) to play. 
 
 Other platforms aren't supported yet.
 
-Let's Get Coding
----
+-->
 
-Download the project using git.
+## Let's Get Coding
 
-```sh
-git clone https://github.com/stickyfingies/gengine.git
-git submodule init
-git submodule update
-```
+#### Minimum Required Environment
 
-In the next step, `setup.sh` automatically configures your developer environment and fetches the dependencies that we use.
+Building gengine requires a sane Linux environment (git, zip, curl, etc.) in addition to the following system packages for building the application:
+- cmake
+- g++-13
 
-> **Note:** `setup.sh` may run for several minutes.
+#### Setup the Environment
 
-```sh
-chmod +x setup.sh
-./setup.sh
-```
+1. **Clone** the git repository.
+    ```sh
+    git clone https://github.com/stickyfingies/gengine.git
+    ```
 
-Now, we can use [CMake](https://cmake.org/download/) to build the application for your desired platform.
+2. **Setup** the local dev-env and build dependencies from source code.
+    ```sh
+    cd gengine
+    chmod +x setup.sh
+    sh setup.sh
+    ```
 
-```sh
-cmake --workflow --preset linux-vk-app # for linux
-cmake --workflow --preset web-gl-app   # for web
-```
+#### Build the Application
 
-And you're done!  Run it on Linux like this:
-
-```sh
-./artifacts/linux-vk-app/gengine
-```
-
-And you're done!  Run it on Web like this:
+Build the game engine application from source code.
 
 ```sh
-cd ./artifacts/web-gl-app
-python3 -m http.server
-# Game running: '0.0.0.0:8000/gengine.html'
+cmake --workflow --preset $target
 ```
+
+Desktop targets:
+- `linux-vk-dev` — desktop vulkan development
+- `linux-gl-dev` — desktop opengl development
+- `linux-vk-app` — desktop vulkan release
+- `linux-gl-app` — desktop opengl release
+
+Browser targets:
+- `web-gl-dev` — browser webgl development
+- `web-gl-app` — browser webgl release
+
+#### Run the Application
+
+- On the **desktop** with:
+
+    ```sh
+    ./artifacts/${target}/gengine
+    ```
+- In the **browser** with:
+    ```sh
+    cd ./artifacts/web-gl-app
+    python3 -m http.server
+    ```
+    Visit the printed URL on your favorite browser to play the game.
 
 What's Inside
 ---
