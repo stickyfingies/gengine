@@ -1,6 +1,10 @@
+include(cmake/emscripten.cmake)
+
+file(GLOB CPP_FILES "*.cpp")
+file(GLOB JS_FILES "*.js")
+
 # For every world.cpp file in examples/
-file(GLOB FILES "*.cpp")
-foreach(FILE ${FILES})
+foreach(FILE ${CPP_FILES})
 
     # Strip the directory prefix and file extension
     get_filename_component(APP_NAME "${FILE}" NAME_WLE)
@@ -9,17 +13,10 @@ foreach(FILE ${FILES})
 
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/examples/${APP_NAME}")
 
-    # Create an executable for this app
     add_executable(${APP_NAME})
 
-    # Use internal targets directly instead of find_package
-    # find_package(gpu CONFIG REQUIRED)
-    # find_package(core CONFIG REQUIRED)
-
-    # Combine engine components
     target_link_libraries(${APP_NAME} PRIVATE core gpu)
 
-    # Adjust compiler settings
     set_target_properties(${APP_NAME}
         PROPERTIES
         # Standard C++23
@@ -37,15 +34,16 @@ foreach(FILE ${FILES})
     # Today, worlds are limited to one source file
     target_sources(${APP_NAME} PRIVATE ${FILE} "${CMAKE_SOURCE_DIR}/core/main.cpp")
 
-    include(cmake/emscripten.cmake)
-
     if(NOT EMSCRIPTEN)
         # Install gengine.exe --> dist/bin/
         install(TARGETS ${APP_NAME} DESTINATION "${CMAKE_INSTALL_BINDIR}")
         # Install data/ --> dist/data/
         install(DIRECTORY "${CMAKE_SOURCE_DIR}/data/" DESTINATION "data/")
     else()
-        # Install outputs --> dist/bin
+        # Configure Emscripten-specific settings
+        configure_emscripten_target(${APP_NAME} ASSETS_PATH "${CMAKE_SOURCE_DIR}/data")
+        
+        # Install outputs --> dist/examples/APP_NAME/
         install(FILES
             "$<TARGET_FILE_DIR:${APP_NAME}>/index.js"
             "$<TARGET_FILE_DIR:${APP_NAME}>/index.wasm"
@@ -56,8 +54,7 @@ foreach(FILE ${FILES})
 endforeach()
 
 # For every JavaScript game script in examples/
-file(GLOB FILES "*.js")
-foreach(FILE ${FILES})
+foreach(FILE ${JS_FILES})
 
     # Strip the directory prefix and file extension
     get_filename_component(APP_NAME "${FILE}" NAME_WLE)
@@ -66,20 +63,12 @@ foreach(FILE ${FILES})
 
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/examples/${APP_NAME}")
 
-    # Determine if this example uses JavaScript or not
     set(HAS_JS TRUE)
 
-    # Create an executable for this app
     add_executable(${APP_NAME})
 
-    # Use internal targets directly instead of find_package
-    # find_package(gpu CONFIG REQUIRED)
-    # find_package(core CONFIG REQUIRED)
-
-    # Combine engine components
     target_link_libraries(${APP_NAME} PRIVATE core gpu)
 
-    # Adjust compiler settings
     set_target_properties(${APP_NAME}
         PROPERTIES
         # Standard C++23
@@ -128,15 +117,16 @@ foreach(FILE ${FILES})
             DESTINATION "examples")
     endif()
 
-    include(cmake/emscripten.cmake)
-
     if(NOT EMSCRIPTEN)
         # Install gengine.exe --> dist/bin/
         install(TARGETS ${APP_NAME} DESTINATION "${CMAKE_INSTALL_BINDIR}")
         # Install data/ --> dist/data/
         install(DIRECTORY "${CMAKE_SOURCE_DIR}/data/" DESTINATION "data/")
     else()
-        # Install outputs --> dist/bin
+        # Configure Emscripten-specific settings
+        configure_emscripten_target(${APP_NAME} ASSETS_PATH "${CMAKE_SOURCE_DIR}/data")
+        
+        # Install outputs --> dist/examples/APP_NAME/
         install(FILES
             "$<TARGET_FILE_DIR:${APP_NAME}>/index.js"
             "$<TARGET_FILE_DIR:${APP_NAME}>/index.wasm"

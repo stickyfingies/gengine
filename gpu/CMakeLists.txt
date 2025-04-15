@@ -49,7 +49,6 @@ if(GPU_BACKEND MATCHES "Vulkan")
     target_sources(gpu PRIVATE src/gpu.vulkan.cpp)
     find_package(Vulkan REQUIRED)
     target_link_libraries(gpu PRIVATE Vulkan::Vulkan)
-    set_target_properties(gpu PROPERTIES OUTPUT_NAME "gpu.vk")
 elseif(GPU_BACKEND MATCHES "GL")
     target_sources(gpu PRIVATE src/gpu.opengl.cpp)
     # Glad is used for OpenGL ES, but is not needed for WebGL.
@@ -57,7 +56,6 @@ elseif(GPU_BACKEND MATCHES "GL")
         find_package(glad CONFIG REQUIRED)
         target_link_libraries(gpu PRIVATE glad::glad)
     endif()
-    set_target_properties(gpu PROPERTIES OUTPUT_NAME "gpu.gl")
 endif()
 
 # Required dependencies for all platforms
