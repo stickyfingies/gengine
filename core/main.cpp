@@ -1,10 +1,6 @@
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#endif
-
+#include "config.h"
 #include <GLFW/glfw3.h>
 
-#ifndef __EMSCRIPTEN__
 #include "glm/gtc/matrix_transform.hpp"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
@@ -14,8 +10,6 @@
 #include "assets.h"
 #include "camera.hpp"
 #include "physics.h"
-
-#endif
 
 #include "kernel.h"
 #include "gpu.h"
@@ -49,7 +43,7 @@ auto main(int argc, char** argv) -> int
 
 	loop = [&]() -> void { kernel_update(kernel); };
 
-#ifdef __EMSCRIPTEN__
+#if GENGINE_PLATFORM_WEB
 	emscripten_set_main_loop(main_loop, 0, true);
 #else
 	while (kernel_running(kernel))

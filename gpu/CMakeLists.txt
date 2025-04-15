@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.30)
 
 # The target 'gpu' is our cross-platform rendering library.
 # The interface gpu.h is common across implementations, but
 # the .cpp implementations depend on what platform we're
 # compiling the library for.
 project(gpu
-    VERSION 1.0.0
+    VERSION ${GENGINE_VERSION}
     DESCRIPTION "Cross-platform GPU library"
     LANGUAGES CXX
 )

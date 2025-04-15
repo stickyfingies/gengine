@@ -12,11 +12,12 @@ foreach(FILE ${FILES})
     # Create an executable for this app
     add_executable(${APP_NAME})
 
-    # find_package(gpu REQUIRED)
-    # find_package(core REQUIRED)
+    # Use internal targets directly instead of find_package
+    # find_package(gpu CONFIG REQUIRED)
+    # find_package(core CONFIG REQUIRED)
 
     # Combine engine components
-    target_link_libraries(${APP_NAME} PRIVATE core::core gpu::gpu)
+    target_link_libraries(${APP_NAME} PRIVATE core gpu)
 
     # Adjust compiler settings
     set_target_properties(${APP_NAME}
@@ -71,11 +72,12 @@ foreach(FILE ${FILES})
     # Create an executable for this app
     add_executable(${APP_NAME})
 
-    # find_package(gpu REQUIRED)
-    # find_package(core REQUIRED)
+    # Use internal targets directly instead of find_package
+    # find_package(gpu CONFIG REQUIRED)
+    # find_package(core CONFIG REQUIRED)
 
     # Combine engine components
-    target_link_libraries(${APP_NAME} PRIVATE core::core gpu::gpu)
+    target_link_libraries(${APP_NAME} PRIVATE core gpu)
 
     # Adjust compiler settings
     set_target_properties(${APP_NAME}

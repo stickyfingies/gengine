@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.30)
 
 # The target 'core' is the main game engine, which combines
 # subsystems together into a cohesive package with an API
 # for building game worlds.
 project(core
-    VERSION 1.0.0
+    VERSION ${GENGINE_VERSION}
     DESCRIPTION "Core game engine systems"
     LANGUAGES CXX
 )
@@ -22,13 +22,13 @@ set_target_properties(core
     CMAKE_CXX_STANDARD_REQUIRED ON
 )
 
-# Required dependency for all platforms
-# find_package(gpu REQUIRED)
-target_link_libraries(core PRIVATE gpu::gpu)
+# Use internal gpu target directly instead of find_package
+# find_package(gpu CONFIG REQUIRED) # This would be used for external projects
+target_link_libraries(core PRIVATE gpu)
 
 # Required dependency for all platforms
 find_package(glm CONFIG REQUIRED)
-target_link_libraries(core INTERFACE glm::glm)
+target_link_libraries(core PUBLIC glm::glm)
 
 # Required dependency for all platforms
 find_package(assimp CONFIG REQUIRED)
@@ -43,11 +43,15 @@ target_link_directories(core PRIVATE ${BULLET_LIBRARY_DIRS})
 if(CMAKE_SYSTEM_NAME MATCHES Linux)
     find_package(glfw3 CONFIG REQUIRED)
     find_package(imgui CONFIG REQUIRED)
-    target_link_libraries(core INTERFACE glfw imgui::imgui)
+    target_link_libraries(core PUBLIC glfw imgui::imgui)
 endif()
 
-# TODO - change this to use build/install interfaces
-target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+# Configure include directories with proper interfaces
+target_include_directories(core 
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 
 target_sources(core
     PRIVATE
@@ -62,8 +66,21 @@ target_sources(core
     stb/stb_image.cpp
 )
 
-# Install header file
-install(FILES core.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+# Install header files
+install(
+    FILES 
+        core.h
+        kernel.h
+        assets.h
+        physics.h
+        scene.h
+        fps_controller.h
+        camera.hpp
+        common.h
+        window.h
+        world.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
 # Install target
 install(TARGETS core
