@@ -46,6 +46,8 @@ enum class VertexAttribute { VEC3_FLOAT, VEC2_FLOAT };
 
 enum class BufferUsage { VERTEX, INDEX };
 
+enum class WindingOrder { CLOCKWISE, COUNTERCLOCKWISE };
+
 /**
  * NOTICE: This MUST run before `glfwCreateWindow` and after `glfwInit`.
  */
@@ -125,7 +127,8 @@ public:
 	virtual auto create_pipeline(
 		std::string_view vert_code,
 		std::string_view frag_code,
-		const std::vector<VertexAttribute>& vertex_attributes) -> ShaderPipelineHandle = 0;
+		const std::vector<VertexAttribute>& vertex_attributes,
+		gpu::WindingOrder = gpu::WindingOrder::COUNTERCLOCKWISE) -> ShaderPipelineHandle = 0;
 
 	/**
 	 * "Descriptors" bind GPU resources to slots in shaders.
@@ -150,6 +153,12 @@ public:
 		-> Geometry* = 0;
 
 	virtual auto destroy_geometry(const Geometry* geometry) -> void = 0;
+
+	virtual auto simple_draw(
+		ShaderPipelineHandle pipeline,
+		BufferHandle vertex_buffer,
+		BufferHandle index_buffer,
+		size_t index_count) -> void = 0;
 
 	virtual auto render(
 		const glm::mat4& view,

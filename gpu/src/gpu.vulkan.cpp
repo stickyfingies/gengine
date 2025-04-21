@@ -199,7 +199,7 @@ class RenderDeviceVk final : public RenderDevice {
 public:
 	RenderDeviceVk(std::shared_ptr<GLFWwindow> window) : window{window}
 	{
-		static const auto debug = false;
+		static const auto debug = true;
 
 		std::cout << "[info]\t Vulkan renderer initializing >:)" << std::endl;
 
@@ -420,7 +420,7 @@ public:
 		// TODO(seth) - clean up res_buffers pls :)
 
 		device.destroyDescriptorPool(descpool);
-		
+
 		device.destroyDescriptorSetLayout(descset_layout);
 
 		device.destroyDescriptorPool(imgui_pool);
@@ -531,6 +531,7 @@ public:
 		if (buffer_handle.id == UINT64_MAX) {
 			return;
 		}
+		device.waitIdle();
 		Buffer* buffer = res_buffers.at(buffer_handle.id);
 		std::cout << "~ GpuBuffer" << std::endl;
 		device.destroyBuffer(buffer->buffer);
@@ -815,7 +816,8 @@ public:
 	auto create_pipeline(
 		std::string_view vert_code,
 		std::string_view frag_code,
-		const std::vector<VertexAttribute>& vertex_attributes) -> ShaderPipelineHandle override
+		const std::vector<VertexAttribute>& vertex_attributes,
+		WindingOrder winding_order) -> ShaderPipelineHandle override
 	{
 
 		if (vert_code.empty() || frag_code.empty()) {
@@ -914,7 +916,8 @@ public:
 			false,
 			vk::PolygonMode::eFill,
 			vk::CullModeFlagBits::eBack,
-			vk::FrontFace::eCounterClockwise,
+			winding_order == WindingOrder::CLOCKWISE ? vk::FrontFace::eClockwise
+													 : vk::FrontFace::eCounterClockwise,
 			false,
 			0.0f,
 			0.0f,
@@ -1007,6 +1010,41 @@ public:
 		// TODO - add pso_handle.id to a free list
 		delete pso;
 		res_pipelines[pso_handle.id] = nullptr;
+	}
+
+	auto simple_draw(
+		ShaderPipelineHandle pipeline_handle,
+		BufferHandle vertex_buffer_handle,
+		BufferHandle index_buffer_handle,
+		size_t index_count) -> void override
+	{
+		if (pipeline_handle.id == UINT64_MAX) {
+			return;
+		}
+		if (vertex_buffer_handle.id == UINT64_MAX) {
+			return;
+		}
+		if (index_buffer_handle.id == UINT64_MAX) {
+			return;
+		}
+
+		ShaderPipeline* pso = res_pipelines.at(pipeline_handle.id);
+		gpu::Buffer* vbo = res_buffers.at(vertex_buffer_handle.id);
+		gpu::Buffer* ebo = res_buffers.at(index_buffer_handle.id);
+
+		const auto ctx = alloc_context();
+		if (!ctx) {
+			return;
+		}
+		ctx->begin();
+
+		ctx->cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pso->pipeline);
+
+		ctx->bind_geometry_buffers(vbo, ebo);
+		ctx->draw(index_count, 1);
+		ctx->end();
+
+		execute_context(ctx.get());
 	}
 
 	auto render(

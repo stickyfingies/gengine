@@ -201,7 +201,8 @@ public:
 	auto create_pipeline(
 		string_view vert_code,
 		string_view frag_code,
-		const vector<VertexAttribute>& vertex_attributes) -> ShaderPipelineHandle override
+		const vector<VertexAttribute>& vertex_attributes,
+		WindingOrder winding_order) -> ShaderPipelineHandle override
 	{
 		// Reserved for GL error strings
 		int success;
@@ -218,7 +219,7 @@ public:
 			cout << "Error: Pipeline creation failed." << endl;
 			cout << "Reason: Vertex shader compilation failed." << endl;
 			cout << infoLog << endl;
-			return { .id = UINT64_MAX };
+			return {.id = UINT64_MAX};
 		}
 
 		// Compile fragment shader
@@ -232,7 +233,7 @@ public:
 			cout << "Error: Pipeline creation failed." << endl;
 			cout << "Reason: Fragment shader compilation failed." << endl;
 			cout << infoLog << endl;
-			return { .id = UINT64_MAX };
+			return {.id = UINT64_MAX};
 		}
 
 		// Link shader stages
@@ -241,17 +242,19 @@ public:
 		glAttachShader(shader_program, fragment_shader);
 		glLinkProgram(shader_program);
 
-		glDeleteShader(vertex_shader);
-		glDeleteShader(fragment_shader);
-
 		glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
 		if (!success) {
 			glGetProgramInfoLog(shader_program, 512, nullptr, infoLog);
 			cout << "Error: Pipeline creation failed." << endl;
 			cout << "Reason: Shader linkage failed." << endl;
 			cout << infoLog << endl;
-			return { .id = UINT64_MAX };
+			return {.id = UINT64_MAX};
 		}
+
+		glDeleteShader(vertex_shader);
+		glDeleteShader(fragment_shader);
+
+		glFrontFace(winding_order == WindingOrder::CLOCKWISE ? GL_CW : GL_CCW);
 
 		const uint64_t pipeline_handle = res_pipelines.size();
 		res_pipelines.push_back(new ShaderPipeline{shader_program, vertex_attributes});
@@ -346,6 +349,35 @@ public:
 		destroy_buffer(geometry->vbo);
 		destroy_buffer(geometry->ebo);
 		delete geometry;
+	}
+
+	auto simple_draw(
+		ShaderPipelineHandle pipeline_handle,
+		BufferHandle vertex_buffer_handle,
+		BufferHandle index_buffer_handle,
+		size_t index_count) -> void override
+	{
+		if (pipeline_handle.id == UINT64_MAX) {
+			return;
+		}
+		if (vertex_buffer_handle.id == UINT64_MAX) {
+			return;
+		}
+		if (index_buffer_handle.id == UINT64_MAX) {
+			return;
+		}
+
+		const auto pipeline = res_pipelines.at(pipeline_handle.id);
+		const auto vertex_buffer = res_buffers.at(vertex_buffer_handle.id);
+		const auto index_buffer = res_buffers.at(index_buffer_handle.id);
+
+		glClearColor(0.4, 0.3, 0.8, 1.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glUseProgram(pipeline->gl_program);
+
+		glBindVertexArray(vertex_buffer->gl_buffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer->gl_buffer);
+		glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, 0);
 	}
 
 	auto render(

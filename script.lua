@@ -1,25 +1,58 @@
 -- RUN: cmake --workflow --preset linux-vk-dev && ./artifacts/linux-vk-dev/gpu/gpu-lua
+local vertices =
+    {-0.5, -0.5, 1.0, 0.0, 0.0, 0.5, -0.5, 0.0, 1.0, 0.0, 0.5, 0.5, 0.0, 0.0, 1.0, -0.5, 0.5, 1.0, 1.0, 1.0}
 
--- buffer experiment
-vbo = gpu:create_buffer(BufferUsage.VERTEX, 0, 0, getData())
-gpu:destroy_buffer(vbo)
+local indices = {0, 1, 2, 2, 3, 0}
 
--- shader pipeline experiment
+local vertex_shader_source = [[
+#version 450
 
-vscglsl = open_file("data/cube.vert.glsl")
-vscsprv = glsl_to_sprv("cube.vert.glsl", ShaderC.VERTEX, vscglsl, false)
+layout(location = 0) in vec2 inPosition;
+layout(location = 1) in vec3 inColor;
 
-fscglsl = open_file("data/cube.frag.glsl")
-fscsprv = glsl_to_sprv("cube.frag.glsl", ShaderC.FRAGMENT, fscglsl, false)
+layout(location = 0) out vec3 fragColor;
 
--- vscgles = sprv_to_gles(vscsprv)
--- fscgles = sprv_to_gles(fscsprv)
+void main() {
+    gl_Position = vec4(inPosition, 1.0, 1.0);
+    fragColor = inColor;
+}
+]]
 
-pso = gpu:create_pipeline(vscsprv, fscsprv, {VertexAttribute.VEC3, VertexAttribute.VEC3, VertexAttribute.VEC2})
-gpu:destroy_pipeline(pso)
+local fragment_shader_source = [[
+#version 450
+
+layout(location = 0) in vec3 fragColor;
+
+layout(location = 0) out vec4 outColor;
+
+void main() {
+    outColor = vec4(fragColor, 1.0);
+}
+]]
+
+local vscglsl = vertex_shader_source
+local vscsprv = glsl_to_sprv("v", ShaderC.VERTEX, vscglsl, false)
+
+local fscglsl = fragment_shader_source
+local fscsprv = glsl_to_sprv("f", ShaderC.FRAGMENT, fscglsl, false)
+
+-- # for opengl
+local vscgles = sprv_to_gles(vscsprv)
+local fscgles = sprv_to_gles(fscsprv)
+
+local pso = gpu:create_pipeline(vscgles, fscgles, {VertexAttribute.VEC2, VertexAttribute.VEC3}, WindingOrder.CLOCKWISE)
+
+local vbo = gpu:create_buffer(BufferUsage.VERTEX, 20, 4, vertices)
+local ebo = gpu:create_buffer(BufferUsage.INDEX, 4, #indices, indices)
 
 print("Hello, Window!")
 while not shouldClose() do
     pollEvents()
+    gpu:simple_draw(pso, vbo, ebo, #indices);
+    swapBuffers()
 end
 print("Goodbye, Window!");
+
+gpu:destroy_buffer(ebo)
+gpu:destroy_buffer(vbo)
+gpu:destroy_pipeline(pso)
