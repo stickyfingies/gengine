@@ -129,7 +129,7 @@ EMSCRIPTEN_BINDINGS(core)
  */
 class NativeWorld : public World {
 	// Engine services
-	GLFWwindow* window;
+	shared_ptr<GLFWwindow> window;
 	unique_ptr<gengine::PhysicsEngine> physics_engine;
 	unique_ptr<Scene> scene;
 	shared_ptr<gpu::RenderDevice> gpu;
@@ -142,7 +142,7 @@ class NativeWorld : public World {
 	gpu::ShaderPipeline* pipeline;
 
 public:
-	NativeWorld(GLFWwindow* window, shared_ptr<gpu::RenderDevice> gpu) : window{window}, gpu{gpu}
+	NativeWorld(shared_ptr<GLFWwindow> window, shared_ptr<gpu::RenderDevice> gpu) : window{window}, gpu{gpu}
 	{
 
 		physics_engine = make_unique<gengine::PhysicsEngine>();
@@ -241,11 +241,11 @@ public:
 
 	auto update_input(float delta, gengine::Collidable* player) -> void
 	{
-		auto window_data = static_cast<gengine::WindowData*>(glfwGetWindowUserPointer(window));
+		auto window_data = static_cast<gengine::WindowData*>(glfwGetWindowUserPointer(window.get()));
 
 		camera.process_mouse_movement(window_data->delta_mouse_x, window_data->delta_mouse_y);
 
-		fps_controller->update(window, delta);
+		fps_controller->update(window.get(), delta);
 
 		window_data->delta_mouse_x = 0;
 		window_data->delta_mouse_y = 0;
@@ -261,7 +261,7 @@ public:
 	}
 };
 
-unique_ptr<World> World::create(GLFWwindow* window, shared_ptr<gpu::RenderDevice> gpu)
+unique_ptr<World> World::create(shared_ptr<GLFWwindow> window, shared_ptr<gpu::RenderDevice> gpu)
 {
 	return make_unique<NativeWorld>(window, gpu);
 }

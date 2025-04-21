@@ -66,7 +66,7 @@ public:
 	 * Connect a hardware accelerator to the windowing system.
 	 * @param window The OS window on which to draw graphics.
 	 */
-	static auto create(GLFWwindow* window) -> std::unique_ptr<RenderDevice>;
+	static auto create(std::shared_ptr<GLFWwindow> window) -> std::unique_ptr<RenderDevice>;
 
 	/**
 	 * @brief The destructor is NOT RESPONSIBLE for destroying GPU resources.

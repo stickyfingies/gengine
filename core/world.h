@@ -11,7 +11,7 @@ struct RenderDevice;
 class World {
 public:
 	static std::unique_ptr<World>
-	create(GLFWwindow* window, std::shared_ptr<gpu::RenderDevice> renderer);
+	create(std::shared_ptr<GLFWwindow> window, std::shared_ptr<gpu::RenderDevice> renderer);
 
 	virtual ~World() = default;
 

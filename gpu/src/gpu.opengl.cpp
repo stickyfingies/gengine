@@ -101,16 +101,16 @@ namespace gpu {
 
 class RenderDeviceGL : public RenderDevice {
 
-	GLFWwindow* window;
+	shared_ptr<GLFWwindow> window;
 
 	const array<GLint, 2> BUFFER_USAGE_TABLE{GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER};
 
 public:
-	RenderDeviceGL(GLFWwindow* window) : window{window}
+	RenderDeviceGL(shared_ptr<GLFWwindow> window) : window{window}
 	{
-		glfwMakeContextCurrent(window);
+		glfwMakeContextCurrent(window.get());
 		glfwSwapInterval(1);
-		glfwSetFramebufferSizeCallback(window, glfw_framebuffer_size_cb);
+		glfwSetFramebufferSizeCallback(window.get(), glfw_framebuffer_size_cb);
 
 		cout << "RenderDeviceGL" << endl;
 
@@ -363,7 +363,7 @@ public:
 	}
 };
 
-auto RenderDevice::create(GLFWwindow* window) -> std::unique_ptr<RenderDevice>
+auto RenderDevice::create(shared_ptr<GLFWwindow> window) -> std::unique_ptr<RenderDevice>
 {
 	return std::make_unique<RenderDeviceGL>(window);
 }

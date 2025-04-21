@@ -197,7 +197,7 @@ private:
 
 class RenderDeviceVk final : public RenderDevice {
 public:
-	RenderDeviceVk(GLFWwindow* window) : window{window}
+	RenderDeviceVk(std::shared_ptr<GLFWwindow> window) : window{window}
 	{
 		static const auto debug = false;
 
@@ -238,7 +238,7 @@ public:
 		instance = vk::createInstance(instance_info);
 
 		// create surface
-		glfwCreateWindowSurface(instance, window, nullptr, &surface);
+		glfwCreateWindowSurface(instance, window.get(), nullptr, &surface);
 
 		// choose physical device
 		{
@@ -454,7 +454,7 @@ public:
 		ImGuiIO& io = ImGui::GetIO();
 		ImGui::StyleColorsDark();
 
-		ImGui_ImplGlfw_InitForVulkan(window, true);
+		ImGui_ImplGlfw_InitForVulkan(window.get(), true);
 		ImGui_ImplVulkan_InitInfo init_info = {};
 		init_info.Instance = instance;
 		init_info.PhysicalDevice = physical_device;
@@ -1288,7 +1288,7 @@ private:
 	{
 		auto width = 0;
 		auto height = 0;
-		glfwGetWindowSize(window, &width, &height);
+		glfwGetWindowSize(window.get(), &width, &height);
 
 		const auto formats = physical_device.getSurfaceFormatsKHR(surface);
 
@@ -1454,7 +1454,7 @@ private:
 		create_backbuffers();
 	}
 
-	GLFWwindow* window;
+	std::shared_ptr<GLFWwindow> window;
 
 	VkSurfaceKHR surface;
 
@@ -1502,7 +1502,7 @@ private:
 	uint32_t present_queue_idx = 0u;
 };
 
-auto RenderDevice::create(GLFWwindow* window) -> std::unique_ptr<RenderDevice>
+auto RenderDevice::create(std::shared_ptr<GLFWwindow> window) -> std::unique_ptr<RenderDevice>
 {
 	return std::make_unique<RenderDeviceVk>(window);
 }

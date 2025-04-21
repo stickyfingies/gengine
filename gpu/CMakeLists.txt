@@ -51,6 +51,7 @@ if(GPU_BACKEND MATCHES "Vulkan")
     target_link_libraries(gpu PRIVATE Vulkan::Vulkan)
 elseif(GPU_BACKEND MATCHES "GL")
     target_sources(gpu PRIVATE src/gpu.opengl.cpp)
+
     # Glad is used for OpenGL ES, but is not needed for WebGL.
     if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         find_package(glad CONFIG REQUIRED)
@@ -68,6 +69,15 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     find_package(imgui CONFIG REQUIRED)
     target_link_libraries(gpu PUBLIC glfw imgui::imgui)
 endif()
+
+find_package(glfw3 REQUIRED)
+find_package(Lua REQUIRED)
+find_package(sol2 REQUIRED)
+
+add_executable(gpu-lua)
+target_sources(gpu-lua PRIVATE src/gpu-lua.cpp)
+target_include_directories(gpu-lua PRIVATE ${LUA_INCLUDE_DIR})
+target_link_libraries(gpu-lua PRIVATE ${LUA_LIBRARIES} gpu sol2::sol2 glfw)
 
 # Install target
 install(TARGETS gpu

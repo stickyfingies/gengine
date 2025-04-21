@@ -20,6 +20,26 @@
 using namespace gengine;
 using namespace std;
 
+struct GlfwWindowDeleter {
+	void operator()(GLFWwindow* window) const
+	{
+		if (window) {
+			glfwDestroyWindow(window);
+		}
+	}
+};
+
+static shared_ptr<GLFWwindow> createSharedGlfwWindow(
+	int width,
+	int height,
+	const char* title,
+	GLFWmonitor* monitor = nullptr,
+	GLFWwindow* share = nullptr)
+{
+	GLFWwindow* window = glfwCreateWindow(width, height, title, monitor, share);
+	return shared_ptr<GLFWwindow>(window, GlfwWindowDeleter());
+}
+
 static void mouse_callback(GLFWwindow* window, double pos_x, double pos_y)
 {
 	auto window_data = static_cast<WindowData*>(glfwGetWindowUserPointer(window));
@@ -35,7 +55,7 @@ struct EngineKernel {
 	WindowData window_data;
 	shared_ptr<gpu::RenderDevice> renderer;
 	unique_ptr<World> world;
-	GLFWwindow* window;
+	shared_ptr<GLFWwindow> window;
 	size_t frame_count;
 	double last_displayed_fps;
 	double last_time;
@@ -50,13 +70,13 @@ EngineKernel* kernel_create(bool editor_enabled)
 
 	gpu::configure_glfw();
 
-	kernel->window = glfwCreateWindow(1280, 720, "Gengine", nullptr, nullptr);
+	kernel->window = createSharedGlfwWindow(280, 720, "Gengine", nullptr, nullptr);
 
-	glfwSetWindowUserPointer(kernel->window, &kernel->window_data);
+	glfwSetWindowUserPointer(kernel->window.get(), &kernel->window_data);
 
 	if (!editor_enabled) {
-		glfwSetInputMode(kernel->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-		glfwSetCursorPosCallback(kernel->window, mouse_callback);
+		glfwSetInputMode(kernel->window.get(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		glfwSetCursorPosCallback(kernel->window.get(), mouse_callback);
 	}
 
 	// << Window startup
@@ -81,7 +101,7 @@ EngineKernel* kernel_create(bool editor_enabled)
 	return kernel;
 }
 
-bool kernel_running(EngineKernel* kernel) { return glfwWindowShouldClose(kernel->window) == false; }
+bool kernel_running(EngineKernel* kernel) { return glfwWindowShouldClose(kernel->window.get()) == false; }
 
 void kernel_update(EngineKernel* kernel)
 {
@@ -99,9 +119,9 @@ void kernel_update(EngineKernel* kernel)
 
 	glfwPollEvents();
 
-	if (glfwGetKey(kernel->window, GLFW_KEY_ESCAPE)) {
+	if (glfwGetKey(kernel->window.get(), GLFW_KEY_ESCAPE)) {
 		cout << "Esc" << endl;
-		glfwSetWindowShouldClose(kernel->window, true);
+		glfwSetWindowShouldClose(kernel->window.get(), true);
 #ifdef __EMSCRIPTEN__
 		emscripten_cancel_main_loop();
 #endif
@@ -110,7 +130,7 @@ void kernel_update(EngineKernel* kernel)
 
 	kernel->world->update(elapsed_time);
 
-	glfwSwapBuffers(kernel->window);
+	glfwSwapBuffers(kernel->window.get());
 
 	kernel->last_time = current_time;
 }
@@ -125,7 +145,7 @@ void kernel_destroy(EngineKernel* kernel)
 
 	kernel->renderer.reset();
 
-	glfwDestroyWindow(kernel->window);
+	kernel->window.reset();
 
 	glfwTerminate();
 
