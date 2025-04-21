@@ -29,6 +29,9 @@ struct GLFWwindow;
 namespace gpu {
 
 // GPU Resources
+// TODO(Seth) - These are slowly moving into the private interface because
+// I'm moving from pointers to handles for GPU resources, which I want to be
+// strongly & uniquely typed but are ultimately just integers.
 struct ShaderPipeline;
 struct Descriptors;
 struct Buffer;
@@ -37,24 +40,20 @@ struct RenderImage;
 struct Geometry;
 
 /**
- * Describes the shape and usage of a VRAM allocation
- */
-struct BufferInfo {
-	enum class Usage { VERTEX, INDEX };
-	Usage usage;
-	std::size_t stride;
-	std::size_t element_count;
-};
-
-/**
  * A "vertex" is a set of attributes, like position, texture coordinates, etc.
  */
 enum class VertexAttribute { VEC3_FLOAT, VEC2_FLOAT };
+
+enum class BufferUsage { VERTEX, INDEX };
 
 /**
  * NOTICE: This MUST run before `glfwCreateWindow` and after `glfwInit`.
  */
 auto configure_glfw() -> void;
+
+struct BufferHandle {
+	uint64_t id;
+};
 
 /**
  * @class gpu::RenderDevice
@@ -70,6 +69,7 @@ public:
 
 	/**
 	 * @brief The destructor is NOT RESPONSIBLE for destroying GPU resources.
+	 * @note  This should improve after I switch the interface from PIMPL to handles.
 	 *
 	 * NOTICE: Be careful to free GPU resources before it is destroyed.
 	 */
@@ -77,10 +77,10 @@ public:
 
 	/**
 	 * Allocate VRAM and instantiate it with data from RAM.
-	 * @param info describes the VRAM allocation shape and its usage
-	 * @param data is a region of RAM which is uploaded over PCI-e
 	 */
-	virtual auto create_buffer(const BufferInfo& info, const void* data) -> Buffer* = 0;
+	virtual auto create_buffer(
+		BufferUsage usage, std::size_t stride, std::size_t element_count, const void* data)
+		-> BufferHandle = 0;
 
 	/// TODO 2024-09-18 - I still haven't done this?
 	/// TODO 2024-05-13 - This is undesirable.
@@ -91,7 +91,7 @@ public:
 	 * Free a region of VRAM.
 	 * @param buffer VRAM to free
 	 */
-	virtual auto destroy_buffer(Buffer* buffer) -> void = 0;
+	virtual auto destroy_buffer(BufferHandle buffer) -> void = 0;
 
 	/**
 	 * @brief Allocate VRAM and instantiate it with a bitmap image.
@@ -117,8 +117,10 @@ public:
 	 * @param vertex_attributes a list of attributes used in each vertex
 	 * @return ShaderPipeline*
 	 */
-	virtual auto create_pipeline(std::string_view vert_code, std::string_view frag_code, const std::vector<VertexAttribute>& vertex_attributes)
-		-> ShaderPipeline* = 0;
+	virtual auto create_pipeline(
+		std::string_view vert_code,
+		std::string_view frag_code,
+		const std::vector<VertexAttribute>& vertex_attributes) -> ShaderPipeline* = 0;
 
 	/**
 	 * "Descriptors" bind GPU resources to slots in shaders.
@@ -137,7 +139,9 @@ public:
 	 * @param vertices_aux see implementation
 	 * @param indices see implementation
 	 */
-	virtual auto create_geometry(ShaderPipeline* pipeline, Buffer* vertex_buffer, Buffer* index_buffer) -> Geometry* = 0;
+	virtual auto
+	create_geometry(ShaderPipeline* pipeline, BufferHandle vertex_buffer, BufferHandle index_buffer)
+		-> Geometry* = 0;
 
 	virtual auto destroy_geometry(const Geometry* geometry) -> void = 0;
 

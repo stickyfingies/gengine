@@ -7,61 +7,65 @@
 #include "gpu.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <memory>
 
+#undef SOL_SAFE_NUMERICS
 #include <sol/sol.hpp>
 
-class Window {
-public:
-	Window(int width, int height, const char* title)
+using namespace std;
+
+struct GlfwWindowDeleter {
+	void operator()(GLFWwindow* window) const
 	{
-		window = glfwCreateWindow(width, height, title, nullptr, nullptr);
+		if (window) {
+			glfwDestroyWindow(window);
+		}
 	}
-
-	bool shouldClose() const { return glfwWindowShouldClose(window); }
-	void pollEvents() const { glfwPollEvents(); }
-
-	~Window() { glfwDestroyWindow(window); }
-
-    GLFWwindow* getRawWindowPtr() const { return window; }
-
-private:
-	GLFWwindow* window;
 };
 
-class RenderDevice {
-public:
-    RenderDevice(Window& window)
-    {
-        // Initialize the GPU device with the given window
-    }
-
-    ~RenderDevice()
-    {
-        // Cleanup GPU resources
-    }
-};
+static shared_ptr<GLFWwindow> createSharedGlfwWindow(
+	int width,
+	int height,
+	const char* title,
+	GLFWmonitor* monitor = nullptr,
+	GLFWwindow* share = nullptr)
+{
+	GLFWwindow* window = glfwCreateWindow(width, height, title, monitor, share);
+	return shared_ptr<GLFWwindow>(window, GlfwWindowDeleter());
+}
 
 int main()
 {
 	glfwInit();
-    gpu::configure_glfw();
+	gpu::configure_glfw();
+
+	shared_ptr<GLFWwindow> window = createSharedGlfwWindow(1280, 720, "GPU Lua Demo");
+	unique_ptr<gpu::RenderDevice> render_device = gpu::RenderDevice::create(window);
 
 	sol::state lua;
 	lua.open_libraries(sol::lib::base);
 
-	lua.new_usertype<Window>(
-		"Window",
-		sol::constructors<Window(int, int, const char*)>(),
-		"shouldClose",
-		&Window::shouldClose,
-		"pollEvents",
-		&Window::pollEvents);
+	lua.new_usertype<gpu::BufferHandle>("BufferHandle");
+	lua.new_usertype<gpu::RenderDevice>(
+		"RenderDevice",
+		"create_buffer",
+		&gpu::RenderDevice::create_buffer,
+		"destroy_buffer",
+		&gpu::RenderDevice::destroy_buffer);
 
-    lua.new_usertype<RenderDevice>(
-        "RenderDevice",
-        sol::constructors<RenderDevice(Window&)>());
+	lua["BufferUsage"] =
+		lua.create_table_with("VERTEX", gpu::BufferUsage::VERTEX, "INDEX", gpu::BufferUsage::INDEX);
 
-	// Open script.lua
+	lua.set_function("shouldClose", [&]() -> bool {
+		return static_cast<bool>(glfwWindowShouldClose(window.get()));
+	});
+
+	lua.set_function("pollEvents", [&]() { glfwPollEvents(); });
+
+	lua["getData"] = []() -> void* { return nullptr; };
+
+	lua["gpu"] = std::move(render_device);
+
 	lua.script_file("script.lua");
 
 	glfwTerminate();

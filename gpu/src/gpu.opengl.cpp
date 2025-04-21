@@ -20,7 +20,9 @@
 using namespace std;
 
 struct gpu::Buffer {
-	gpu::BufferInfo info;
+	gpu::BufferUsage usage;
+	std::size_t stride;
+	std::size_t element_count;
 	GLuint gl_buffer;
 };
 
@@ -39,8 +41,8 @@ struct gpu::Descriptors {
 
 struct gpu::Geometry {
 	GLuint vao;
-	shared_ptr<gpu::Buffer> vbo;
-	shared_ptr<gpu::Buffer> ebo;
+	gpu::BufferHandle vbo;
+	gpu::BufferHandle ebo;
 	unsigned long index_count;
 };
 
@@ -105,6 +107,8 @@ class RenderDeviceGL : public RenderDevice {
 
 	const array<GLint, 2> BUFFER_USAGE_TABLE{GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER};
 
+	std::vector<Buffer*> res_buffers;
+
 public:
 	RenderDeviceGL(shared_ptr<GLFWwindow> window) : window{window}
 	{
@@ -135,26 +139,36 @@ public:
 
 	~RenderDeviceGL() { cout << "~ RenderDeviceGL" << endl; }
 
-	auto create_buffer(const BufferInfo& info, const void* data) -> Buffer* override
+	auto create_buffer(
+		BufferUsage usage, std::size_t stride, std::size_t element_count, const void* data)
+		-> BufferHandle override
 	{
-		const auto size = info.element_count * info.stride;
+		const auto size = element_count * stride;
 
-		const auto buffer_type = BUFFER_USAGE_TABLE[static_cast<unsigned int>(info.usage)];
+		const auto buffer_type = BUFFER_USAGE_TABLE[static_cast<unsigned int>(usage)];
 
-		cout << "GPU Buffer size: " << size << " stride: " << info.stride << " type: 0x" << hex
+		cout << "GPU Buffer size: " << size << " stride: " << stride << " type: 0x" << hex
 			 << buffer_type << dec << endl;
 		GLuint VBO;
 		glGenBuffers(1, &VBO);
 		glBindBuffer(buffer_type, VBO);
 		glBufferData(buffer_type, size, data, GL_STATIC_DRAW);
-		return new Buffer{info, VBO};
+		uint64_t buffer_handle = res_buffers.size();
+		res_buffers.push_back(new Buffer{usage, stride, element_count, VBO});
+		return {.id = buffer_handle};
 	}
 
-	auto destroy_buffer(Buffer* buffer) -> void override
+	auto destroy_buffer(BufferHandle buffer_handle) -> void override
 	{
-		cout << "~ GPU Buffer " << buffer << endl;
+		if (buffer_handle.id == UINT64_MAX) {
+			return;
+		}
+		cout << "~ GPU Buffer " << buffer_handle.id << endl;
+		Buffer* buffer = res_buffers.at(buffer_handle.id);
 		glDeleteBuffers(1, &buffer->gl_buffer);
 		delete buffer;
+		res_buffers[buffer_handle.id] = res_buffers[res_buffers.size() - 1];
+		res_buffers.pop_back();
 	}
 
 	auto create_image(
@@ -256,10 +270,15 @@ public:
 		delete pso;
 	}
 
-	auto create_geometry(ShaderPipeline* pipeline, Buffer* vertex_buffer, Buffer* index_buffer)
-		-> Geometry* override
+	auto create_geometry(
+		ShaderPipeline* pipeline,
+		BufferHandle vertex_buffer_handle,
+		BufferHandle index_buffer_handle) -> Geometry* override
 	{
 		std::cout << "Creating geometry" << std::endl;
+
+		Buffer* vertex_buffer = res_buffers.at(vertex_buffer_handle.id);
+		Buffer* index_buffer = res_buffers.at(index_buffer_handle.id);
 
 		GLuint vao;
 		webgl::genVertexArrays(1, &vao);
@@ -270,9 +289,9 @@ public:
 		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer->gl_buffer);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer->gl_buffer);
 
-		// TODO - see the definition of `Vertex` in gpu.vulkan.cpp
 		size_t vertex_size = 0;
 		const size_t attribute_count = pipeline->vertex_attributes.size();
+		
 		// First, calculate the size of one vertex
 		for (size_t attribute_idx = 0; attribute_idx < attribute_count; attribute_idx++) {
 			const auto attribute = pipeline->vertex_attributes.at(attribute_idx);
@@ -281,6 +300,7 @@ public:
 			else if (attribute == VertexAttribute::VEC2_FLOAT)
 				vertex_size += 2 * sizeof(float);
 		}
+		
 		// Next, generate the gl vertex attributes
 		size_t attribute_offset = 0;
 		for (size_t attribute_idx = 0; attribute_idx < attribute_count; attribute_idx++) {
@@ -299,12 +319,9 @@ public:
 			}
 		}
 
-		const auto index_count = index_buffer->info.element_count;
-		const auto gpu_geometry = new Geometry{
-			vao,
-			std::unique_ptr<Buffer>(vertex_buffer),
-			std::unique_ptr<Buffer>(index_buffer),
-			index_count};
+		const auto index_count = index_buffer->element_count;
+		const auto gpu_geometry =
+			new Geometry{vao, vertex_buffer_handle, index_buffer_handle, index_count};
 
 		cout << "GPU Geometry indices: " << index_count << " " << gpu_geometry << endl;
 
@@ -313,8 +330,8 @@ public:
 
 	auto destroy_geometry(const Geometry* geometry) -> void override
 	{
-		destroy_buffer(geometry->vbo.get());
-		destroy_buffer(geometry->ebo.get());
+		destroy_buffer(geometry->vbo);
+		destroy_buffer(geometry->ebo);
 		delete geometry;
 	}
 

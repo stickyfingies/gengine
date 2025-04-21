@@ -120,8 +120,8 @@ struct Descriptors {
 };
 
 struct Geometry {
-	Buffer* vbo;
-	Buffer* ebo;
+	BufferHandle vbo;
+	BufferHandle ebo;
 	unsigned long index_count;
 };
 
@@ -417,6 +417,8 @@ public:
 			device.destroyFence(swapchain_fences[i]);
 		}
 
+		// TODO(seth) - clean up res_buffers pls :)
+
 		device.destroyDescriptorPool(imgui_pool);
 
 		device.destroyRenderPass(backbuffer_pass);
@@ -470,8 +472,14 @@ public:
 		ImGui_ImplVulkan_Init(&init_info);
 	}
 
-	auto create_buffer(const BufferInfo& info, const void* data) -> Buffer* override
+	auto create_buffer(
+		BufferUsage usage, std::size_t stride, std::size_t element_count, const void* data)
+		-> BufferHandle override
 	{
+		if (data == nullptr) {
+			return {.id = UINT64_MAX};
+		}
+
 		// this assumes the user wants a device local buffer
 
 		auto staging = vk::Buffer{};
@@ -480,7 +488,7 @@ public:
 		createBufferVk(
 			device,
 			physical_device,
-			info.element_count * info.stride,
+			element_count * stride,
 			vk::BufferUsageFlagBits::eTransferSrc,
 			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
 			staging,
@@ -492,32 +500,40 @@ public:
 		createBufferVk(
 			device,
 			physical_device,
-			info.element_count * info.stride,
-			BUFFER_USAGE_TABLE[static_cast<unsigned int>(info.usage)] |
+			element_count * stride,
+			BUFFER_USAGE_TABLE[static_cast<unsigned int>(usage)] |
 				vk::BufferUsageFlagBits::eTransferDst,
 			vk::MemoryPropertyFlagBits::eDeviceLocal,
 			buffer,
 			buffer_mem);
 
-		auto data_dst = device.mapMemory(staging_mem, 0, info.element_count * info.stride);
-		memcpy(data_dst, data, info.element_count * info.stride);
+		auto data_dst = device.mapMemory(staging_mem, 0, element_count * stride);
+		memcpy(data_dst, data, element_count * stride);
 		device.unmapMemory(staging_mem);
 
-		copy_buffer(staging, buffer, info.element_count * info.stride);
+		copy_buffer(staging, buffer, element_count * stride);
 
 		std::cout << "~ GpuBuffer (staging)" << std::endl;
 		device.destroyBuffer(staging);
 		device.freeMemory(staging_mem);
 
-		return new Buffer{buffer, buffer_mem, info.element_count};
+		uint64_t buffer_handle = res_buffers.size();
+		res_buffers.push_back(new Buffer{buffer, buffer_mem, element_count});
+		return {.id = buffer_handle};
 	}
 
-	auto destroy_buffer(Buffer* buffer) -> void override
+	auto destroy_buffer(BufferHandle buffer_handle) -> void override
 	{
+		if (buffer_handle.id == UINT64_MAX) {
+			return;
+		}
+		Buffer* buffer = res_buffers.at(buffer_handle.id);
 		std::cout << "~ GpuBuffer" << std::endl;
 		device.destroyBuffer(buffer->buffer);
 		device.freeMemory(buffer->mem);
 		delete buffer;
+		res_buffers[buffer_handle.id] = res_buffers[res_buffers.size() - 1];
+		res_buffers.pop_back();
 	}
 
 	auto create_image(
@@ -592,8 +608,8 @@ public:
 		return &image_cache[name];
 	}
 
-	auto
-	generate_mipmaps(vk::Image image, uint32_t width, uint32_t height, uint32_t mipLevels) -> void
+	auto generate_mipmaps(vk::Image image, uint32_t width, uint32_t height, uint32_t mipLevels)
+		-> void
 	{
 		auto cmdbuf = begin_one_time_cmdbuf();
 
@@ -711,10 +727,14 @@ public:
 		device.destroySampler(image->sampler);
 	}
 
-	auto create_geometry(ShaderPipeline* pipeline, Buffer* vertex_buffer, Buffer* index_buffer)
-		-> Geometry* override
+	auto create_geometry(
+		ShaderPipeline* pipeline,
+		BufferHandle vertex_buffer_handle,
+		BufferHandle index_buffer_handle) -> Geometry* override
 	{
-		return new Geometry{vertex_buffer, index_buffer, index_buffer->size};
+		Buffer* vertex_buffer = res_buffers.at(vertex_buffer_handle.id);
+		Buffer* index_buffer = res_buffers.at(index_buffer_handle.id);
+		return new Geometry{vertex_buffer_handle, index_buffer_handle, index_buffer->size};
 	}
 
 	auto destroy_geometry(const Geometry* geometry) -> void override
@@ -1009,7 +1029,9 @@ public:
 				sizeof(PushConstantData),
 				&push_constant_data);
 
-			ctx->bind_geometry_buffers(renderables[i]->vbo, renderables[i]->ebo);
+			gpu::Buffer* vbo = res_buffers.at(renderables[i]->vbo.id);
+			gpu::Buffer* ebo = res_buffers.at(renderables[i]->ebo.id);
+			ctx->bind_geometry_buffers(vbo, ebo);
 			ctx->draw(renderables[i]->index_count, 1);
 		}
 
@@ -1170,10 +1192,8 @@ private:
 	}
 
 	auto create_image_view(
-		vk::Image image,
-		vk::Format format,
-		vk::ImageAspectFlags aspect,
-		uint32_t mipLevels) -> vk::ImageView
+		vk::Image image, vk::Format format, vk::ImageAspectFlags aspect, uint32_t mipLevels)
+		-> vk::ImageView
 	{
 		const auto component_mapping = vk::ComponentMapping(
 			vk::ComponentSwizzle::eR,
@@ -1500,6 +1520,8 @@ private:
 
 	uint32_t graphics_queue_idx = 0u;
 	uint32_t present_queue_idx = 0u;
+
+	std::vector<Buffer*> res_buffers;
 };
 
 auto RenderDevice::create(std::shared_ptr<GLFWwindow> window) -> std::unique_ptr<RenderDevice>

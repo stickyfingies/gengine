@@ -1,9 +1,9 @@
-print("Hello, World!")
+vbo = gpu:create_buffer(BufferUsage.VERTEX, 0, 0, getData())
 
-window = Window.new(800, 400, "Hello Lua!")
+gpu:destroy_buffer(vbo)
 
-while not window:shouldClose() do
-    window:pollEvents()
+print("Hello, Window!")
+while not shouldClose() do
+    pollEvents()
 end
-
-print("Goodbye, World!");
+print("Goodbye, Window!");
