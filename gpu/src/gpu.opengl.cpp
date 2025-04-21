@@ -218,7 +218,7 @@ public:
 			cout << "Error: Pipeline creation failed." << endl;
 			cout << "Reason: Vertex shader compilation failed." << endl;
 			cout << infoLog << endl;
-			// abort();
+			return { .id = UINT64_MAX };
 		}
 
 		// Compile fragment shader
@@ -229,8 +229,10 @@ public:
 		glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
 		if (!success) {
 			glGetShaderInfoLog(fragment_shader, 512, nullptr, infoLog);
-			cout << "Fragment shader compilation failed.\n" << infoLog << endl;
-			// abort();
+			cout << "Error: Pipeline creation failed." << endl;
+			cout << "Reason: Fragment shader compilation failed." << endl;
+			cout << infoLog << endl;
+			return { .id = UINT64_MAX };
 		}
 
 		// Link shader stages
@@ -238,14 +240,18 @@ public:
 		glAttachShader(shader_program, vertex_shader);
 		glAttachShader(shader_program, fragment_shader);
 		glLinkProgram(shader_program);
+
+		glDeleteShader(vertex_shader);
+		glDeleteShader(fragment_shader);
+
 		glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
 		if (!success) {
 			glGetProgramInfoLog(shader_program, 512, nullptr, infoLog);
-			cout << "Shader linkage failed.\n" << infoLog << endl;
-			// abort();
+			cout << "Error: Pipeline creation failed." << endl;
+			cout << "Reason: Shader linkage failed." << endl;
+			cout << infoLog << endl;
+			return { .id = UINT64_MAX };
 		}
-		glDeleteShader(vertex_shader);
-		glDeleteShader(fragment_shader);
 
 		const uint64_t pipeline_handle = res_pipelines.size();
 		res_pipelines.push_back(new ShaderPipeline{shader_program, vertex_attributes});
@@ -265,8 +271,12 @@ public:
 
 	auto destroy_pipeline(ShaderPipelineHandle pso_handle) -> void override
 	{
+		if (pso_handle.id == UINT64_MAX) {
+			return;
+		}
+
 		ShaderPipeline* pso = res_pipelines.at(pso_handle.id);
-		cout << "Destroying pipeline " << pso << endl;
+		cout << "Destroying pipeline " << pso_handle.id << endl;
 		glDeleteProgram(pso->gl_program);
 		delete pso;
 	}

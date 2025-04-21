@@ -7,20 +7,14 @@ gpu:destroy_buffer(vbo)
 -- shader pipeline experiment
 
 vscglsl = open_file("data/cube.vert.glsl")
-vscsprv = compile_file("cube.vert.glsl", ShaderC.VERTEX, vscglsl, true)
+vscsprv = glsl_to_sprv("cube.vert.glsl", ShaderC.VERTEX, vscglsl, false)
 
 fscglsl = open_file("data/cube.frag.glsl")
-fscsprv = compile_file("cube.frag.glsl", ShaderC.FRAGMENT, fscglsl, true)
+fscsprv = glsl_to_sprv("cube.frag.glsl", ShaderC.FRAGMENT, fscglsl, false)
 
-pso = gpu:create_pipeline(vscsprv, fscsprv, {VertexAttribute.VEC3, VertexAttribute.VEC3, VertexAttribute.VEC2})
-gpu:destroy_pipeline(pso)
+-- vscgles = sprv_to_gles(vscsprv)
+-- fscgles = sprv_to_gles(fscsprv)
 
-pso = gpu:create_pipeline(vscsprv, fscsprv, {VertexAttribute.VEC3, VertexAttribute.VEC3, VertexAttribute.VEC2})
-gpu:destroy_pipeline(pso)
-pso = gpu:create_pipeline(vscsprv, fscsprv, {VertexAttribute.VEC3, VertexAttribute.VEC3, VertexAttribute.VEC2})
-gpu:destroy_pipeline(pso)
-pso = gpu:create_pipeline(vscsprv, fscsprv, {VertexAttribute.VEC3, VertexAttribute.VEC3, VertexAttribute.VEC2})
-gpu:destroy_pipeline(pso)
 pso = gpu:create_pipeline(vscsprv, fscsprv, {VertexAttribute.VEC3, VertexAttribute.VEC3, VertexAttribute.VEC2})
 gpu:destroy_pipeline(pso)
 

@@ -55,15 +55,8 @@ static string open_file(const char* filename)
 }
 
 // Convert SPIRV to GLSL ES 300 (WebGL 2)
-static std::string spvglsl(std::string spirv_binary_src)
+static std::vector<uint32_t> sprv_to_gles(std::vector<uint32_t> spirv_binary)
 {
-	// Convert spirv_binary_src to vector of uint32_t
-	std::vector<uint32_t> spirv_binary;
-	spirv_binary.reserve(spirv_binary_src.size() / sizeof(uint32_t));
-	for (size_t i = 0; i < spirv_binary_src.size(); i += sizeof(uint32_t)) {
-		spirv_binary.push_back(*reinterpret_cast<const uint32_t*>(spirv_binary_src.data() + i));
-	}
-
 	spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
 
 	// Set some options.
@@ -72,15 +65,24 @@ static std::string spvglsl(std::string spirv_binary_src)
 	options.es = true;
 	glsl.set_common_options(options);
 
-	// Compile to GLSL, ready to give to GL driver.
+	// Compile the SPIRV to GLSL.
 	std::string source = glsl.compile();
 
-	return source;
+	std::cout << source << std::endl;
+
+	// convert source to vector of uint32_t
+	std::vector<uint32_t> glsl_binary;
+	glsl_binary.resize(source.size() / sizeof(uint32_t));
+	for (size_t i = 0; i < source.size() / sizeof(uint32_t); ++i) {
+		glsl_binary[i] = *reinterpret_cast<const uint32_t*>(source.data() + i * sizeof(uint32_t));
+	}
+
+	return glsl_binary;
 }
 
 // Compiles a shader to a SPIR-V binary. Returns the binary as
 // a vector of 32-bit words.
-std::vector<uint32_t> compile_file(
+std::vector<uint32_t> glsl_to_sprv(
 	const std::string& source_name,
 	shaderc_shader_kind kind,
 	const std::string& source,
@@ -94,6 +96,9 @@ std::vector<uint32_t> compile_file(
 	if (optimize) {
 		options.SetOptimizationLevel(shaderc_optimization_level_size);
 	}
+
+	// Add this line to preserve uniform names
+	options.SetGenerateDebugInfo();
 
 	shaderc::SpvCompilationResult module =
 		compiler.CompileGlslToSpv(source, kind, source_name.c_str(), options);
@@ -136,9 +141,13 @@ int main()
 			// STL containers only work in Sol2 with values, not references
 
 			// convert vert_code_bytes to std::string
-			std::string vert_code(reinterpret_cast<const char*>(vert_code_bytes.data()), vert_code_bytes.size() * sizeof(uint32_t));
+			std::string vert_code(
+				reinterpret_cast<const char*>(vert_code_bytes.data()),
+				vert_code_bytes.size() * sizeof(uint32_t));
 			// convert frag_code_bytes to std::string
-			std::string frag_code(reinterpret_cast<const char*>(frag_code_bytes.data()), frag_code_bytes.size() * sizeof(uint32_t));
+			std::string frag_code(
+				reinterpret_cast<const char*>(frag_code_bytes.data()),
+				frag_code_bytes.size() * sizeof(uint32_t));
 
 			return device->create_pipeline(vert_code, frag_code, vertex_attributes);
 		};
@@ -161,8 +170,8 @@ int main()
 	lua.set_function("pollEvents", [&]() { glfwPollEvents(); });
 	lua["getData"] = []() -> void* { return nullptr; };
 	lua["open_file"] = &open_file;
-	lua["spvglsl"] = &spvglsl;
-	lua["compile_file"] = &compile_file;
+	lua["sprv_to_gles"] = &sprv_to_gles;
+	lua["glsl_to_sprv"] = &glsl_to_sprv;
 
 	// Globals
 	lua["gpu"] = std::move(render_device);
