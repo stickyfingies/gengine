@@ -110,28 +110,39 @@
   ],
   "buildPresets": [
     {
+      "name": "base",
+      "hidden": true,
+      "jobs": 12
+    },
+    {
       "name": "linux-vk-dev",
-      "configurePreset": "linux-vk-dev"
+      "configurePreset": "linux-vk-dev",
+      "inherits": ["base"]
     },
     {
       "name": "linux-vk-app",
-      "configurePreset": "linux-vk-app"
+      "configurePreset": "linux-vk-app",
+      "inherits": ["base"]
     },
     {
       "name": "linux-gl-dev",
-      "configurePreset": "linux-gl-dev"
+      "configurePreset": "linux-gl-dev",
+      "inherits": ["base"]
     },
     {
       "name": "linux-gl-app",
-      "configurePreset": "linux-gl-app"
+      "configurePreset": "linux-gl-app",
+      "inherits": ["base"]
     },
     {
       "name": "web-gl-dev",
-      "configurePreset": "web-gl-dev"
+      "configurePreset": "web-gl-dev",
+      "inherits": ["base"]
     },
     {
       "name": "web-gl-app",
-      "configurePreset": "web-gl-app"
+      "configurePreset": "web-gl-app",
+      "inherits": ["base"]
     }
   ],
   "testPresets": [],
