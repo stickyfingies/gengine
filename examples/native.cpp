@@ -25,7 +25,7 @@ class NativeWorld : public World {
 	// Game data
 	Camera camera;
 	unique_ptr<FirstPersonController> fps_controller;
-	gpu::ShaderPipeline* pipeline;
+	gpu::ShaderPipelineHandle pipeline;
 
 public:
 	NativeWorld(shared_ptr<GLFWwindow> window, shared_ptr<gpu::RenderDevice> gpu) : window{window}, gpu{gpu}

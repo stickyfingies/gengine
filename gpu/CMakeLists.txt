@@ -75,11 +75,24 @@ if(NOT EMSCRIPTEN)
     find_package(glfw3 REQUIRED)
     find_package(Lua REQUIRED)
     find_package(sol2 REQUIRED)
+    find_package(spirv_cross_core REQUIRED)
+    find_package(spirv_cross_glsl REQUIRED)
+    find_package(spirv_cross_cpp REQUIRED)
+    find_package(unofficial-shaderc REQUIRED)
 
     add_executable(gpu-lua)
     target_sources(gpu-lua PRIVATE src/gpu-lua.cpp)
     target_include_directories(gpu-lua PRIVATE ${LUA_INCLUDE_DIR})
-    target_link_libraries(gpu-lua PRIVATE ${LUA_LIBRARIES} gpu sol2::sol2 glfw)
+    target_link_libraries(gpu-lua PRIVATE
+        ${LUA_LIBRARIES}
+        gpu
+        sol2::sol2
+        glfw
+        spirv-cross-core
+        spirv-cross-glsl
+        spirv-cross-cpp
+        unofficial::shaderc::shaderc
+    )
 endif()
 
 # Install target

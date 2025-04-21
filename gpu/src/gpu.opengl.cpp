@@ -108,6 +108,7 @@ class RenderDeviceGL : public RenderDevice {
 	const array<GLint, 2> BUFFER_USAGE_TABLE{GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER};
 
 	std::vector<Buffer*> res_buffers;
+	std::vector<ShaderPipeline*> res_pipelines;
 
 public:
 	RenderDeviceGL(shared_ptr<GLFWwindow> window) : window{window}
@@ -167,8 +168,8 @@ public:
 		Buffer* buffer = res_buffers.at(buffer_handle.id);
 		glDeleteBuffers(1, &buffer->gl_buffer);
 		delete buffer;
-		res_buffers[buffer_handle.id] = res_buffers[res_buffers.size() - 1];
-		res_buffers.pop_back();
+		res_buffers[buffer_handle.id] = nullptr;
+		// TODO(seth) - add buffer_handle.id to a free list
 	}
 
 	auto create_image(
@@ -200,7 +201,7 @@ public:
 	auto create_pipeline(
 		string_view vert_code,
 		string_view frag_code,
-		const vector<VertexAttribute>& vertex_attributes) -> ShaderPipeline* override
+		const vector<VertexAttribute>& vertex_attributes) -> ShaderPipelineHandle override
 	{
 		// Reserved for GL error strings
 		int success;
@@ -246,14 +247,13 @@ public:
 		glDeleteShader(vertex_shader);
 		glDeleteShader(fragment_shader);
 
-		const auto pipeline = new ShaderPipeline{shader_program, vertex_attributes};
-
-		cout << "Pipeline " << pipeline << endl;
-
-		return pipeline;
+		const uint64_t pipeline_handle = res_pipelines.size();
+		res_pipelines.push_back(new ShaderPipeline{shader_program, vertex_attributes});
+		cout << "Pipeline " << pipeline_handle << endl;
+		return {.id = pipeline_handle};
 	}
 
-	auto create_descriptors(ShaderPipeline* pipeline, Image* albedo, const glm::vec3& color)
+	auto create_descriptors(ShaderPipelineHandle pipeline, Image* albedo, const glm::vec3& color)
 		-> Descriptors* override
 	{
 		const auto descriptor = new Descriptors{albedo};
@@ -263,19 +263,22 @@ public:
 		return descriptor;
 	}
 
-	auto destroy_pipeline(ShaderPipeline* pso) -> void override
+	auto destroy_pipeline(ShaderPipelineHandle pso_handle) -> void override
 	{
+		ShaderPipeline* pso = res_pipelines.at(pso_handle.id);
 		cout << "Destroying pipeline " << pso << endl;
 		glDeleteProgram(pso->gl_program);
 		delete pso;
 	}
 
 	auto create_geometry(
-		ShaderPipeline* pipeline,
+		ShaderPipelineHandle pipeline_handle,
 		BufferHandle vertex_buffer_handle,
 		BufferHandle index_buffer_handle) -> Geometry* override
 	{
 		std::cout << "Creating geometry" << std::endl;
+
+		ShaderPipeline* pipeline = res_pipelines.at(pipeline_handle.id);
 
 		Buffer* vertex_buffer = res_buffers.at(vertex_buffer_handle.id);
 		Buffer* index_buffer = res_buffers.at(index_buffer_handle.id);
@@ -291,7 +294,7 @@ public:
 
 		size_t vertex_size = 0;
 		const size_t attribute_count = pipeline->vertex_attributes.size();
-		
+
 		// First, calculate the size of one vertex
 		for (size_t attribute_idx = 0; attribute_idx < attribute_count; attribute_idx++) {
 			const auto attribute = pipeline->vertex_attributes.at(attribute_idx);
@@ -300,7 +303,7 @@ public:
 			else if (attribute == VertexAttribute::VEC2_FLOAT)
 				vertex_size += 2 * sizeof(float);
 		}
-		
+
 		// Next, generate the gl vertex attributes
 		size_t attribute_offset = 0;
 		for (size_t attribute_idx = 0; attribute_idx < attribute_count; attribute_idx++) {
@@ -337,7 +340,7 @@ public:
 
 	auto render(
 		const glm::mat4& view,
-		ShaderPipeline* pipeline,
+		ShaderPipelineHandle pipeline_handle,
 		const vector<glm::mat4>& transforms,
 		const vector<Geometry*>& geometries,
 		const vector<Descriptors*>& descriptors,
@@ -350,6 +353,8 @@ public:
 		while ((err = glGetError()) != GL_NO_ERROR) {
 			cout << "GL Error: " << err << endl;
 		}
+
+		ShaderPipeline* pipeline = res_pipelines.at(pipeline_handle.id);
 
 		glClearColor(0.4, 0.3, 0.8, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

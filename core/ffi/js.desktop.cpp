@@ -119,7 +119,7 @@ class NativeWorld : public World {
 	// Game data
 	Camera camera;
 	unique_ptr<FirstPersonController> fps_controller;
-	gpu::ShaderPipeline* pipeline;
+	gpu::ShaderPipelineHandle pipeline;
 
 	duk_context* ctx;
 

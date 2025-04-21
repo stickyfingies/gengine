@@ -90,7 +90,7 @@ public:
 	 */
 	std::unique_ptr<Scene> build(
 		ResourceContainer& resources,
-		gpu::ShaderPipeline* pipeline,
+		gpu::ShaderPipelineHandle pipeline,
 		gpu::RenderDevice* gpu,
 		gengine::PhysicsEngine* physics_engine,
 		gengine::TextureFactory* texture_factory);

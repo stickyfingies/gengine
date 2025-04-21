@@ -16,7 +16,7 @@ using GpuImageIndex = std::unordered_map<std::string, gpu::Image*>;
 /// copy those regions from the Scene* and append them back into its self.
 static ResourceContainer make_game_object(
 	ResourceContainer& global_resources,
-	gpu::ShaderPipeline* pipeline,
+	gpu::ShaderPipelineHandle pipeline,
 	gpu::RenderDevice* gpu,
 	gengine::TextureFactory* texture_factory,
 	GpuImageIndex& gpu_image_index,
@@ -159,7 +159,7 @@ void SceneBuilder::apply_model_settings(
 
 unique_ptr<Scene> SceneBuilder::build(
 	ResourceContainer& resources,
-	gpu::ShaderPipeline* pipeline,
+	gpu::ShaderPipelineHandle pipeline,
 	gpu::RenderDevice* gpu,
 	gengine::PhysicsEngine* physics_engine,
 	gengine::TextureFactory* texture_factory)

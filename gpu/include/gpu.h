@@ -55,6 +55,10 @@ struct BufferHandle {
 	uint64_t id;
 };
 
+struct ShaderPipelineHandle {
+	uint64_t id;
+};
+
 /**
  * @class gpu::RenderDevice
  * A physical hardware accelerator.
@@ -63,6 +67,7 @@ class RenderDevice {
 public:
 	/**
 	 * Connect a hardware accelerator to the windowing system.
+	 * Make sure to call `gpu::configure_glfw()` before this.
 	 * @param window The OS window on which to draw graphics.
 	 */
 	static auto create(std::shared_ptr<GLFWwindow> window) -> std::unique_ptr<RenderDevice>;
@@ -115,12 +120,12 @@ public:
 	 * @param vert_code vertex shader content
 	 * @param frag_code fragment shader content
 	 * @param vertex_attributes a list of attributes used in each vertex
-	 * @return ShaderPipeline*
+	 * @return ShaderPipelineHandle
 	 */
 	virtual auto create_pipeline(
 		std::string_view vert_code,
 		std::string_view frag_code,
-		const std::vector<VertexAttribute>& vertex_attributes) -> ShaderPipeline* = 0;
+		const std::vector<VertexAttribute>& vertex_attributes) -> ShaderPipelineHandle = 0;
 
 	/**
 	 * "Descriptors" bind GPU resources to slots in shaders.
@@ -128,10 +133,11 @@ public:
 	 * @param albedo a texture to apply
 	 * @param color rgb color to apply
 	 */
-	virtual auto create_descriptors(ShaderPipeline* pipeline, Image* albedo, const glm::vec3& color)
+	virtual auto
+	create_descriptors(ShaderPipelineHandle pipeline, Image* albedo, const glm::vec3& color)
 		-> Descriptors* = 0;
 
-	virtual auto destroy_pipeline(ShaderPipeline* pso) -> void = 0;
+	virtual auto destroy_pipeline(ShaderPipelineHandle pso) -> void = 0;
 
 	/**
 	 * Convert raw geometry data into a GPU geometry object.
@@ -139,15 +145,15 @@ public:
 	 * @param vertices_aux see implementation
 	 * @param indices see implementation
 	 */
-	virtual auto
-	create_geometry(ShaderPipeline* pipeline, BufferHandle vertex_buffer, BufferHandle index_buffer)
+	virtual auto create_geometry(
+		ShaderPipelineHandle pipeline, BufferHandle vertex_buffer, BufferHandle index_buffer)
 		-> Geometry* = 0;
 
 	virtual auto destroy_geometry(const Geometry* geometry) -> void = 0;
 
 	virtual auto render(
 		const glm::mat4& view,
-		ShaderPipeline* pipeline,
+		ShaderPipelineHandle pipeline,
 		const std::vector<glm::mat4>& transforms,
 		const std::vector<Geometry*>& renderables,
 		const std::vector<Descriptors*>& descriptors,

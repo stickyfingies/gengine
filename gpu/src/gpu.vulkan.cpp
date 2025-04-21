@@ -419,6 +419,10 @@ public:
 
 		// TODO(seth) - clean up res_buffers pls :)
 
+		device.destroyDescriptorPool(descpool);
+		
+		device.destroyDescriptorSetLayout(descset_layout);
+
 		device.destroyDescriptorPool(imgui_pool);
 
 		device.destroyRenderPass(backbuffer_pass);
@@ -532,8 +536,8 @@ public:
 		device.destroyBuffer(buffer->buffer);
 		device.freeMemory(buffer->mem);
 		delete buffer;
-		res_buffers[buffer_handle.id] = res_buffers[res_buffers.size() - 1];
-		res_buffers.pop_back();
+		res_buffers[buffer_handle.id] = nullptr;
+		// TODO(seth) - add buffer_handle.id to a free list
 	}
 
 	auto create_image(
@@ -728,7 +732,7 @@ public:
 	}
 
 	auto create_geometry(
-		ShaderPipeline* pipeline,
+		ShaderPipelineHandle pipeline_handle,
 		BufferHandle vertex_buffer_handle,
 		BufferHandle index_buffer_handle) -> Geometry* override
 	{
@@ -776,9 +780,11 @@ public:
 		return device.createDescriptorPool(descpool_info);
 	}
 
-	auto create_descriptors(ShaderPipeline* pipeline, Image* albedo, const glm::vec3& color)
+	auto
+	create_descriptors(ShaderPipelineHandle pipeline_handle, Image* albedo, const glm::vec3& color)
 		-> Descriptors* override
 	{
+		ShaderPipeline* pipeline = res_pipelines.at(pipeline_handle.id);
 		std::cout << "[info]\t Descriptor " << albedo->name << " rgb(" << color.r << ", " << color.g
 				  << ", " << color.b << ")" << std::endl;
 
@@ -809,8 +815,14 @@ public:
 	auto create_pipeline(
 		std::string_view vert_code,
 		std::string_view frag_code,
-		const std::vector<VertexAttribute>& vertex_attributes) -> ShaderPipeline* override
+		const std::vector<VertexAttribute>& vertex_attributes) -> ShaderPipelineHandle override
 	{
+
+		if (vert_code.empty() || frag_code.empty()) {
+			std::cerr << "[error]\t Shader code is empty!" << std::endl;
+			return {.id = UINT64_MAX};
+		}
+
 		// Create uniform buffer
 
 		auto ubo = vk::Buffer{};
@@ -958,7 +970,11 @@ public:
 
 		// finally create the bloody cunt
 
-		const auto pipeline = device.createGraphicsPipeline(nullptr, pipeline_info).value;
+		auto pipeline = device.createGraphicsPipeline(nullptr, pipeline_info);
+		if (pipeline.result != vk::Result::eSuccess) {
+			std::cerr << "[error]\t Failed to create graphics pipeline!" << std::endl;
+			return {.id = UINT64_MAX};
+		}
 
 		device.destroyShaderModule(vert_module);
 		device.destroyShaderModule(frag_module);
@@ -966,36 +982,42 @@ public:
 		// note that here we assume that nothing fucked up, and that
 		// pipline.value is the actual pipeline object
 
-		return new ShaderPipeline{
-			pipeline_layout,
-			pipeline,
-			ubo,
-			ubo_mem,
-		};
+		const uint64_t pipeline_handle = res_pipelines.size();
+		res_pipelines.push_back(new ShaderPipeline{pipeline_layout, pipeline.value, ubo, ubo_mem});
+		std::cout << "[info]\t Pipeline " << pipeline_handle << std::endl;
+		return {.id = pipeline_handle};
 	}
 
-	auto destroy_pipeline(ShaderPipeline* pso) -> void override
+	auto destroy_pipeline(ShaderPipelineHandle pso_handle) -> void override
 	{
+		if (pso_handle.id == UINT64_MAX) {
+			return;
+		}
+		ShaderPipeline* pso = res_pipelines.at(pso_handle.id);
+
 		device.waitIdle();
 
 		device.destroyPipeline(pso->pipeline);
 		device.destroyPipelineLayout(pso->pipeline_layout);
 		device.destroyBuffer(pso->ubo);
 		device.freeMemory(pso->ubo_mem);
-		device.destroyDescriptorPool(descpool);
-		device.destroyDescriptorSetLayout(descset_layout);
 
+		std::cout << "[info]\t ~ Pipeline " << pso_handle.id << std::endl;
+
+		// TODO - add pso_handle.id to a free list
 		delete pso;
+		res_pipelines[pso_handle.id] = nullptr;
 	}
 
 	auto render(
 		const glm::mat4& view,
-		ShaderPipeline* pso,
+		ShaderPipelineHandle pso_handle,
 		const std::vector<glm::mat4>& transforms,
 		const std::vector<Geometry*>& renderables,
 		const std::vector<Descriptors*>& descriptors,
 		std::function<void()> gui_code) -> void override
 	{
+		ShaderPipeline* pso = res_pipelines.at(pso_handle.id);
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
@@ -1522,6 +1544,7 @@ private:
 	uint32_t present_queue_idx = 0u;
 
 	std::vector<Buffer*> res_buffers;
+	std::vector<ShaderPipeline*> res_pipelines;
 };
 
 auto RenderDevice::create(std::shared_ptr<GLFWwindow> window) -> std::unique_ptr<RenderDevice>
