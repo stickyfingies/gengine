@@ -82,13 +82,15 @@ if(NOT EMSCRIPTEN)
     find_package(spirv_cross_glsl REQUIRED)
     find_package(spirv_cross_cpp REQUIRED)
     find_package(unofficial-shaderc REQUIRED)
+    find_package(unofficial-spirv-reflect REQUIRED)
 
     # This affects gpu
     target_sources(gpu PRIVATE src/shaders.cpp)
     target_link_libraries(gpu PRIVATE spirv-cross-core
         spirv-cross-glsl
         spirv-cross-cpp
-        unofficial::shaderc::shaderc)
+        unofficial::shaderc::shaderc
+        unofficial::spirv-reflect)
 
     # This creates gpu-lua
     add_executable(gpu-lua)

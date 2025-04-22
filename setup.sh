@@ -54,4 +54,5 @@ sh ./bootstrap-vcpkg.sh -disableMetrics # you evil f^#ks
 ./vcpkg install sol2:x64-linux
 ./vcpkg install sol2:wasm32-emscripten
 ./vcpkg install spirv-cross:x64-linux
+./vcpkg install spirv-reflect:x64-linux
 ./vcpkg install vulkan

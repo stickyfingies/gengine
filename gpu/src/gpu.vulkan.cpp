@@ -986,13 +986,14 @@ public:
 		// finally create the bloody cunt
 
 		auto pipeline = device.createGraphicsPipeline(nullptr, pipeline_info);
+
+		device.destroyShaderModule(vert_module);
+		device.destroyShaderModule(frag_module);
+
 		if (pipeline.result != vk::Result::eSuccess) {
 			std::cerr << "[error]\t Failed to create graphics pipeline!" << std::endl;
 			return {.id = UINT64_MAX};
 		}
-
-		device.destroyShaderModule(vert_module);
-		device.destroyShaderModule(frag_module);
 
 		// note that here we assume that nothing fucked up, and that
 		// pipline.value is the actual pipeline object

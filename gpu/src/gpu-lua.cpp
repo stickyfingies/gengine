@@ -60,7 +60,7 @@ int main()
 	unique_ptr<gpu::RenderDevice> render_device = gpu::RenderDevice::create(window);
 
 	sol::state lua;
-	lua.open_libraries(sol::lib::base);
+	lua.open_libraries(sol::lib::base, sol::lib::package);
 
 	// Structures
 	lua.new_usertype<gpu::BufferHandle>("BufferHandle");
