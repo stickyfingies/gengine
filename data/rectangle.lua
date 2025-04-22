@@ -37,10 +37,10 @@ void main() {
 }
 ]]
 
-local vsc = compile_shader(ShaderStage.VERTEX, vertex_shader_source)
-local fsc = compile_shader(ShaderStage.FRAGMENT, fragment_shader_source)
+-- sho contains the target shaders and metadata about their structure
+local sho = compile_shaders(vertex_shader_source, fragment_shader_source);
 
-local pso = gpu:create_pipeline(vsc, fsc, {VertexAttribute.VEC2, VertexAttribute.VEC3}, WindingOrder.CLOCKWISE)
+local pso = gpu:create_pipeline(sho.target_vertex_shader, sho.target_fragment_shader, sho.vertex_attributes, WindingOrder.CLOCKWISE)
 
 local vbo = gpu:create_buffer(BufferUsage.VERTEX, 20, 4, vertices)
 local ebo = gpu:create_buffer(BufferUsage.INDEX, 4, #indices, indices)

@@ -20,8 +20,6 @@
 using namespace std;
 
 struct gpu::Buffer {
-	gpu::BufferUsage usage;
-	std::size_t stride;
 	std::size_t element_count;
 	GLuint gl_buffer;
 };
@@ -183,7 +181,7 @@ public:
 		glBindBuffer(buffer_type, VBO);
 		glBufferData(buffer_type, size, data, GL_STATIC_DRAW);
 		uint64_t buffer_handle = res_buffers.size();
-		res_buffers.push_back(new Buffer{usage, stride, element_count, VBO});
+		res_buffers.push_back(new Buffer{element_count, VBO});
 		return {.id = buffer_handle};
 	}
 

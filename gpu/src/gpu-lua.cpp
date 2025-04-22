@@ -64,6 +64,14 @@ int main()
 
 	// Structures
 	lua.new_usertype<gpu::BufferHandle>("BufferHandle");
+	lua.new_usertype<gpu::ShaderObject>(
+		"ShaderObject",
+		"target_vertex_shader",
+		&gpu::ShaderObject::target_vertex_shader,
+		"target_fragment_shader",
+		&gpu::ShaderObject::target_fragment_shader,
+		"vertex_attributes",
+		&gpu::ShaderObject::vertex_attributes);
 	lua.new_usertype<gpu::RenderDevice>(
 		"RenderDevice",
 		"destroy_buffer",
@@ -103,8 +111,6 @@ int main()
 												std::vector<gpu::VertexAttribute> vertex_attributes,
 												gpu::WindingOrder winding_order =
 													gpu::WindingOrder::COUNTERCLOCKWISE) {
-		// STL containers only work in Sol2 with values, not references
-
 		// convert vert_code_bytes to std::string
 		std::string vert_code(
 			reinterpret_cast<const char*>(vert_code_bytes.data()),
@@ -138,9 +144,7 @@ int main()
 	lua.set_function("swapBuffers", [&]() { glfwSwapBuffers(window.get()); });
 	lua["getData"] = []() -> void* { return nullptr; };
 	lua["open_file"] = &open_file;
-	lua["sprv_to_gles"] = &gpu::sprv_to_gles;
-	lua["glsl_to_sprv"] = &gpu::glsl_to_sprv;
-	lua["compile_shader"] = &gpu::compile_shader;
+	lua["compile_shaders"] = &gpu::compile_shaders;
 
 	// Globals
 	lua["gpu"] = std::move(render_device);

@@ -97,11 +97,6 @@ public:
 		BufferUsage usage, std::size_t stride, std::size_t element_count, const void* data)
 		-> BufferHandle = 0;
 
-	/// TODO 2024-09-18 - I still haven't done this?
-	/// TODO 2024-05-13 - This is undesirable.
-	/// TODO - destroy_buffer completely invalidates the usage of that buffer.
-	/// TODO - shared_ptr indicates the buffer may still be in use.
-	/// TODO - These are conflicting goals.
 	/**
 	 * Free a region of VRAM.
 	 * @param buffer VRAM to free

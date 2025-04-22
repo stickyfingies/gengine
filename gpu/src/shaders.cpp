@@ -1,8 +1,8 @@
 #include "shaders.h"
 
+#include <shaderc/shaderc.hpp>
 #include <spirv_glsl.hpp>
 #include <spirv_reflect.h>
-#include <shaderc/shaderc.hpp>
 
 #include <iostream>
 
@@ -38,17 +38,15 @@ struct PushConstantLayout {
 	std::vector<BufferMemberLayout> members;
 };
 
-// Structure to hold the layout information for a single vertex input attribute
-struct VertexInputAttributeLayout {
+struct VertexAttributeLayout {
+	uint32_t location;
+	uint32_t size; // in bytes
 	std::string name;
-	uint32_t location;		 // Corresponds to layout(location = X) in GLSL
-	SpvReflectFormat format; // The format of the attribute (e.g., R32G32B32_SFLOAT)
-	uint32_t size;			 // Size of the attribute in bytes (e.g., 12 for vec3)
-							 // You could add more info like type description if needed
+	std::string format;
 };
 
 // Helper to convert SpvReflectFormat to string for printing (optional)
-std::string spvFormatToString(SpvReflectFormat format)
+static std::string spvFormatToString(SpvReflectFormat format)
 {
 	switch (format) {
 	case SPV_REFLECT_FORMAT_UNDEFINED:
@@ -100,7 +98,7 @@ std::string spvFormatToString(SpvReflectFormat format)
 	}
 }
 
-uint32_t spvFormatToSize(SpvReflectFormat format)
+static uint32_t spvFormatToSize(SpvReflectFormat format)
 {
 	switch (format) {
 	case SPV_REFLECT_FORMAT_UNDEFINED:
@@ -162,10 +160,8 @@ uint32_t spvFormatToSize(SpvReflectFormat format)
  *
  * @return True if successful, false otherwise (e.g., not a vertex shader, no inputs found).
  */
-bool getVertexInputLayout(
-	const uint32_t* spirv_data,
-	size_t data_size,
-	std::vector<VertexInputAttributeLayout>& out_layout)
+static bool getVertexInputLayout(
+	const uint32_t* spirv_data, size_t data_size, std::vector<VertexAttributeLayout>& out_layout)
 {
 	SpvReflectShaderModule module;
 	SpvReflectResult result = spvReflectCreateShaderModule(data_size, spirv_data, &module);
@@ -225,17 +221,17 @@ bool getVertexInputLayout(
 		}
 
 		out_layout.push_back(
-			{var->name ? var->name : "UnnamedAttribute", // Use name if available
-			 var->location,
-			 var->format,
-			 spvFormatToSize(var->format)}); // Size of the attribute
+			{.location = var->location,
+			 .size = spvFormatToSize(var->format),				 // Size of the attribute
+			 .name = var->name ? var->name : "UnnamedAttribute", // Use name if available
+			 .format = spvFormatToString(var->format)});		 // Size of the attribute
 	}
 
 	// Sort the attributes by location for consistent ordering
 	std::sort(
 		out_layout.begin(),
 		out_layout.end(),
-		[](const VertexInputAttributeLayout& a, const VertexInputAttributeLayout& b) {
+		[](const VertexAttributeLayout& a, const VertexAttributeLayout& b) {
 			return a.location < b.location;
 		});
 
@@ -253,8 +249,8 @@ bool getVertexInputLayout(
  * @return True if a push constant block was found and its layout extracted, false otherwise.
  * Returns false if no push constant block is present.
  */
-bool getPushConstantLayout(
-	const uint32_t* spirv_data, size_t data_size, PushConstantLayout& out_layout)
+static bool
+getPushConstantLayout(const uint32_t* spirv_data, size_t data_size, PushConstantLayout& out_layout)
 {
 	SpvReflectShaderModule module;
 	SpvReflectResult result = spvReflectCreateShaderModule(data_size, spirv_data, &module);
@@ -334,7 +330,7 @@ bool getPushConstantLayout(
  *
  * @return True if the uniform buffer was found and its layout extracted, false otherwise.
  */
-bool getUniformBufferLayout(
+static bool getUniformBufferLayout(
 	const uint32_t* spirv_data,
 	size_t data_size,
 	uint32_t target_set,
@@ -409,7 +405,7 @@ bool getUniformBufferLayout(
 }
 
 // Convert SPIRV to GLSL ES 300 (WebGL 2)
-std::vector<uint32_t> gpu::sprv_to_gles(std::vector<uint32_t> spirv_binary)
+static std::vector<uint32_t> sprv_to_gles(std::vector<uint32_t> spirv_binary)
 {
 	spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
 
@@ -436,7 +432,7 @@ std::vector<uint32_t> gpu::sprv_to_gles(std::vector<uint32_t> spirv_binary)
 
 // Compiles a shader to a SPIR-V binary. Returns the binary as
 // a vector of 32-bit words.
-std::vector<uint32_t> gpu::glsl_to_sprv(
+static std::vector<uint32_t> glsl_to_sprv(
 	const std::string& source_name,
 	gpu::ShaderStage stage,
 	const std::string& source,
@@ -468,7 +464,7 @@ std::vector<uint32_t> gpu::glsl_to_sprv(
 
 	std::vector<uint32_t> spirv_blob = {module.cbegin(), module.cend()};
 
-	std::vector<VertexInputAttributeLayout> vertex_layout;
+	std::vector<VertexAttributeLayout> vertex_layout;
 	bool success = getVertexInputLayout(
 		spirv_blob.data(),
 		spirv_blob.size() * sizeof(uint32_t), // size in bytes!
@@ -482,8 +478,8 @@ std::vector<uint32_t> gpu::glsl_to_sprv(
 			std::cout << "Vertex Input Layout:" << std::endl;
 			for (const auto& attr : vertex_layout) {
 				std::cout << "  - Location: " << attr.location << ", Name: " << attr.name
-						  << ", Format: " << spvFormatToString(attr.format)
-						  << ", Size: " << attr.size << " bytes" << std::endl;
+						  << ", Format: " << attr.format << ", Size: " << attr.size << " bytes"
+						  << std::endl;
 			}
 		}
 
@@ -549,9 +545,6 @@ std::vector<uint32_t> gpu::glsl_to_sprv(
 		// }
 		// glBindVertexBuffer(binding_point, VBO, 0, stride); // Bind VBO to binding point
 	}
-	else {
-		std::cerr << "Failed to get vertex input layout." << std::endl;
-	}
 
 	uint32_t target_set = 0;
 	uint32_t target_binding = 0;
@@ -603,9 +596,6 @@ std::vector<uint32_t> gpu::glsl_to_sprv(
 		// the *exact* offset based on the SPIR-V layout rules (std140 or std430, typically std140
 		// for UBOs). Ensure your C++ struct matches this layout or use the individual member
 		// offsets.
-	}
-	else {
-		std::cerr << "Failed to get uniform buffer layout." << std::endl;
 	}
 
 	PushConstantLayout pc_layout;
@@ -662,24 +652,53 @@ std::vector<uint32_t> gpu::glsl_to_sprv(
 		// Then update the push constants during command buffer recording
 		// vkCmdPushConstants(... , pc_layout.stage_flags, 0, pc_layout.size, push_constant_buffer);
 	}
-	else {
-		std::cerr << "Failed to get push constant layout (or none found)." << std::endl;
-	}
 
 	return spirv_blob;
 }
 
-std::vector<uint32_t> gpu::compile_shader(gpu::ShaderStage stage, std::string shader_source)
+gpu::ShaderObject gpu::compile_shaders(std::string vert_source, std::string frag_source)
 {
+	ShaderObject shader_object;
+
+	const auto vertex_spirv_blob =
+		glsl_to_sprv("vertex_shader", gpu::ShaderStage::VERTEX, vert_source, true);
+	const auto fragment_spirv_blob =
+		glsl_to_sprv("fragment_shader", gpu::ShaderStage::FRAGMENT, frag_source, true);
+
+	{
+		// Compute vertex layout
+		std::vector<VertexAttributeLayout> vertex_layout;
+		bool success = getVertexInputLayout(
+			vertex_spirv_blob.data(),
+			vertex_spirv_blob.size() * sizeof(uint32_t), // size in bytes!
+			vertex_layout);
+
+		// TODO(Seth) - this really should be using format enums
+		for (const auto& attr : vertex_layout) {
+			if (attr.size == 8) {
+				shader_object.vertex_attributes.push_back(gpu::VertexAttribute::VEC2_FLOAT);
+			}
+			else if (attr.size == 12) {
+				shader_object.vertex_attributes.push_back(gpu::VertexAttribute::VEC3_FLOAT);
+			}
+			else {
+				// oops idk
+			}
+		}
+	}
+
 	if (strcmp(GPU_BACKEND, "Vulkan") == 0) {
-		return gpu::glsl_to_sprv("shader", stage, shader_source);
+		shader_object.target_vertex_shader = vertex_spirv_blob;
+		shader_object.target_fragment_shader = fragment_spirv_blob;
 	}
 	else if (strcmp(GPU_BACKEND, "GL") == 0) {
-		const auto sprv = gpu::glsl_to_sprv("shader", stage, shader_source);
-		return gpu::sprv_to_gles(sprv);
+		shader_object.target_vertex_shader = sprv_to_gles(vertex_spirv_blob);
+		shader_object.target_fragment_shader = sprv_to_gles(fragment_spirv_blob);
 	}
 	else {
 		std::cerr << "Unknown GPU backend: " << GPU_BACKEND << std::endl;
 		return {};
 	}
+
+	return shader_object;
 }
