@@ -5,16 +5,13 @@
  */
 
 #include "gpu.h"
+#include "shaders.h"
 #include <GLFW/glfw3.h>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <string_view>
-
-#include <spirv_glsl.hpp>
-
-#include <shaderc/shaderc.hpp>
 
 #undef SOL_SAFE_NUMERICS
 #include <sol/sol.hpp>
@@ -54,63 +51,6 @@ static string open_file(const char* filename)
 	return content;
 }
 
-// Convert SPIRV to GLSL ES 300 (WebGL 2)
-static std::vector<uint32_t> sprv_to_gles(std::vector<uint32_t> spirv_binary)
-{
-	spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
-
-	// Set some options.
-	spirv_cross::CompilerGLSL::Options options;
-	options.version = 300;
-	options.es = true;
-	glsl.set_common_options(options);
-
-	// Compile the SPIRV to GLSL.
-	std::string source = glsl.compile();
-
-	std::cout << source << std::endl;
-
-	// convert source to vector of uint32_t
-	std::vector<uint32_t> glsl_binary;
-	glsl_binary.resize(source.size() / sizeof(uint32_t));
-	for (size_t i = 0; i < source.size() / sizeof(uint32_t); ++i) {
-		glsl_binary[i] = *reinterpret_cast<const uint32_t*>(source.data() + i * sizeof(uint32_t));
-	}
-
-	return glsl_binary;
-}
-
-// Compiles a shader to a SPIR-V binary. Returns the binary as
-// a vector of 32-bit words.
-std::vector<uint32_t> glsl_to_sprv(
-	const std::string& source_name,
-	shaderc_shader_kind kind,
-	const std::string& source,
-	bool optimize = false)
-{
-	shaderc::Compiler compiler;
-	shaderc::CompileOptions options;
-
-	// Like -DMY_DEFINE=1
-	options.AddMacroDefinition("MY_DEFINE", "1");
-	if (optimize) {
-		options.SetOptimizationLevel(shaderc_optimization_level_size);
-	}
-
-	// Add this line to preserve uniform names
-	options.SetGenerateDebugInfo();
-
-	shaderc::SpvCompilationResult module =
-		compiler.CompileGlslToSpv(source, kind, source_name.c_str(), options);
-
-	if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
-		std::cerr << module.GetErrorMessage();
-		return std::vector<uint32_t>();
-	}
-
-	return {module.cbegin(), module.cend()};
-}
-
 int main()
 {
 	glfwInit();
@@ -130,6 +70,10 @@ int main()
 		&gpu::RenderDevice::destroy_buffer,
 		"destroy_pipeline",
 		&gpu::RenderDevice::destroy_pipeline,
+		"create_geometry",
+		&gpu::RenderDevice::create_geometry,
+		"destroy_geometry",
+		&gpu::RenderDevice::destroy_geometry,
 		"simple_draw",
 		&gpu::RenderDevice::simple_draw);
 
@@ -153,24 +97,25 @@ int main()
 			return device->create_buffer(usage, stride, element_count, data.data());
 		});
 
-	lua["RenderDevice"]["create_pipeline"] =
-		[](gpu::RenderDevice* device,
-		   const std::vector<uint32_t>& vert_code_bytes,
-		   const std::vector<uint32_t>& frag_code_bytes,
-		   std::vector<gpu::VertexAttribute> vertex_attributes, gpu::WindingOrder winding_order = gpu::WindingOrder::COUNTERCLOCKWISE) {
-			// STL containers only work in Sol2 with values, not references
+	lua["RenderDevice"]["create_pipeline"] = [](gpu::RenderDevice* device,
+												const std::vector<uint32_t>& vert_code_bytes,
+												const std::vector<uint32_t>& frag_code_bytes,
+												std::vector<gpu::VertexAttribute> vertex_attributes,
+												gpu::WindingOrder winding_order =
+													gpu::WindingOrder::COUNTERCLOCKWISE) {
+		// STL containers only work in Sol2 with values, not references
 
-			// convert vert_code_bytes to std::string
-			std::string vert_code(
-				reinterpret_cast<const char*>(vert_code_bytes.data()),
-				vert_code_bytes.size() * sizeof(uint32_t));
-			// convert frag_code_bytes to std::string
-			std::string frag_code(
-				reinterpret_cast<const char*>(frag_code_bytes.data()),
-				frag_code_bytes.size() * sizeof(uint32_t));
+		// convert vert_code_bytes to std::string
+		std::string vert_code(
+			reinterpret_cast<const char*>(vert_code_bytes.data()),
+			vert_code_bytes.size() * sizeof(uint32_t));
+		// convert frag_code_bytes to std::string
+		std::string frag_code(
+			reinterpret_cast<const char*>(frag_code_bytes.data()),
+			frag_code_bytes.size() * sizeof(uint32_t));
 
-			return device->create_pipeline(vert_code, frag_code, vertex_attributes, winding_order);
-		};
+		return device->create_pipeline(vert_code, frag_code, vertex_attributes, winding_order);
+	};
 
 	// Enums
 	lua["BufferUsage"] =
@@ -182,11 +127,8 @@ int main()
 		gpu::WindingOrder::CLOCKWISE,
 		"COUNTERCLOCKWISE",
 		gpu::WindingOrder::COUNTERCLOCKWISE);
-	lua["ShaderC"] = lua.create_table_with(
-		"VERTEX",
-		shaderc_shader_kind::shaderc_glsl_vertex_shader,
-		"FRAGMENT",
-		shaderc_shader_kind::shaderc_glsl_fragment_shader);
+	lua["ShaderStage"] = lua.create_table_with(
+		"VERTEX", gpu::ShaderStage::VERTEX, "FRAGMENT", gpu::ShaderStage::FRAGMENT);
 
 	// Functions
 	lua.set_function("shouldClose", [&]() -> bool {
@@ -196,8 +138,9 @@ int main()
 	lua.set_function("swapBuffers", [&]() { glfwSwapBuffers(window.get()); });
 	lua["getData"] = []() -> void* { return nullptr; };
 	lua["open_file"] = &open_file;
-	lua["sprv_to_gles"] = &sprv_to_gles;
-	lua["glsl_to_sprv"] = &glsl_to_sprv;
+	lua["sprv_to_gles"] = &gpu::sprv_to_gles;
+	lua["glsl_to_sprv"] = &gpu::glsl_to_sprv;
+	lua["compile_shader"] = &gpu::compile_shader;
 
 	// Globals
 	lua["gpu"] = std::move(render_device);

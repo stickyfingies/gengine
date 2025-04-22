@@ -109,6 +109,7 @@ class RenderDeviceGL : public RenderDevice {
 
 	std::vector<Buffer*> res_buffers;
 	std::vector<ShaderPipeline*> res_pipelines;
+	std::vector<Geometry*> res_geometries;
 
 public:
 	RenderDeviceGL(shared_ptr<GLFWwindow> window) : window{window}
@@ -133,12 +134,39 @@ public:
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
 
-		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
 		glFrontFace(GL_CCW);
 	}
 
-	~RenderDeviceGL() { cout << "~ RenderDeviceGL" << endl; }
+	~RenderDeviceGL()
+	{
+		cout << "~ RenderDeviceGL" << endl;
+
+		for (auto& geometry : res_geometries) {
+			if (geometry) {
+				std::cout << "~ GPU Geometry " << endl;
+				std::cout << geometry->vao << std::endl;
+				glDeleteVertexArrays(1, &geometry->vao);
+				delete geometry;
+			}
+		}
+
+		for (auto& buffer : res_buffers) {
+			if (buffer) {
+				std::cout << "~ GPU Buffer " << endl;
+				glDeleteBuffers(1, &buffer->gl_buffer);
+				delete buffer;
+			}
+		}
+
+		for (auto& pipeline : res_pipelines) {
+			if (pipeline) {
+				std::cout << "~ GPU Pipeline " << endl;
+				glDeleteProgram(pipeline->gl_program);
+				delete pipeline;
+			}
+		}
+	}
 
 	auto create_buffer(
 		BufferUsage usage, std::size_t stride, std::size_t element_count, const void* data)
@@ -254,7 +282,8 @@ public:
 		glDeleteShader(vertex_shader);
 		glDeleteShader(fragment_shader);
 
-		glFrontFace(winding_order == WindingOrder::CLOCKWISE ? GL_CW : GL_CCW);
+		// This is backwards from Vulkan and I haven't figured out why
+		glFrontFace(winding_order == WindingOrder::CLOCKWISE ? GL_CCW : GL_CW);
 
 		const uint64_t pipeline_handle = res_pipelines.size();
 		res_pipelines.push_back(new ShaderPipeline{shader_program, vertex_attributes});
@@ -282,12 +311,14 @@ public:
 		cout << "Destroying pipeline " << pso_handle.id << endl;
 		glDeleteProgram(pso->gl_program);
 		delete pso;
+		res_pipelines[pso_handle.id] = nullptr;
+		// TODO(seth) - add pso_handle.id to a free list
 	}
 
 	auto create_geometry(
 		ShaderPipelineHandle pipeline_handle,
 		BufferHandle vertex_buffer_handle,
-		BufferHandle index_buffer_handle) -> Geometry* override
+		BufferHandle index_buffer_handle) -> GeometryHandle override
 	{
 		std::cout << "Creating geometry" << std::endl;
 
@@ -341,50 +372,51 @@ public:
 
 		cout << "GPU Geometry indices: " << index_count << " " << gpu_geometry << endl;
 
-		return gpu_geometry;
+		const uint64_t geometry_handle = res_geometries.size();
+		res_geometries.push_back(gpu_geometry);
+
+		return {.id = geometry_handle};
 	}
 
-	auto destroy_geometry(const Geometry* geometry) -> void override
+	auto destroy_geometry(const GeometryHandle geometry_handle) -> void override
 	{
+		if (geometry_handle.id == UINT64_MAX) {
+			return;
+		}
+		cout << "~ Geometry " << geometry_handle.id << endl;
+		Geometry* geometry = res_geometries.at(geometry_handle.id);
 		destroy_buffer(geometry->vbo);
 		destroy_buffer(geometry->ebo);
 		delete geometry;
+		res_geometries[geometry_handle.id] = nullptr;
 	}
 
-	auto simple_draw(
-		ShaderPipelineHandle pipeline_handle,
-		BufferHandle vertex_buffer_handle,
-		BufferHandle index_buffer_handle,
-		size_t index_count) -> void override
+	auto simple_draw(ShaderPipelineHandle pipeline_handle, GeometryHandle geometry_handle)
+		-> void override
 	{
 		if (pipeline_handle.id == UINT64_MAX) {
 			return;
 		}
-		if (vertex_buffer_handle.id == UINT64_MAX) {
-			return;
-		}
-		if (index_buffer_handle.id == UINT64_MAX) {
+		if (geometry_handle.id == UINT64_MAX) {
 			return;
 		}
 
 		const auto pipeline = res_pipelines.at(pipeline_handle.id);
-		const auto vertex_buffer = res_buffers.at(vertex_buffer_handle.id);
-		const auto index_buffer = res_buffers.at(index_buffer_handle.id);
 
 		glClearColor(0.4, 0.3, 0.8, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glUseProgram(pipeline->gl_program);
 
-		glBindVertexArray(vertex_buffer->gl_buffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer->gl_buffer);
-		glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, 0);
+		Geometry* geometry = res_geometries.at(geometry_handle.id);
+		webgl::bindVertexArray(geometry->vao);
+		glDrawElements(GL_TRIANGLES, geometry->index_count, GL_UNSIGNED_INT, 0);
 	}
 
 	auto render(
 		const glm::mat4& view,
 		ShaderPipelineHandle pipeline_handle,
 		const vector<glm::mat4>& transforms,
-		const vector<Geometry*>& geometries,
+		const vector<GeometryHandle>& geometries,
 		const vector<Descriptors*>& descriptors,
 		function<void()> gui_code) -> void override
 	{
@@ -410,7 +442,7 @@ public:
 
 		for (int i = 0; i < transforms.size(); i++) {
 			const auto& matrix = transforms[i];
-			const auto& geometry = geometries[i];
+			const auto& geometry_handle = geometries[i];
 			const auto& descriptor = descriptors[i];
 
 			const GLint u_model = glGetUniformLocation(pipeline->gl_program, "model");
@@ -421,6 +453,7 @@ public:
 			const auto location = glGetUniformLocation(pipeline->gl_program, "tDiffuse");
 			glUniform1i(location, 0);
 
+			Geometry* geometry = res_geometries.at(geometry_handle.id);
 			webgl::bindVertexArray(geometry->vao);
 			glDrawElements(GL_TRIANGLES, geometry->index_count, GL_UNSIGNED_INT, 0);
 		}

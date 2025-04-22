@@ -45,6 +45,9 @@ if(NOT DEFINED GPU_BACKEND OR NOT GPU_BACKEND IN_LIST SUPPORTED_BACKENDS)
 endif()
 
 # Backend-specific compilation options
+target_compile_definitions(gpu PRIVATE
+    GPU_BACKEND="${GPU_BACKEND}"
+)
 if(GPU_BACKEND MATCHES "Vulkan")
     target_sources(gpu PRIVATE src/gpu.vulkan.cpp)
     find_package(Vulkan REQUIRED)
@@ -70,7 +73,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(gpu PUBLIC glfw imgui::imgui)
 endif()
 
-# GPU LUA
+# Shader support and such
 if(NOT EMSCRIPTEN)
     find_package(glfw3 REQUIRED)
     find_package(Lua REQUIRED)
@@ -80,6 +83,14 @@ if(NOT EMSCRIPTEN)
     find_package(spirv_cross_cpp REQUIRED)
     find_package(unofficial-shaderc REQUIRED)
 
+    # This affects gpu
+    target_sources(gpu PRIVATE src/shaders.cpp)
+    target_link_libraries(gpu PRIVATE spirv-cross-core
+        spirv-cross-glsl
+        spirv-cross-cpp
+        unofficial::shaderc::shaderc)
+
+    # This creates gpu-lua
     add_executable(gpu-lua)
     target_sources(gpu-lua PRIVATE src/gpu-lua.cpp)
     target_include_directories(gpu-lua PRIVATE ${LUA_INCLUDE_DIR})
@@ -88,10 +99,6 @@ if(NOT EMSCRIPTEN)
         gpu
         sol2::sol2
         glfw
-        spirv-cross-core
-        spirv-cross-glsl
-        spirv-cross-cpp
-        unofficial::shaderc::shaderc
     )
 endif()
 

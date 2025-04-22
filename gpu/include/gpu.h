@@ -48,6 +48,8 @@ enum class BufferUsage { VERTEX, INDEX };
 
 enum class WindingOrder { CLOCKWISE, COUNTERCLOCKWISE };
 
+enum class ShaderStage { VERTEX, FRAGMENT };
+
 /**
  * NOTICE: This MUST run before `glfwCreateWindow` and after `glfwInit`.
  */
@@ -59,6 +61,12 @@ struct BufferHandle {
 
 struct ShaderPipelineHandle {
 	uint64_t id;
+};
+
+struct GeometryHandle {
+	uint64_t id;
+
+	bool operator==(const GeometryHandle& other) const { return id == other.id; }
 };
 
 /**
@@ -150,21 +158,17 @@ public:
 	 */
 	virtual auto create_geometry(
 		ShaderPipelineHandle pipeline, BufferHandle vertex_buffer, BufferHandle index_buffer)
-		-> Geometry* = 0;
+		-> GeometryHandle = 0;
 
-	virtual auto destroy_geometry(const Geometry* geometry) -> void = 0;
+	virtual auto destroy_geometry(const GeometryHandle geometry) -> void = 0;
 
-	virtual auto simple_draw(
-		ShaderPipelineHandle pipeline,
-		BufferHandle vertex_buffer,
-		BufferHandle index_buffer,
-		size_t index_count) -> void = 0;
+	virtual auto simple_draw(ShaderPipelineHandle pipeline, GeometryHandle geometry) -> void = 0;
 
 	virtual auto render(
 		const glm::mat4& view,
 		ShaderPipelineHandle pipeline,
 		const std::vector<glm::mat4>& transforms,
-		const std::vector<Geometry*>& renderables,
+		const std::vector<GeometryHandle>& renderables,
 		const std::vector<Descriptors*>& descriptors,
 		std::function<void()> gui_code) -> void = 0;
 };

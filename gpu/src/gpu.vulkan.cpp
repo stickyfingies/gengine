@@ -735,18 +735,30 @@ public:
 	auto create_geometry(
 		ShaderPipelineHandle pipeline_handle,
 		BufferHandle vertex_buffer_handle,
-		BufferHandle index_buffer_handle) -> Geometry* override
+		BufferHandle index_buffer_handle) -> GeometryHandle override
 	{
 		Buffer* vertex_buffer = res_buffers.at(vertex_buffer_handle.id);
 		Buffer* index_buffer = res_buffers.at(index_buffer_handle.id);
-		return new Geometry{vertex_buffer_handle, index_buffer_handle, index_buffer->size};
+		const uint64_t geometry_handle = res_geometries.size();
+		res_geometries.push_back(
+			new Geometry{vertex_buffer_handle, index_buffer_handle, index_buffer->size});
+		std::cout << "[info]\t Geometry " << geometry_handle << " indices: "
+				  << index_buffer->size << std::endl;
+		return {.id = geometry_handle};
 	}
 
-	auto destroy_geometry(const Geometry* geometry) -> void override
+	auto destroy_geometry(const GeometryHandle geometry_handle) -> void override
 	{
+		if (geometry_handle.id == UINT64_MAX) {
+			return;
+		}
+		std::cout << "[info]\t ~ Geometry " << geometry_handle.id << std::endl;
+		Geometry* geometry = res_geometries.at(geometry_handle.id);
 		destroy_buffer(geometry->vbo);
 		destroy_buffer(geometry->ebo);
 		delete geometry;
+		res_geometries[geometry_handle.id] = nullptr;
+		// TODO(seth) - add geometry_handle.id to a free list
 	}
 
 	auto create_descriptor_set_layout() -> vk::DescriptorSetLayout
@@ -1014,23 +1026,19 @@ public:
 
 	auto simple_draw(
 		ShaderPipelineHandle pipeline_handle,
-		BufferHandle vertex_buffer_handle,
-		BufferHandle index_buffer_handle,
-		size_t index_count) -> void override
+		GeometryHandle geometry_handle) -> void override
 	{
 		if (pipeline_handle.id == UINT64_MAX) {
 			return;
 		}
-		if (vertex_buffer_handle.id == UINT64_MAX) {
+		if (geometry_handle.id == UINT64_MAX) {
 			return;
 		}
-		if (index_buffer_handle.id == UINT64_MAX) {
-			return;
-		}
+		Geometry* geometry = res_geometries.at(geometry_handle.id);
 
 		ShaderPipeline* pso = res_pipelines.at(pipeline_handle.id);
-		gpu::Buffer* vbo = res_buffers.at(vertex_buffer_handle.id);
-		gpu::Buffer* ebo = res_buffers.at(index_buffer_handle.id);
+		gpu::Buffer* vbo = res_buffers.at(geometry->vbo.id);
+		gpu::Buffer* ebo = res_buffers.at(geometry->ebo.id);
 
 		const auto ctx = alloc_context();
 		if (!ctx) {
@@ -1041,7 +1049,7 @@ public:
 		ctx->cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pso->pipeline);
 
 		ctx->bind_geometry_buffers(vbo, ebo);
-		ctx->draw(index_count, 1);
+		ctx->draw(geometry->index_count, 1);
 		ctx->end();
 
 		execute_context(ctx.get());
@@ -1051,7 +1059,7 @@ public:
 		const glm::mat4& view,
 		ShaderPipelineHandle pso_handle,
 		const std::vector<glm::mat4>& transforms,
-		const std::vector<Geometry*>& renderables,
+		const std::vector<GeometryHandle>& renderables,
 		const std::vector<Descriptors*>& descriptors,
 		std::function<void()> gui_code) -> void override
 	{
@@ -1089,10 +1097,11 @@ public:
 				sizeof(PushConstantData),
 				&push_constant_data);
 
-			gpu::Buffer* vbo = res_buffers.at(renderables[i]->vbo.id);
-			gpu::Buffer* ebo = res_buffers.at(renderables[i]->ebo.id);
+			gpu::Geometry* geometry = res_geometries.at(renderables[i].id);
+			gpu::Buffer* vbo = res_buffers.at(geometry->vbo.id);
+			gpu::Buffer* ebo = res_buffers.at(geometry->ebo.id);
 			ctx->bind_geometry_buffers(vbo, ebo);
-			ctx->draw(renderables[i]->index_count, 1);
+			ctx->draw(geometry->index_count, 1);
 		}
 
 		ImGui::Render();
@@ -1583,6 +1592,7 @@ private:
 
 	std::vector<Buffer*> res_buffers;
 	std::vector<ShaderPipeline*> res_pipelines;
+	std::vector<Geometry*> res_geometries;
 };
 
 auto RenderDevice::create(std::shared_ptr<GLFWwindow> window) -> std::unique_ptr<RenderDevice>

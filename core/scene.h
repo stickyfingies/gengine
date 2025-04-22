@@ -7,6 +7,16 @@
 #include <vector>
 #include <unordered_set>
 
+namespace std {
+    template<> struct hash<gpu::GeometryHandle>
+    {
+        std::size_t operator()(const gpu::GeometryHandle& g) const noexcept
+        {
+            return g.id;
+        }
+    };
+}
+
 struct ResourceContainer {
 
 	/**
@@ -17,7 +27,7 @@ struct ResourceContainer {
 
 	ResourceSet<gengine::Collidable*> rigidbodies;
 	ResourceSet<gpu::Descriptors*> gpu_descriptors;
-	ResourceSet<gpu::Geometry*> gpu_geometries;
+	ResourceSet<gpu::GeometryHandle> gpu_geometries;
 	ResourceSet<gpu::Image*> gpu_images;
 };
 
@@ -30,7 +40,7 @@ struct Scene {
 	// The resources in the vectors "belong" to the res_* equivalents below.
 	std::vector<glm::mat4> transforms{};
 	std::vector<gengine::Collidable*> collidables{};
-	std::vector<gpu::Geometry*> render_components{};
+	std::vector<gpu::GeometryHandle> render_components{};
 	std::vector<gpu::Descriptors*> descriptors{};
 };
 
