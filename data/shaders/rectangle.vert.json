@@ -1,0 +1,45 @@
+{
+    "shader_name": "rectangle.vert",
+    "shader_stage": "vertex",
+    "entry_point_name": "main",
+    "input_variables": [
+        {
+            "name": "inPosition",
+            "format": "R32G32_SFLOAT",
+            "location": 0,
+            "type": {
+                "name": "",
+                "base_type": "vec2",
+                "array_elements": 0,
+                "array_stride": 0,
+                "size": 8
+            }
+        },
+        {
+            "name": "inColor",
+            "format": "R32G32B32_SFLOAT",
+            "location": 1,
+            "type": {
+                "name": "",
+                "base_type": "vec3",
+                "array_elements": 0,
+                "array_stride": 0,
+                "size": 12
+            }
+        }
+    ],
+    "output_variables": [
+        {
+            "name": "fragColor",
+            "format": "R32G32B32_SFLOAT",
+            "location": 0,
+            "type": {
+                "name": "",
+                "base_type": "vec3",
+                "array_elements": 0,
+                "array_stride": 0,
+                "size": 12
+            }
+        }
+    ]
+}

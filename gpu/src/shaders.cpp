@@ -405,27 +405,18 @@ static bool getUniformBufferLayout(
 }
 
 // Convert SPIRV to GLSL ES 300 (WebGL 2)
-std::vector<uint32_t> gpu::sprv_to_gles(std::vector<uint32_t> spirv_binary)
+std::string gpu::sprv_to_gles(std::vector<uint32_t> spirv_binary)
 {
 	spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
-
-	// Set some options.
-	spirv_cross::CompilerGLSL::Options options;
-	options.version = 300;
-	options.es = true;
-	glsl.set_common_options(options);
+	glsl.set_common_options({
+		.version = 300,
+		.es = true,
+	});
 
 	// Compile the SPIRV to GLSL.
-	std::string source = glsl.compile();
+	const string source = glsl.compile();
 
-	// convert source to vector of uint32_t
-	std::vector<uint32_t> glsl_binary;
-	glsl_binary.resize(source.size() / sizeof(uint32_t));
-	for (size_t i = 0; i < source.size() / sizeof(uint32_t); ++i) {
-		glsl_binary[i] = *reinterpret_cast<const uint32_t*>(source.data() + i * sizeof(uint32_t));
-	}
-
-	return glsl_binary;
+	return source;
 }
 
 // Compiles a shader to a SPIR-V binary. Returns the binary as
@@ -468,189 +459,6 @@ std::vector<uint32_t> gpu::glsl_to_sprv(
 		spirv_blob.size() * sizeof(uint32_t), // size in bytes!
 		vertex_layout);
 
-	if (success) {
-		if (vertex_layout.empty()) {
-			std::cout << "Vertex shader has no user-defined input attributes." << std::endl;
-		}
-		else {
-			std::cout << "Vertex Input Layout:" << std::endl;
-			for (const auto& attr : vertex_layout) {
-				std::cout << "  - Location: " << attr.location << ", Name: " << attr.name
-						  << ", Format: " << attr.format << ", Size: " << attr.size << " bytes"
-						  << std::endl;
-			}
-		}
-
-		// --- How you would use this for API setup (Vulkan/OpenGL) ---
-		// This layout information is used to configure the vertex input stage
-		// in your graphics API pipeline.
-
-		// In Vulkan, you'd use this to create VkVertexInputAttributeDescription
-		// and VkVertexInputBindingDescription structures.
-
-		// Example (Vulkan):
-		// Assuming all attributes come from a single buffer (binding 0)
-		//
-		// VkVertexInputBindingDescription bindingDescription{};
-		// bindingDescription.binding = 0;
-		// bindingDescription.stride = /* Calculate total size of one vertex */;
-		// bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX; // or INSTANCE
-		//
-		// std::vector<VkVertexInputAttributeDescription>
-		// attributeDescriptions(vertex_layout.size()); uint32_t currentOffset = 0; for (size_t i =
-		// 0; i < vertex_layout.size(); ++i) {
-		//     attributeDescriptions[i].binding = 0; // Match the binding description
-		//     attributeDescriptions[i].location = vertex_layout[i].location;
-		//     attributeDescriptions[i].format =
-		//     mapSpvReflectFormatToVulkan(vertex_layout[i].format); // <-- Need a mapping function
-		//     attributeDescriptions[i].offset = currentOffset; // Offset within the vertex buffer
-		//     stride
-		//
-		//     // For tightly packed vertex data:
-		//     currentOffset += vertex_layout[i].size;
-		//
-		//     // If using std140/std430-like alignment in vertex buffer (less common for vertex
-		//     data):
-		//     // You'd need reflection data on type alignment and calculate padded offset.
-		//     // But usually vertex buffers are tightly packed per attribute.
-		// }
-		// // bindingDescription.stride = currentOffset; // This is the stride if tightly packed
-		//
-		// // These descriptions go into the VkPipelineVertexInputStateCreateInfo
-
-		// In OpenGL, you'd use this with glVertexAttribPointer:
-		//
-		// GLuint binding_point = 0; // Corresponds to Vulkan binding index
-		// GLsizei stride = /* Calculate total size of one vertex */;
-		//
-		// for (const auto& attr : vertex_layout) {
-		//    // Need a mapping from SpvReflectFormat to GLenum type, components, and normalization
-		//    bool GLenum type; int components; GLboolean normalized; // Get these from mapping
-		//    function void* offset_ptr = (void*)(uintptr_t)/* Calculate offset for this attribute
-		//    */;
-		//
-		//    glVertexAttribPointer(
-		//        attr.location, // Use the location from reflection
-		//        components,    // e.g., 3 for vec3
-		//        type,          // e.g., GL_FLOAT
-		//        normalized,    // e.g., GL_FALSE for float/int
-		//        stride,        // Total size of one vertex
-		//        offset_ptr     // Byte offset from start of vertex in buffer
-		//    );
-		//    glEnableVertexAttribArray(attr.location);
-		//    // If using glBindVertexBuffer (OpenGL 4.3+):
-		//    // glVertexAttribBinding(attr.location, binding_point);
-		// }
-		// glBindVertexBuffer(binding_point, VBO, 0, stride); // Bind VBO to binding point
-	}
-
-	uint32_t target_set = 0;
-	uint32_t target_binding = 0;
-
-	gpu::UniformBufferLayout ubo_layout;
-	success = getUniformBufferLayout(
-		spirv_blob.data(),
-		spirv_blob.size() * sizeof(uint32_t), // size in bytes!
-		target_set,
-		target_binding,
-		ubo_layout);
-
-	if (success) {
-		std::cout << "Successfully found uniform buffer:" << std::endl;
-		std::cout << "  Set: " << ubo_layout.set << std::endl;
-		std::cout << "  Binding: " << ubo_layout.binding << std::endl;
-		std::cout << "  Block Name: " << ubo_layout.block_name << std::endl;
-		std::cout << "  Block Size (bytes): " << ubo_layout.block_size << std::endl;
-		std::cout << "  Members:" << std::endl;
-		for (const auto& member : ubo_layout.members) {
-			std::cout << "    - Name: " << member.name << ", Offset: " << member.offset << " bytes"
-					  << ", Size: " << member.size << " bytes" << std::endl;
-		}
-
-		// --- How you would use this for memcpy ---
-		// Assume you have a buffer allocated for this UBO, maybe using Vulkan/OpenGL APIs
-		// uint8_t* ubo_memory_ptr = ... // Pointer to the mapped buffer memory
-
-		// Example: Copying a float 'time' member
-		// float current_time = 1.23f;
-		// For a member named "time", find its layout
-		// auto it = std::find_if(ubo_layout.members.begin(), ubo_layout.members.end(),
-		//                       [](const UniformBufferMemberLayout& m){ return m.name == "time";
-		//                       });
-		// if (it != ubo_layout.members.end()) {
-		//     memcpy(ubo_memory_ptr + it->offset, &current_time, it->size);
-		// }
-
-		// Example: Copying a vec3 'position' member
-		// struct Vec3 { float x, y, z; };
-		// Vec3 camera_pos = {10.0f, 5.0f, -3.0f};
-		// auto it_pos = std::find_if(ubo_layout.members.begin(), ubo_layout.members.end(),
-		//                            [](const UniformBufferMemberLayout& m){ return m.name ==
-		//                            "position"; });
-		// if (it_pos != ubo_layout.members.end()) {
-		//     memcpy(ubo_memory_ptr + it_pos->offset, &camera_pos, it_pos->size);
-		// }
-		// Note: Be careful with padding and alignment for structs/arrays! spirv-reflect provides
-		// the *exact* offset based on the SPIR-V layout rules (std140 or std430, typically std140
-		// for UBOs). Ensure your C++ struct matches this layout or use the individual member
-		// offsets.
-	}
-
-	PushConstantLayout pc_layout;
-	success = getPushConstantLayout(
-		spirv_blob.data(),
-		spirv_blob.size() * sizeof(uint32_t), // size in bytes!
-		pc_layout);
-
-	if (success) {
-		std::cout << "Successfully found push constant block:" << std::endl;
-		std::cout << "  Block Name: " << pc_layout.block_name << std::endl;
-		// std::cout << "  Stages: " << shaderStageFlagsToString(pc_layout.stage_flags) <<
-		// std::endl;
-		std::cout << "  Block Size (bytes): " << pc_layout.size << std::endl;
-		std::cout << "  Members:" << std::endl;
-		for (const auto& member : pc_layout.members) {
-			std::cout << "    - Name: " << member.name << ", Offset: " << member.offset << " bytes"
-					  << ", Size: " << member.size << " bytes" << std::endl;
-		}
-
-		// --- How you would use this for memcpy ---
-		// Assume you have your push constant data in a C++ struct or array
-		// struct PushConstantData {
-		//     glm::vec4 color;
-		//     float intensity;
-		//     uint32_t id;
-		// };
-		// PushConstantData data = { {1.0f, 0.5f, 0.2f, 1.0f}, 2.5f, 123 };
-
-		// You would typically copy the entire struct if its layout matches or
-		// copy members individually if needed. Push constants are often copied
-		// directly into command buffer space or a temporary buffer.
-		//
-		// uint8_t push_constant_buffer[pc_layout.size]; // Or use a vector
-
-		// Example: Copying 'color' member
-		// auto it_color = std::find_if(pc_layout.members.begin(), pc_layout.members.end(),
-		//                             [](const BufferMemberLayout& m){ return m.name == "color";
-		//                             });
-		// if (it_color != pc_layout.members.end()) {
-		//     memcpy(push_constant_buffer + it_color->offset, &data.color, it_color->size);
-		// }
-
-		// Example: Copying 'intensity' member
-		// auto it_intensity = std::find_if(pc_layout.members.begin(), pc_layout.members.end(),
-		//                                 [](const BufferMemberLayout& m){ return m.name ==
-		//                                 "intensity"; });
-		// if (it_intensity != pc_layout.members.end()) {
-		//     memcpy(push_constant_buffer + it_intensity->offset, &data.intensity,
-		//     it_intensity->size);
-		// }
-		// ... and so on for other members ...
-
-		// Then update the push constants during command buffer recording
-		// vkCmdPushConstants(... , pc_layout.stage_flags, 0, pc_layout.size, push_constant_buffer);
-	}
-
 	return spirv_blob;
 }
 
@@ -686,8 +494,16 @@ gpu::ShaderObject gpu::compile_shaders(std::string vert_source, std::string frag
 	}
 
 	if (strcmp(GPU_BACKEND, "Vulkan") == 0) {
-		shader_object.target_vertex_shader = vertex_spirv_blob;
-		shader_object.target_fragment_shader = fragment_spirv_blob;
+		// convert spirv blob to string
+		std::string vertex_spirv_string(
+			reinterpret_cast<const char*>(vertex_spirv_blob.data()),
+			vertex_spirv_blob.size() * sizeof(uint32_t));
+		std::string fragment_spirv_string(
+			reinterpret_cast<const char*>(fragment_spirv_blob.data()),
+			fragment_spirv_blob.size() * sizeof(uint32_t));
+
+		shader_object.target_vertex_shader = vertex_spirv_string;
+		shader_object.target_fragment_shader = fragment_spirv_string;
 	}
 	else if (strcmp(GPU_BACKEND, "GL") == 0) {
 		shader_object.target_vertex_shader = sprv_to_gles(vertex_spirv_blob);
@@ -699,4 +515,237 @@ gpu::ShaderObject gpu::compile_shaders(std::string vert_source, std::string frag
 	}
 
 	return shader_object;
+}
+
+// Reflect on a SPIR-V shader and return metadata about the shader
+gpu::ShaderMetaData gpu::reflect_shader(std::vector<uint32_t> spirv_blob)
+{
+	gpu::ShaderMetaData meta;
+
+	SpvReflectShaderModule module;
+	SpvReflectResult result = spvReflectCreateShaderModule(
+		spirv_blob.size() * sizeof(uint32_t), spirv_blob.data(), &module);
+
+	if (result != SPV_REFLECT_RESULT_SUCCESS) {
+		std::cerr << "Error: Failed to create SPIR-V reflection module: " << result << std::endl;
+		return meta;
+	}
+
+	// Ensure the module is destroyed when the function exits
+	auto cleanup = [&]() { spvReflectDestroyShaderModule(&module); };
+
+	// Extract shader name from the SPIR-V source file name (if available)
+	if (module.source_file) {
+		std::string source_file = module.source_file;
+		// Extract just the filename without directory or extension
+		size_t last_slash = source_file.find_last_of("/\\");
+		size_t start = (last_slash == std::string::npos) ? 0 : last_slash + 1;
+		size_t dot = source_file.find_last_of('.');
+		size_t end = (dot == std::string::npos || dot < start) ? source_file.length() : dot;
+		meta.shader_name = source_file.substr(start, end - start);
+	}
+	else {
+		// If no source file name, generate one based on shader stage
+		switch (module.shader_stage) {
+		case SPV_REFLECT_SHADER_STAGE_VERTEX_BIT:
+			meta.shader_name = "vertex_shader";
+			break;
+		case SPV_REFLECT_SHADER_STAGE_FRAGMENT_BIT:
+			meta.shader_name = "fragment_shader";
+			break;
+		default:
+			meta.shader_name = "unnamed_shader";
+			break;
+		}
+	}
+
+	// Set shader stage
+	switch (module.shader_stage) {
+	case SPV_REFLECT_SHADER_STAGE_VERTEX_BIT:
+		meta.shader_stage = "vertex";
+		break;
+	case SPV_REFLECT_SHADER_STAGE_FRAGMENT_BIT:
+		meta.shader_stage = "fragment";
+		break;
+	case SPV_REFLECT_SHADER_STAGE_GEOMETRY_BIT:
+		meta.shader_stage = "geometry";
+		break;
+	case SPV_REFLECT_SHADER_STAGE_COMPUTE_BIT:
+		meta.shader_stage = "compute";
+		break;
+	default:
+		meta.shader_stage = "unknown";
+		break;
+	}
+
+	// Get entry point name
+	meta.entry_point_name = module.entry_point_name ? module.entry_point_name : "main";
+
+	// Reflect on input variables
+	uint32_t input_count = 0;
+	result = spvReflectEnumerateInputVariables(&module, &input_count, nullptr);
+	if (result == SPV_REFLECT_RESULT_SUCCESS && input_count > 0) {
+		std::vector<SpvReflectInterfaceVariable*> input_vars(input_count);
+		spvReflectEnumerateInputVariables(&module, &input_count, input_vars.data());
+
+		for (uint32_t i = 0; i < input_count; ++i) {
+			const auto* var = input_vars[i];
+
+			// Skip built-in variables
+			if (var->decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN) {
+				continue;
+			}
+
+			if (!var->type_description) {
+				continue;
+			}
+
+			ShaderVariable input;
+			input.name = var->name ? var->name : "UnnamedInput";
+			input.location = var->location;
+			input.format = spvFormatToString(var->format);
+
+			// Get type information
+			ShaderDataType type;
+			type.name = var->type_description->type_name ? var->type_description->type_name : "";
+
+			// Determine base type from format
+			if (var->format == SPV_REFLECT_FORMAT_R32_SFLOAT) {
+				type.base_type = "float";
+			}
+			else if (var->format == SPV_REFLECT_FORMAT_R32G32_SFLOAT) {
+				type.base_type = "vec2";
+			}
+			else if (var->format == SPV_REFLECT_FORMAT_R32G32B32_SFLOAT) {
+				type.base_type = "vec3";
+			}
+			else if (var->format == SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT) {
+				type.base_type = "vec4";
+			}
+			else if (var->format == SPV_REFLECT_FORMAT_R32_SINT) {
+				type.base_type = "int";
+			}
+			else if (var->format == SPV_REFLECT_FORMAT_R32G32_SINT) {
+				type.base_type = "ivec2";
+			}
+			else if (var->format == SPV_REFLECT_FORMAT_R32G32B32_SINT) {
+				type.base_type = "ivec3";
+			}
+			else if (var->format == SPV_REFLECT_FORMAT_R32G32B32A32_SINT) {
+				type.base_type = "ivec4";
+			}
+			else {
+				type.base_type = "unknown";
+			}
+
+			type.size = spvFormatToSize(var->format);
+			type.array_elements = var->array.dims_count > 0 ? var->array.dims[0] : 0;
+			type.array_stride = var->array.stride;
+
+			input.type = type;
+			meta.input_variables.push_back(input);
+		}
+	}
+
+	// Reflect on output variables
+	uint32_t output_count = 0;
+	result = spvReflectEnumerateOutputVariables(&module, &output_count, nullptr);
+	if (result == SPV_REFLECT_RESULT_SUCCESS && output_count > 0) {
+		std::vector<SpvReflectInterfaceVariable*> output_vars(output_count);
+		spvReflectEnumerateOutputVariables(&module, &output_count, output_vars.data());
+
+		for (uint32_t i = 0; i < output_count; ++i) {
+			const auto* var = output_vars[i];
+
+			// Skip built-in variables
+			if (var->decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN) {
+				continue;
+			}
+
+			if (!var->type_description) {
+				continue;
+			}
+
+			ShaderVariable output;
+			output.name = var->name ? var->name : "UnnamedOutput";
+			output.location = var->location;
+			output.format = spvFormatToString(var->format);
+
+			// Get type information
+			ShaderDataType type;
+			type.name = var->type_description->type_name ? var->type_description->type_name : "";
+
+			// Determine base type from format
+			if (var->format == SPV_REFLECT_FORMAT_R32_SFLOAT) {
+				type.base_type = "float";
+			}
+			else if (var->format == SPV_REFLECT_FORMAT_R32G32_SFLOAT) {
+				type.base_type = "vec2";
+			}
+			else if (var->format == SPV_REFLECT_FORMAT_R32G32B32_SFLOAT) {
+				type.base_type = "vec3";
+			}
+			else if (var->format == SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT) {
+				type.base_type = "vec4";
+			}
+			else if (var->format == SPV_REFLECT_FORMAT_R32_SINT) {
+				type.base_type = "int";
+			}
+			else if (var->format == SPV_REFLECT_FORMAT_R32G32_SINT) {
+				type.base_type = "ivec2";
+			}
+			else if (var->format == SPV_REFLECT_FORMAT_R32G32B32_SINT) {
+				type.base_type = "ivec3";
+			}
+			else if (var->format == SPV_REFLECT_FORMAT_R32G32B32A32_SINT) {
+				type.base_type = "ivec4";
+			}
+			else {
+				type.base_type = "unknown";
+			}
+
+			type.size = spvFormatToSize(var->format);
+			type.array_elements = var->array.dims_count > 0 ? var->array.dims[0] : 0;
+			type.array_stride = var->array.stride;
+
+			output.type = type;
+			meta.output_variables.push_back(output);
+		}
+	}
+
+	// Get uniform buffer information if available
+	uint32_t buffer_count = 0;
+	result = spvReflectEnumerateDescriptorSets(&module, &buffer_count, nullptr);
+	if (result == SPV_REFLECT_RESULT_SUCCESS && buffer_count > 0) {
+		std::vector<SpvReflectDescriptorSet*> sets(buffer_count);
+		spvReflectEnumerateDescriptorSets(&module, &buffer_count, sets.data());
+
+		// We could add this information to meta if needed
+		// For now just outputting to console for debugging
+		for (uint32_t i = 0; i < buffer_count; ++i) {
+			const auto* set = sets[i];
+			std::cout << "Descriptor Set " << set->set << " with " << set->binding_count
+					  << " bindings" << std::endl;
+		}
+	}
+
+	// Add push constant information if available
+	uint32_t push_constant_count = 0;
+	result = spvReflectEnumeratePushConstantBlocks(&module, &push_constant_count, nullptr);
+	if (result == SPV_REFLECT_RESULT_SUCCESS && push_constant_count > 0) {
+		std::vector<SpvReflectBlockVariable*> push_constants(push_constant_count);
+		spvReflectEnumeratePushConstantBlocks(&module, &push_constant_count, push_constants.data());
+
+		// We could add this information to meta if needed
+		// For now just outputting to console for debugging
+		for (uint32_t i = 0; i < push_constant_count; ++i) {
+			const auto* pc_block = push_constants[i];
+			std::cout << "Push Constant Block: "
+					  << (pc_block->name ? pc_block->name : "$push_constants") << " with size "
+					  << pc_block->size << " bytes" << std::endl;
+		}
+	}
+
+	cleanup();
+	return meta;
 }

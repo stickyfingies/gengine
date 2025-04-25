@@ -2,6 +2,15 @@
 precision mediump float;
 precision highp int;
 
+struct PushConstants
+{
+    highp mat4 model;
+    highp mat4 view;
+    highp vec3 matColor;
+};
+
+uniform PushConstants pc;
+
 layout(location = 0) out highp vec4 outColor;
 in highp vec3 fragColor;
 
@@ -9,3 +18,4 @@ void main()
 {
     outColor = vec4(fragColor, 1.0);
 }
+

@@ -1,0 +1,33 @@
+{
+    "shader_name": "rectangle.frag",
+    "shader_stage": "fragment",
+    "entry_point_name": "main",
+    "input_variables": [
+        {
+            "name": "fragColor",
+            "format": "R32G32B32_SFLOAT",
+            "location": 0,
+            "type": {
+                "name": "",
+                "base_type": "vec3",
+                "array_elements": 0,
+                "array_stride": 0,
+                "size": 12
+            }
+        }
+    ],
+    "output_variables": [
+        {
+            "name": "outColor",
+            "format": "R32G32B32A32_SFLOAT",
+            "location": 0,
+            "type": {
+                "name": "",
+                "base_type": "vec4",
+                "array_elements": 0,
+                "array_stride": 0,
+                "size": 16
+            }
+        }
+    ]
+}

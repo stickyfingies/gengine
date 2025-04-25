@@ -76,6 +76,8 @@ int main()
 		"RenderDevice",
 		"destroy_buffer",
 		&gpu::RenderDevice::destroy_buffer,
+		"create_pipeline",
+		&gpu::RenderDevice::create_pipeline,
 		"destroy_pipeline",
 		&gpu::RenderDevice::destroy_pipeline,
 		"create_geometry",
@@ -92,6 +94,7 @@ int main()
 		   std::size_t stride,
 		   std::size_t element_count,
 		   std::vector<float> data) {
+			// Overload so we can pass a table of numbers from Lua
 			// if it's an index buffer, convert data to uint32_t
 			if (usage == gpu::BufferUsage::INDEX) {
 				std::cout << "Creating uint32_t index buffer" << std::endl;
@@ -104,24 +107,6 @@ int main()
 
 			return device->create_buffer(usage, stride, element_count, data.data());
 		});
-
-	lua["RenderDevice"]["create_pipeline"] = [](gpu::RenderDevice* device,
-												const std::vector<uint32_t>& vert_code_bytes,
-												const std::vector<uint32_t>& frag_code_bytes,
-												std::vector<gpu::VertexAttribute> vertex_attributes,
-												gpu::WindingOrder winding_order =
-													gpu::WindingOrder::COUNTERCLOCKWISE) {
-		// convert vert_code_bytes to std::string
-		std::string vert_code(
-			reinterpret_cast<const char*>(vert_code_bytes.data()),
-			vert_code_bytes.size() * sizeof(uint32_t));
-		// convert frag_code_bytes to std::string
-		std::string frag_code(
-			reinterpret_cast<const char*>(frag_code_bytes.data()),
-			frag_code_bytes.size() * sizeof(uint32_t));
-
-		return device->create_pipeline(vert_code, frag_code, vertex_attributes, winding_order);
-	};
 
 	// Enums
 	lua["BufferUsage"] =

@@ -54,8 +54,8 @@ struct ShaderMetaData {
 // This is an intermediate stage ABOVE THE RENDERDEVICE that contains
 // compiled shader code and vertex attributes.
 struct ShaderObject {
-	std::vector<uint32_t> target_vertex_shader;	  // SPIR-V or GLSL-ES
-	std::vector<uint32_t> target_fragment_shader; // SPIR-V or GLSL-ES
+	std::string target_vertex_shader;	  // SPIR-V or GLSL-ES
+	std::string target_fragment_shader; // SPIR-V or GLSL-ES
 	std::vector<gpu::VertexAttribute> vertex_attributes;
 };
 
@@ -65,7 +65,7 @@ std::vector<uint32_t> glsl_to_sprv(
 	const std::string& source,
 	bool optimize);
 
-std::vector<uint32_t> sprv_to_gles(std::vector<uint32_t> spirv_binary);
+std::string sprv_to_gles(std::vector<uint32_t> spirv_binary);
 
 gpu::ShaderMetaData reflect_shader(std::vector<uint32_t> spirv_blob);
 
