@@ -65,6 +65,15 @@ void bindVertexArray(GLuint vao)
 #endif
 }
 
+void deleteVertexArrays(GLsizei count, const GLuint* vaos)
+{
+#ifdef __EMSCRIPTEN__
+	glDeleteVertexArraysOES(count, vaos);
+#else
+	glDeleteVertexArrays(count, vaos);
+#endif
+}
+
 void GLAPIENTRY messageCallback(
 	GLenum source,
 	GLenum type,
@@ -144,7 +153,7 @@ public:
 			if (geometry) {
 				std::cout << "~ GPU Geometry " << endl;
 				std::cout << geometry->vao << std::endl;
-				glDeleteVertexArrays(1, &geometry->vao);
+				webgl::deleteVertexArrays(1, &geometry->vao);
 				delete geometry;
 			}
 		}

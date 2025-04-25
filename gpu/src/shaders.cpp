@@ -27,7 +27,7 @@ struct UniformBufferLayout {
 	uint32_t binding;
 	std::string block_name; // The name of the uniform block (e.g., "CameraParams")
 	uint32_t block_size;	// Total size of the block in bytes (including padding)
-	std::vector<BufferMemberLayout> members;
+	std::vector<gpu::BufferMemberLayout> members;
 };
 
 // Structure to hold the layout information for a push constant block
@@ -35,7 +35,7 @@ struct PushConstantLayout {
 	std::string block_name; // Often "$push_constants" or the name if defined in GLSL/HLSL
 	SpvReflectShaderStageFlagBits stage_flags; // Which shader stages use this block
 	uint32_t size;							   // Total size of the push constant block in bytes
-	std::vector<BufferMemberLayout> members;
+	std::vector<gpu::BufferMemberLayout> members;
 };
 
 struct VertexAttributeLayout {
@@ -335,7 +335,7 @@ static bool getUniformBufferLayout(
 	size_t data_size,
 	uint32_t target_set,
 	uint32_t target_binding,
-	UniformBufferLayout& out_layout)
+	gpu::UniformBufferLayout& out_layout)
 {
 	SpvReflectShaderModule module;
 	SpvReflectResult result = spvReflectCreateShaderModule(data_size, spirv_data, &module);
@@ -405,7 +405,7 @@ static bool getUniformBufferLayout(
 }
 
 // Convert SPIRV to GLSL ES 300 (WebGL 2)
-static std::vector<uint32_t> sprv_to_gles(std::vector<uint32_t> spirv_binary)
+std::vector<uint32_t> gpu::sprv_to_gles(std::vector<uint32_t> spirv_binary)
 {
 	spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
 
@@ -417,8 +417,6 @@ static std::vector<uint32_t> sprv_to_gles(std::vector<uint32_t> spirv_binary)
 
 	// Compile the SPIRV to GLSL.
 	std::string source = glsl.compile();
-
-	std::cout << source << std::endl;
 
 	// convert source to vector of uint32_t
 	std::vector<uint32_t> glsl_binary;
@@ -432,7 +430,7 @@ static std::vector<uint32_t> sprv_to_gles(std::vector<uint32_t> spirv_binary)
 
 // Compiles a shader to a SPIR-V binary. Returns the binary as
 // a vector of 32-bit words.
-static std::vector<uint32_t> glsl_to_sprv(
+std::vector<uint32_t> gpu::glsl_to_sprv(
 	const std::string& source_name,
 	gpu::ShaderStage stage,
 	const std::string& source,
@@ -549,7 +547,7 @@ static std::vector<uint32_t> glsl_to_sprv(
 	uint32_t target_set = 0;
 	uint32_t target_binding = 0;
 
-	UniformBufferLayout ubo_layout;
+	gpu::UniformBufferLayout ubo_layout;
 	success = getUniformBufferLayout(
 		spirv_blob.data(),
 		spirv_blob.size() * sizeof(uint32_t), // size in bytes!

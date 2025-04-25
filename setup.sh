@@ -50,6 +50,8 @@ sh ./bootstrap-vcpkg.sh -disableMetrics # you evil f^#ks
 ./vcpkg install imgui[core,glfw-binding,vulkan-binding]
 ./vcpkg install lua:x64-linux
 ./vcpkg install lua:wasm32-emscripten
+./vcpkg install reflectcpp:x64-linux
+./vcpkg install reflectcpp:wasm32-emscripten
 ./vcpkg install shaderc:x64-linux
 ./vcpkg install sol2:x64-linux
 ./vcpkg install sol2:wasm32-emscripten

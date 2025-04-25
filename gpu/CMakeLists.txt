@@ -83,6 +83,7 @@ if(NOT EMSCRIPTEN)
     find_package(spirv_cross_cpp REQUIRED)
     find_package(unofficial-shaderc REQUIRED)
     find_package(unofficial-spirv-reflect REQUIRED)
+    find_package(reflectcpp REQUIRED)
 
     # This affects gpu
     target_sources(gpu PRIVATE src/shaders.cpp)
@@ -92,6 +93,14 @@ if(NOT EMSCRIPTEN)
         unofficial::shaderc::shaderc
         unofficial::spirv-reflect)
 
+    # This creates shadertools
+    add_executable(shadertools)
+    target_sources(shadertools PRIVATE src/shadertools.cpp)
+    target_link_libraries(shadertools PRIVATE
+        gpu
+        reflectcpp::reflectcpp
+    )
+
     # This creates gpu-lua
     add_executable(gpu-lua)
     target_sources(gpu-lua PRIVATE src/gpu-lua.cpp)
@@ -100,6 +109,7 @@ if(NOT EMSCRIPTEN)
         ${LUA_LIBRARIES}
         gpu
         sol2::sol2
+        reflectcpp::reflectcpp
         glfw
     )
 endif()
